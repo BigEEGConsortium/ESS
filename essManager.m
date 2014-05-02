@@ -4,8 +4,11 @@ classdef essManager
     % associations...). On read data are loaded in the object properties, you can change this data
     % (e.g. add a ne session) and then save using the write() method into a new ESS XML file.
     %
-    % Written by Jessica Hsi and Nima Bigdely-Shamlo, Copyright © University of California San Diego
-    % 2013.
+    % Written by Nima Bigdely-Shamlo and Jessica Hsi. 
+    % Copyright © 2014 Syntrogi, Inc.
+    % Copyright © 2013-2014 University of California San Diego.
+    % Released under BSD License.
+    
     properties
         essVersion
         studyTitle
