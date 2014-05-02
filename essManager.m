@@ -8,6 +8,7 @@ classdef essManager
     % Copyright © 2014 Syntrogi, Inc.
     % Copyright © 2013-2014 University of California San Diego.
     % Released under BSD License.
+    % development branch
     
     properties
         essVersion
