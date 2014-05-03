@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="xml_style.xsl"?>
 <study>
+	<essVersion>2.0</essVersion>
 	<title>RSVP Study</title>
 	<description>The purpose of this study was to explore the neural basis of target detection in human brain and to compare the performance of brain-computer interface (BCI) methods in classification of target vs. non-target images. The data was acquired during a rapid serial visual presentation task which was composed of a sequential presentation of image clips in rapid succession (12/s) in 4.1-s bursts, to which subjects were to indicate whether or not the satellite image clips of London presented included a small target airplane image by making one of two button presses. To indicate that they did see the target airplane feature, subjects pressed the right button and to indicate that they did not see the target airplane feature, subjects pressed the left button. During the training sessions, feedback ('correct' or 'incorrect') was given based on the subject's response, but this feedback was omitted during the testing sessions.</description>
+	<uuid>vn893y386yw3y</uuid>
 	<sessions>
 		<session>
 			<number>1</number>
@@ -10,7 +12,8 @@
 			<purpose>training</purpose>
 			<labId>exp44</labId>
 			<subject>
-				<sublabId>10</sublabId>
+				<labId>10</labId>
+				<inSessionNumber>1</inSessionNumber>
 				<group>normal</group>
 				<gender>F</gender>
 				<YOB>1978</YOB>

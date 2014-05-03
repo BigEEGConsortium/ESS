@@ -10,28 +10,29 @@ classdef essDocument
     % Released under BSD License.
     
     properties
-        essVersion
-        studyTitle
-        studyDescription
-        projectInfo = struct('organization', '',  'grantId', '');
-        sessionInfo = struct('number', '', 'taskLabel', '', 'purpose', '', 'labId', '',...
-            'channels', '', 'eegSamplingRate', '', 'eegRecording', {{''}},...
-            'note', '', 'linkName', '', 'link', '', 'subject', struct('labId', '',...
-            'group', '', 'gender', '', 'YOB', '', 'age', '', 'hand', '', 'vision', '', ...
-            'hearing', '', 'height', '', 'weight', '', 'channelLocations', '', ...
-            'channelLocationType', '', 'medication', struct('caffeine', '', 'alcohol', '')));        
-        tasksInfo = struct('taskLabel', '', 'tag', '', 'description', '');
-        eventCodesInfo = struct('code', '', 'taskLabel', '', 'condition', struct(...
-            'label', '', 'description', '', 'tag', ''));
-        summaryInfo = struct('totalSize', '', 'allSubjectsHealthyAndNormal', '', 'recordedModalities', ...
-            struct('name', '', 'recordingDevice', '', 'numberOfSensors', '', 'numberOfChannels', '',...
-            'numberOfCameras',''), 'license', struct('type', '', 'text', '', 'link',''));
-        publicationsInfo = struct('citation', '', 'DOI', '', 'link', '');
-        experimentersInfo = struct('name', '', 'role', '');
-        contactInfo = struct ('name', '', 'phone', '', 'email', '');
-        organizationInfo = struct('name', '', 'logoLink', '');
-        copyrightInfo
-        irbInfo
+        essVersion = ' ';
+        studyTitle = ' ';
+        studyDescription = ' ';
+        studyUuid = ' ';
+        projectInfo = struct('organization', ' ',  'grantId', ' ');
+        sessionInfo = struct('number', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
+            'channels', ' ', 'eegSamplingRate', ' ', 'eegRecording', {{' '}},...
+            'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
+            'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
+            'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
+            'channelLocationType', ' ', 'medication', struct('caffeine', ' ', 'alcohol', ' ')));        
+        tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
+        eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
+            'label', ' ', 'description', ' ', 'tag', ' '));
+        summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' ', 'recordedModalities', ...
+            struct('name', ' ', 'recordingDevice', ' ', 'numberOfSensors', ' ', 'numberOfChannels', ' ',...
+            'numberOfCameras',' '), 'license', struct('type', ' ', 'text', ' ', 'link',' '));
+        publicationsInfo = struct('citation', ' ', 'DOI', ' ', 'link', ' ');
+        experimentersInfo = struct('name', ' ', 'role', ' ');
+        contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
+        organizationInfo = struct('name', ' ', 'logoLink', ' ');
+        copyrightInfo = ' ';
+        irbInfo = ' ';
         
         % internal variables
         essFilePath        % the file (including folder) associated with the document (e.g. the file the document was last saved to , or originally read from) 
@@ -54,6 +55,15 @@ classdef essDocument
                     % input file did not exist. Create an ESS file at that located 
                     % and populate it with empty fields according to input
                     % values.
+                    
+                    % prepare the object based on input values.
+                    % assigns a random UUID.
+                    obj.essVersion = '2.0';
+                    obj.studyUuid = char(java.util.UUID.randomUUID);
+                    
+                    % ToDo: here we sneed to replicate sessions, subjects
+                    % and taks based onthe numbers provided.
+                    
                     obj = obj.write(obj.essFilePath);
                     fprintf('Input file does not exist, creating  a new ESS file with empty fields at %s.\n', obj.essFilePath);
                 end;
@@ -91,9 +101,11 @@ classdef essDocument
                 error('The XML file contains more than one study node.');
             end;
             
-            obj.essVersion = str2double(char(studyNode.getAttribute('essVersion')));
-            currentNode = studyNode;
-            
+            % read ESS version.
+            currentNode = studyNode; 
+            potentialEssVersionNodeArray = currentNode.getElementsByTagName('essVersion');
+            obj.essVersion = obj.readStringFromNode(potentialEssVersionNodeArray.item(0));            
+                       
             potentialDescriptionNodeArray = currentNode.getElementsByTagName('description');
             if nodeExistsAndHasAChild(potentialDescriptionNodeArray)
                 obj.studyDescription = strtrim(char(potentialDescriptionNodeArray.item(0).getFirstChild.getData));
@@ -108,6 +120,13 @@ classdef essDocument
             else
                 obj.studyTitle = '';
             end;
+            
+            potentialTitleNodeArray = currentNode.getElementsByTagName('uuid');
+            if nodeExistsAndHasAChild(potentialTitleNodeArray)
+                obj.studyUuid = obj.readStringFromNode(potentialTitleNodeArray.item(0));
+            else
+                obj.studyUuid = '';
+            end;                        
             
             % start project node
             potentialProjectNodeArray = currentNode.getElementsByTagName('project');
@@ -303,6 +322,13 @@ classdef essDocument
                                     obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId= '';
                                 end;
                                 
+                                potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('inSessionNumber');
+                                if potentialSubjectInSessionNumberNodeArray.getLength > 0
+                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = obj.readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
+                                else
+                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = '';
+                                end;
+                                
                                 potentialGroupNodeArray = currentNode.getElementsByTagName('group');
                                 if potentialGroupNodeArray.getLength > 0
                                     obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group = obj.readStringFromNode(potentialGroupNodeArray.item(0));
@@ -406,13 +432,9 @@ classdef essDocument
                         end; %end subject info
                         
                         
-                    end;%ends specific session node, end for loop
-                    
-                    
-                    
+                    end;%ends specific session node, end for loop                                                            
                 end;
-                
-                
+                                
             end; %ends sessions node
             
             
@@ -753,6 +775,9 @@ classdef essDocument
             docNode = com.mathworks.xml.XMLUtils.createDocument('study');
             docRootNode = docNode.getDocumentElement;
             
+            essVersionElement = docNode.createElement('essVersion');
+            essVersionElement.appendChild(docNode.createTextNode(obj.essVersion));
+            docRootNode.appendChild(essVersionElement);
             
             titleElement = docNode.createElement('title');
             titleElement.appendChild(docNode.createTextNode(obj.studyTitle));
@@ -761,6 +786,10 @@ classdef essDocument
             descriptionElement = docNode.createElement('description');
             descriptionElement.appendChild(docNode.createTextNode(obj.studyDescription));
             docRootNode.appendChild(descriptionElement);
+            
+            uuidElement = docNode.createElement('uuid');
+            uuidElement.appendChild(docNode.createTextNode(obj.studyUuid));
+            docRootNode.appendChild(uuidElement);
             
             projectElement = docNode.createElement('project');
             projectRootNode=docRootNode.appendChild(projectElement);
@@ -809,7 +838,11 @@ classdef essDocument
                     
                     subjectLabIdElement = docNode.createElement('labId');
                     subjectLabIdElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).labId));
-                    subjectRootNode.appendChild(subjectLabIdElement);
+                    subjectRootNode.appendChild(subjectLabIdElement);                    
+                    
+                    subjectInSessionNumberElement = docNode.createElement('inSessionNumber');
+                    subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).inSessionNumber));
+                    subjectRootNode.appendChild(subjectInSessionNumberElement);
                     
                     subjectGroupElement = docNode.createElement('group');
                     subjectGroupElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).group));
