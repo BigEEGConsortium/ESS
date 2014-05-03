@@ -1,43 +1,62 @@
-classdef essManager
+classdef essDocument
     % Allow reading, writing and manipulatoion of information contained in ESS-formatted XML files.
     % EEG Studdy Schema (ESS) contains EEG study meta-data information (subject information, sessions file
     % associations...). On read data are loaded in the object properties, you can change this data
-    % (e.g. add a ne session) and then save using the write() method into a new ESS XML file.
+    % (e.g. add a ne session) and then save using the write() method into a =new ESS XML file.
     %
-    % Written by Nima Bigdely-Shamlo and Jessica Hsi. 
+    % Written by Nima Bigdely-Shamlo and Jessica Hsi.
     % Copyright © 2014 Syntrogi, Inc.
     % Copyright © 2013-2014 University of California San Diego.
     % Released under BSD License.
-    % development branch
     
     properties
         essVersion
         studyTitle
         studyDescription
-        projectInfo = struct;
-        sessionInfo = struct;
-        tasksInfo = struct;
-        eventCodesInfo = struct;
-        summaryInfo = struct;
-        publicationsInfo = struct;
-        experimentersInfo = struct;
-        contactInfo = struct;
-        organizationInfo = struct;
+        projectInfo = struct('organization', '',  'grantId', '');
+        sessionInfo = struct('number', '', 'taskLabel', '', 'purpose', '', 'labId', '',...
+            'channels', '', 'eegSamplingRate', '', 'eegRecording', {{''}},...
+            'note', '', 'linkName', '', 'link', '', 'subject', struct('labId', '',...
+            'group', '', 'gender', '', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
+            'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
+            'channelLocationType', ' ', 'medication', struct('caffeine', ' ', 'alcohol', ' ')));        
+        tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
+        eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
+            'label', ' ', 'description', ' ', 'tag', ' '));
+        summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' ', 'recordedModalities', ...
+            struct('name', ' ', 'recordingDevice', ' ', 'numberOfSensors', ' ', 'numberOfChannels', ' ',...
+            'numberOfCameras',' '), 'license', struct('type', ' ', 'text', ' ', 'link',' '));
+        publicationsInfo = struct('citation', ' ', 'DOI', ' ', 'link', ' ');
+        experimentersInfo = struct('name', ' ', 'role', ' ');
+        contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
+        organizationInfo = struct('name', ' ', 'logoLink', ' ');
         copyrightInfo
         irbInfo
+        
+        % internal variables
+        essFilePath        % the file (including folder) associated with the document (e.g. the file the document was last saved to , or originally read from) 
     end;
     
     methods
         
-        function obj = essManager(essFilePath, varargin)
-            % obj = essManager(essFilePath)
+        function obj = essDocument(essFilePath, varargin)
+            % obj = essDocument(essFilePath)
             % create a instance of the object. If essFilePath is provided (optimal) it also read the
-            % file.
+            % file.                       
             
             % read the ESS File is provided.
-            if nargin > 0                               
-                % read the ESS information from the file, 
-                obj = obj.read(essFilePath);
+            if nargin > 0
+                obj.essFilePath = essFilePath;
+                
+                if exist(obj.essFilePath, 'file') % read the ESS information from the file                
+                    obj = obj.read(essFilePath);
+                else  
+                    % input file did not exist. Create an ESS file at that located 
+                    % and populate it with empty fields according to input
+                    % values.
+                    obj = obj.write(obj.essFilePath);
+                    fprintf(['Input file did not exist. A new ESS file with empty fields was created at ' obj.essFilePath '.\n']);
+                end;
             end;
         end;
         
@@ -46,14 +65,20 @@ classdef essManager
             if isempty(firstChild)
                 outString = '';
             else
-                outString = strtrim(char(firstChild.getData));                
+                outString = strtrim(char(firstChild.getData));
             end;
         end;
         
         function obj = read(obj, essFilePath)
-           %  obj = read(essFilePath);            
-           %
-           % Reads the information contained an ESS-formatted XML file and placed it into object properties.
+            
+            function result = nodeExistsAndHasAChild(node)
+                result = node.getLength > 0 && ~isempty( node.item(0).getFirstChild);
+            end
+            
+            
+            %  obj = read(essFilePath);
+            %
+            % Reads the information contained an ESS-formatted XML file and placed it into object properties.
             
             xmlDocument = xmlread(essFilePath);
             potentialStudyNodeArray = xmlDocument.getElementsByTagName('study');
@@ -66,11 +91,11 @@ classdef essManager
                 error('The XML file contains more than one study node.');
             end;
             
-            obj.essVersion = str2double(char(studyNode.getAttribute('essVersion')));            
+            obj.essVersion = str2double(char(studyNode.getAttribute('essVersion')));
             currentNode = studyNode;
             
             potentialDescriptionNodeArray = currentNode.getElementsByTagName('description');
-            if potentialDescriptionNodeArray.getLength > 0
+            if nodeExistsAndHasAChild(potentialDescriptionNodeArray)
                 obj.studyDescription = strtrim(char(potentialDescriptionNodeArray.item(0).getFirstChild.getData));
             else
                 obj.studyDescription = '';
@@ -78,7 +103,7 @@ classdef essManager
             
             
             potentialTitleNodeArray = currentNode.getElementsByTagName('title');
-            if potentialTitleNodeArray.getLength > 0
+            if nodeExistsAndHasAChild(potentialTitleNodeArray)
                 obj.studyTitle = strtrim(char(potentialTitleNodeArray.item(0).getFirstChild.getData));
             else
                 obj.studyTitle = '';
@@ -86,7 +111,7 @@ classdef essManager
             
             % start project node
             potentialProjectNodeArray = currentNode.getElementsByTagName('project');
-            if potentialProjectNodeArray.getLength > 0
+            if nodeExistsAndHasAChild(potentialProjectNodeArray)
                 obj.projectInfo = strtrim(char(potentialProjectNodeArray.item(0).getFirstChild.getData));
                 
                 potentialFundingNodeArray = currentNode.getElementsByTagName('funding'); % inside <Sessions> .. find <session> <session>
@@ -95,7 +120,7 @@ classdef essManager
                     for fundingCounter = 0:(potentialFundingNodeArray.getLength-1)
                         currentNode = potentialFundingNodeArray.item(fundingCounter); % select a session and make it the current node.
                         fundingNode = currentNode;
-
+                        
                         potentialFundingOrganizationNodeArray = currentNode.getElementsByTagName('organization');
                         
                         % to distinguish this from the organization node at the top level we need to
@@ -119,18 +144,18 @@ classdef essManager
                         else
                             obj.projectInfo(fundingCounter+1).grantId = '';
                         end;
-                    end;            
+                    end;
                 end;
             else %project information has not been provided, we need to create the appropriate subfields though.
                 obj.projectInfo = struct('organization', '', 'grantId', '');
-            end;                        
+            end;
             
             
             
             % start tasks node
             currentNode = studyNode;
             potentialTasksNodeArray = currentNode.getElementsByTagName('tasks');
-            if potentialTasksNodeArray.getLength > 0
+            if nodeExistsAndHasAChild(potentialTasksNodeArray)
                 obj.tasksInfo = strtrim(char(potentialTasksNodeArray.item(0).getFirstChild.getData));
                 
                 potentialTaskNodeArray = currentNode.getElementsByTagName('task'); % inside <Sessions> .. find <session> <session>
@@ -160,7 +185,7 @@ classdef essManager
                         else
                             obj.tasksInfo(taskCounter+1).description = '';
                         end;
-                    end;      
+                    end;
                 end;
             else
                 obj.tasksInfo= [];
@@ -192,7 +217,7 @@ classdef essManager
                         potentialTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialTaskLabelNodeArray.getLength > 0
                             obj.sessionInfo(sessionCounter+1).taskLabel = obj.readStringFromNode(potentialTaskLabelNodeArray.item(0));
-                         else
+                        else
                             obj.sessionInfo(sessionCounter+1).number= '';
                         end;
                         
@@ -242,7 +267,7 @@ classdef essManager
                             if  potentialNoteNodeArray.getLength > 0
                                 obj.sessionInfo(sessionCounter+1).note= obj.readStringFromNode(potentialNoteNodeArray.item(0));
                             else
-                            obj.sessionInfo(sessionCounter+1).note= '';
+                                obj.sessionInfo(sessionCounter+1).note= '';
                             end;
                             
                             currentNode = potentialNotesNodeArray.item(0);
@@ -250,14 +275,14 @@ classdef essManager
                             if  potentialLinkNameNodeArray.getLength > 0
                                 obj.sessionInfo(sessionCounter+1).linkName = obj.readStringFromNode(potentialLinkNameNodeArray.item(0)); % the if empty line
                             else
-                            obj.sessionInfo(sessionCounter+1).linkName= '';
+                                obj.sessionInfo(sessionCounter+1).linkName= '';
                             end;
                             
                             potentialLinkNodeArray = currentNode.getElementsByTagName('link');
                             if  potentialLinkNodeArray.getLength > 0
                                 obj.sessionInfo(sessionCounter+1).link  = obj.readStringFromNode(potentialLinkNodeArray.item(0));
                             else
-                            obj.sessionInfo(sessionCounter+1).link= '';
+                                obj.sessionInfo(sessionCounter+1).link= '';
                             end;
                             
                         end;
@@ -265,12 +290,12 @@ classdef essManager
                         
                         
                         potentialSubjectNodeArray = singleSessionNode.getElementsByTagName('subject'); % inside <subject> for each session
-              
+                        
                         if potentialSubjectNodeArray.getLength > 0
                             for sessionSubjectCounter = 0:(potentialSubjectNodeArray.getLength-1)
                                 
                                 currentNode = potentialSubjectNodeArray.item(sessionSubjectCounter); % select a subject and make it the current node.
-
+                                
                                 potentialSubjectLabIdNodeArray = currentNode.getElementsByTagName('labId');
                                 if potentialSubjectLabIdNodeArray.getLength > 0
                                     obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId = obj.readStringFromNode(potentialSubjectLabIdNodeArray.item(0));
@@ -351,7 +376,7 @@ classdef essManager
                                 potentialChannelLocationTypeNodeArray = currentNode.getElementsByTagName('channelLocationType');
                                 if potentialChannelLocationTypeNodeArray.getLength > 0
                                     obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType = obj.readStringFromNode(potentialChannelLocationTypeNodeArray.item(0));
-                                 else
+                                else
                                     obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType= '';
                                 end;
                                 
@@ -370,13 +395,13 @@ classdef essManager
                                     else
                                         obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
                                     end
-                                else                                 
-                                 obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
-                                 obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
+                                else
+                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
+                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
                                 end;
-  
+                                
                             end;
-                        else % if subject node is not provided, use an empty array.                            
+                        else % if subject node is not provided, use an empty array.
                             obj.sessionInfo(sessionCounter+1).subject = [];
                         end; %end subject info
                         
@@ -430,8 +455,8 @@ classdef essManager
                                 potentialConditionLabelArray = currentNode.getElementsByTagName('label');
                                 if potentialConditionLabelArray.getLength > 0
                                     obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).label = obj.readStringFromNode(potentialConditionLabelArray.item(0));
-                                else 
-                                     obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).label = '';
+                                else
+                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).label = '';
                                 end;
                                 
                                 potentialConditionDescriptionArray = currentNode.getElementsByTagName('description');
@@ -592,8 +617,8 @@ classdef essManager
                     
                     
                 end;
-                else % if subject node is not provided, use an empty array.                            
-                  obj.publicationsInfo = []; 
+            else % if subject node is not provided, use an empty array.
+                obj.publicationsInfo = [];
             end; %end publications info
             
             
@@ -697,24 +722,24 @@ classdef essManager
                 obj.organizationInfo = struct('name', '', 'logoLink', '');
                 
             end;%end organization Info
-
+            
             currentNode = studyNode;
             potentialCopyrightNodeArray = currentNode.getElementsByTagName('copyright');
             if potentialCopyrightNodeArray.getLength > 1
-                obj.copyrightInfo = strtrim(char(potentialCopyrightNodeArray.item(0).getFirstChild.getData));
+                obj.copyrightInfo = obj.readStringFromNode(potentialCopyrightNodeArray.item(0));
             else
                 obj.copyrightInfo = '';
             end;%end copyright Info
-
+            
             currentNode = studyNode;
             potentialIRBNodeArray = currentNode.getElementsByTagName('IRB');
             if potentialIRBNodeArray.getLength > 0
-                obj.irbInfo = strtrim(char(potentialIRBNodeArray.item(0).getFirstChild.getData));
+                obj.irbInfo = obj.readStringFromNode(potentialIRBNodeArray.item(0));
             else
                 obj.irbInfo = '';
             end;
             
-        end;               
+        end;
         
         function obj = write(obj, essFilePath)
             % obj = write(essFilePath)
@@ -741,17 +766,17 @@ classdef essManager
             projectRootNode=docRootNode.appendChild(projectElement);
             
             for y=1:length(obj.projectInfo)
-            fundingElement = docNode.createElement('funding');
-            fundingRootNode= projectRootNode.appendChild(fundingElement);
-
-            fundingOrganizationElement = docNode.createElement('organization');
-            fundingOrganizationElement.appendChild(docNode.createTextNode(obj.projectInfo(y).organization));
-            fundingRootNode.appendChild(fundingOrganizationElement);
-            
-            fundingGrantIdElement = docNode.createElement('grantId');
-            fundingGrantIdElement.appendChild(docNode.createTextNode(obj.projectInfo(y).grantId));
-            fundingRootNode.appendChild(fundingGrantIdElement);
-            
+                fundingElement = docNode.createElement('funding');
+                fundingRootNode= projectRootNode.appendChild(fundingElement);
+                
+                fundingOrganizationElement = docNode.createElement('organization');
+                fundingOrganizationElement.appendChild(docNode.createTextNode(obj.projectInfo(y).organization));
+                fundingRootNode.appendChild(fundingOrganizationElement);
+                
+                fundingGrantIdElement = docNode.createElement('grantId');
+                fundingGrantIdElement.appendChild(docNode.createTextNode(obj.projectInfo(y).grantId));
+                fundingRootNode.appendChild(fundingGrantIdElement);
+                
             end;
             
             sessionsElement = docNode.createElement('sessions');
@@ -778,7 +803,7 @@ classdef essManager
                 labIdElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).labId));
                 sessionRootNode.appendChild(labIdElement);
                 
-               for j=1:length(obj.sessionInfo(i).subject)
+                for j=1:length(obj.sessionInfo(i).subject)
                     subjectElement = docNode.createElement('subject');
                     subjectRootNode= sessionRootNode.appendChild(subjectElement);
                     
@@ -842,7 +867,7 @@ classdef essManager
                     subjectChannelLocationTypeElement = docNode.createElement('channelLocationType');
                     subjectChannelLocationTypeElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).channelLocationType));
                     subjectRootNode.appendChild(subjectChannelLocationTypeElement);
-               end;
+                end;
                 
                 channelsElement = docNode.createElement('channels');
                 channelsElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).channels));
@@ -871,9 +896,9 @@ classdef essManager
                 eegRecordingsRootNode= sessionRootNode.appendChild(eegRecordingsElement);
                 
                 for k=1:length(obj.sessionInfo(i).eegRecording)
-                eegRecordingElement = docNode.createElement('eegRecording');
-                eegRecordingElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).eegRecording{k}));
-                eegRecordingsRootNode.appendChild(eegRecordingElement);
+                    eegRecordingElement = docNode.createElement('eegRecording');
+                    eegRecordingElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).eegRecording{k}));
+                    eegRecordingsRootNode.appendChild(eegRecordingElement);
                 end;
             end;
             
@@ -881,53 +906,53 @@ classdef essManager
             tasksRootNode=docRootNode.appendChild(tasksElement);
             
             for m=1:length(obj.tasksInfo)
-            taskElement = docNode.createElement('task');
-            taskRootNode= tasksRootNode.appendChild(taskElement);
-
-            taskLabelElement = docNode.createElement('taskLabel');
-            taskLabelElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).taskLabel));
-            taskRootNode.appendChild(taskLabelElement);
-            
-            taskTagElement = docNode.createElement('tag');
-            taskTagElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).tag));
-            taskRootNode.appendChild(taskTagElement);
-            
-            taskDescriptionElement = docNode.createElement('description');
-            taskDescriptionElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).description));
-            taskRootNode.appendChild(taskDescriptionElement);
+                taskElement = docNode.createElement('task');
+                taskRootNode= tasksRootNode.appendChild(taskElement);
+                
+                taskLabelElement = docNode.createElement('taskLabel');
+                taskLabelElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).taskLabel));
+                taskRootNode.appendChild(taskLabelElement);
+                
+                taskTagElement = docNode.createElement('tag');
+                taskTagElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).tag));
+                taskRootNode.appendChild(taskTagElement);
+                
+                taskDescriptionElement = docNode.createElement('description');
+                taskDescriptionElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).description));
+                taskRootNode.appendChild(taskDescriptionElement);
             end;
             
             eventCodesElement = docNode.createElement('eventCodes');
             eventCodesRootNode=docRootNode.appendChild(eventCodesElement);
             
             for n=1:length(obj.eventCodesInfo)
-            eventCodeElement = docNode.createElement('eventCode');
-            eventCodeRootNode=eventCodesRootNode.appendChild(eventCodeElement);
-            
-            eventCodeNodeElement = docNode.createElement('code');
-            eventCodeNodeElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).code));
-            eventCodeRootNode.appendChild(eventCodeNodeElement);
-            
-            eventCodeTaskLabelElement = docNode.createElement('taskLabel');
-            eventCodeTaskLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).taskLabel));
-            eventCodeRootNode.appendChild(eventCodeTaskLabelElement);
-            
-            for p= 1:length(obj.eventCodesInfo(n).condition)
-            eventCodeConditionElement = docNode.createElement('condition');
-            eventCodeConditionRootNode=eventCodeRootNode.appendChild(eventCodeConditionElement);
-            
-            eventCodeConditionLabelElement = docNode.createElement('label');
-            eventCodeConditionLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).label));
-            eventCodeConditionRootNode.appendChild(eventCodeConditionLabelElement);
-            
-            eventCodeConditionDescriptionElement = docNode.createElement('description');
-            eventCodeConditionDescriptionElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).description));
-            eventCodeConditionRootNode.appendChild(eventCodeConditionDescriptionElement);
-            
-            eventCodeConditionTagElement = docNode.createElement('tag');
-            eventCodeConditionTagElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).tag));
-            eventCodeConditionRootNode.appendChild(eventCodeConditionTagElement);
-            end;
+                eventCodeElement = docNode.createElement('eventCode');
+                eventCodeRootNode=eventCodesRootNode.appendChild(eventCodeElement);
+                
+                eventCodeNodeElement = docNode.createElement('code');
+                eventCodeNodeElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).code));
+                eventCodeRootNode.appendChild(eventCodeNodeElement);
+                
+                eventCodeTaskLabelElement = docNode.createElement('taskLabel');
+                eventCodeTaskLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).taskLabel));
+                eventCodeRootNode.appendChild(eventCodeTaskLabelElement);
+                
+                for p= 1:length(obj.eventCodesInfo(n).condition)
+                    eventCodeConditionElement = docNode.createElement('condition');
+                    eventCodeConditionRootNode=eventCodeRootNode.appendChild(eventCodeConditionElement);
+                    
+                    eventCodeConditionLabelElement = docNode.createElement('label');
+                    eventCodeConditionLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).label));
+                    eventCodeConditionRootNode.appendChild(eventCodeConditionLabelElement);
+                    
+                    eventCodeConditionDescriptionElement = docNode.createElement('description');
+                    eventCodeConditionDescriptionElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).description));
+                    eventCodeConditionRootNode.appendChild(eventCodeConditionDescriptionElement);
+                    
+                    eventCodeConditionTagElement = docNode.createElement('tag');
+                    eventCodeConditionTagElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).tag));
+                    eventCodeConditionRootNode.appendChild(eventCodeConditionTagElement);
+                end;
             end;
             
             summaryElement = docNode.createElement('summary');
@@ -937,28 +962,28 @@ classdef essManager
             summaryModalitiesRootNode=summaryRootNode.appendChild(summaryRecordedModalitiesElement);
             
             for q=1:length(obj.summaryInfo.recordedModalities)
-            summaryModalityElement = docNode.createElement('modality');
-            summaryModalityRootNode=summaryModalitiesRootNode.appendChild(summaryModalityElement);
-            
-            summaryModalityNameElement = docNode.createElement('name');
-            summaryModalityNameElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).name));
-            summaryModalityRootNode.appendChild(summaryModalityNameElement);
-            
-            summaryRecordingDeviceElement = docNode.createElement('recordingDevice');
-            summaryRecordingDeviceElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).recordingDevice));
-            summaryModalityRootNode.appendChild(summaryRecordingDeviceElement);
-            
-            summaryNumberOfSensorsElement = docNode.createElement('numberOfSensors');
-            summaryNumberOfSensorsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfSensors));
-            summaryModalityRootNode.appendChild(summaryNumberOfSensorsElement);
-            
-            summaryNumberOfChannelsElement = docNode.createElement('numberOfChannels');
-            summaryNumberOfChannelsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfChannels));
-            summaryModalityRootNode.appendChild(summaryNumberOfChannelsElement);
-            
-            summaryNumberOfCamerasElement = docNode.createElement('numberOfCameras');
-            summaryNumberOfCamerasElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfCameras));
-            summaryModalityRootNode.appendChild(summaryNumberOfCamerasElement);
+                summaryModalityElement = docNode.createElement('modality');
+                summaryModalityRootNode=summaryModalitiesRootNode.appendChild(summaryModalityElement);
+                
+                summaryModalityNameElement = docNode.createElement('name');
+                summaryModalityNameElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).name));
+                summaryModalityRootNode.appendChild(summaryModalityNameElement);
+                
+                summaryRecordingDeviceElement = docNode.createElement('recordingDevice');
+                summaryRecordingDeviceElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).recordingDevice));
+                summaryModalityRootNode.appendChild(summaryRecordingDeviceElement);
+                
+                summaryNumberOfSensorsElement = docNode.createElement('numberOfSensors');
+                summaryNumberOfSensorsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfSensors));
+                summaryModalityRootNode.appendChild(summaryNumberOfSensorsElement);
+                
+                summaryNumberOfChannelsElement = docNode.createElement('numberOfChannels');
+                summaryNumberOfChannelsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfChannels));
+                summaryModalityRootNode.appendChild(summaryNumberOfChannelsElement);
+                
+                summaryNumberOfCamerasElement = docNode.createElement('numberOfCameras');
+                summaryNumberOfCamerasElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfCameras));
+                summaryModalityRootNode.appendChild(summaryNumberOfCamerasElement);
             end;
             
             summaryTotalSizeElement = docNode.createElement('totalSize');
@@ -988,37 +1013,37 @@ classdef essManager
             publicationsRootNode=docRootNode.appendChild(publicationsElement);
             
             for r= 1: length(obj.publicationsInfo)
-            publicationElement = docNode.createElement('publication');
-            publicationRootNode=publicationsRootNode.appendChild(publicationElement);
-            
-            publicationCitationElement = docNode.createElement('citation');
-            publicationCitationElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).citation));
-            publicationRootNode.appendChild(publicationCitationElement);
-            
-            publicationDoiElement = docNode.createElement('DOI');
-            publicationDoiElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).DOI));
-            publicationRootNode.appendChild(publicationDoiElement);
-            
-            publicationLinkElement = docNode.createElement('link');
-            publicationLinkElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).link));
-            publicationRootNode.appendChild(publicationLinkElement);
-            
+                publicationElement = docNode.createElement('publication');
+                publicationRootNode=publicationsRootNode.appendChild(publicationElement);
+                
+                publicationCitationElement = docNode.createElement('citation');
+                publicationCitationElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).citation));
+                publicationRootNode.appendChild(publicationCitationElement);
+                
+                publicationDoiElement = docNode.createElement('DOI');
+                publicationDoiElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).DOI));
+                publicationRootNode.appendChild(publicationDoiElement);
+                
+                publicationLinkElement = docNode.createElement('link');
+                publicationLinkElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).link));
+                publicationRootNode.appendChild(publicationLinkElement);
+                
             end;
             
             experimentersElement = docNode.createElement('experimenters');
             experimentersRootNode=docRootNode.appendChild(experimentersElement);
             
             for x=1:length(obj.experimentersInfo)
-            experimenterElement = docNode.createElement('experimenter');
-            experimenterRootNode=experimentersRootNode.appendChild(experimenterElement);
-            
-            experimenterNameElement = docNode.createElement('name');
-            experimenterNameElement.appendChild(docNode.createTextNode(obj.experimentersInfo(x).name));
-            experimenterRootNode.appendChild(experimenterNameElement);
-            
-            experimenterRoleElement = docNode.createElement('role');
-            experimenterRoleElement.appendChild(docNode.createTextNode(obj.experimentersInfo(x).role));
-            experimenterRootNode.appendChild(experimenterRoleElement);
+                experimenterElement = docNode.createElement('experimenter');
+                experimenterRootNode=experimentersRootNode.appendChild(experimenterElement);
+                
+                experimenterNameElement = docNode.createElement('name');
+                experimenterNameElement.appendChild(docNode.createTextNode(obj.experimentersInfo(x).name));
+                experimenterRootNode.appendChild(experimenterNameElement);
+                
+                experimenterRoleElement = docNode.createElement('role');
+                experimenterRoleElement.appendChild(docNode.createTextNode(obj.experimentersInfo(x).role));
+                experimenterRootNode.appendChild(experimenterRoleElement);
             end;
             
             contactElement = docNode.createElement('contact');
@@ -1061,7 +1086,7 @@ classdef essManager
             
             docNode.insertBefore(proc, docNode.getFirstChild());
             
-            xmlwrite(essFilePath, docNode);            
+            xmlwrite(essFilePath, docNode);
         end;
     end;
 end
