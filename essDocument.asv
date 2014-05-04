@@ -9,48 +9,91 @@ classdef essDocument
     % Copyright © 2013-2014 University of California San Diego.
     % Released under BSD License.
     
-    properties
+    properties        
+        % Version of ESS schema used.
         essVersion = ' ';
+
+        % The title of the study.
         studyTitle = ' ';
+        
+        % Short description the study (e.g. explanation of study goals,
+        % experimental procedures utilized, etc.).
         studyDescription = ' ';
+        
+        % Unique identifier (uuid) with 32 random  alphanumeric characters and four hyphens). It is used to uniquely identify each ESS document.
         studyUuid = ' ';
+        
+        % Information about the project under which this experiment is
+        % performed.
         projectInfo = struct('organization', ' ',  'grantId', ' ');
-        sessionInfo = struct('number', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'channels', ' ', 'eegSamplingRate', ' ', 'eegRecording', {{' '}},...
+        
+        % Information about (session, task) tuples. Diifferent tasks in
+        % a session are each assigned a separate structure in sessionTaskInfo.
+        sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
+            'channels', ' ', 'eegSamplingRate', ' ', 'eegRecording', ...
+            struct('filename', ' ', 'startDateTime', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
             'channelLocationType', ' ', 'medication', struct('caffeine', ' ', 'alcohol', ' ')));        
+        
+        % information different tasks in each session of the study.
         tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
+        
+        % Information about event codes (i.e. triggers, event numbers).
         eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
             'label', ' ', 'description', ' ', 'tag', ' '));
+        
+        % Summary of study information. 
         summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' ', 'recordedModalities', ...
             struct('name', ' ', 'recordingDevice', ' ', 'numberOfSensors', ' ', 'numberOfChannels', ' ',...
             'numberOfCameras',' '), 'license', struct('type', ' ', 'text', ' ', 'link',' '));
+        
+        % List of publications produced from the data collected in this study.
         publicationsInfo = struct('citation', ' ', 'DOI', ' ', 'link', ' ');
+        
+        % List of experimenters involved in the study.
         experimentersInfo = struct('name', ' ', 'role', ' ');
+        
+        % Information of individual to contact for data results, or more information regarding the study.
         contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
+        
+        % Iinformation regarding the organization that conducted the
+        % research study or experiment.
         organizationInfo = struct('name', ' ', 'logoLink', ' ');
+        
+        % Copyright information.
         copyrightInfo = ' ';
+        
+        % IRB (Institutional Review Board or equivalent) information, including IRB number study was conducted under.
         irbInfo = ' ';
         
-        % internal variables
+        % Filename (including path) of the ESS XML file associated with the
+        % object.
         essFilePath        % the file (including folder) associated with the document (e.g. the file the document was last saved to , or originally read from) 
     end;
     
     methods
         
-        function obj = essDocument(essFilePath, varargin)
+        function obj = essDocument(varargin)
             % obj = essDocument(essFilePath)
             % create a instance of the object. If essFilePath is provided (optimal) it also read the
             % file.                       
             
-            % read the ESS File is provided.
-            if nargin > 0
-                obj.essFilePath = essFilePath;
+            inputOptions = arg_define(1,varargin, ...
+                arg('essFilePath', 'test',[],'Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.'), ...
+                arg('numberOfSessions', 1,[1 Inf],'Number of recording sessions in the study. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
+                arg('numberOfSubjectsPerSession', 1,[1 Inf],'Number of subjects that participayed in each session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
+                arg('numberOfRecordingsPerSession', 1,[1 Inf],'Number of individual EEG recording files in each session. Sometimes data for a single session is recorded in multiple files.'), ...
+                arg('numberOfTasks', 1,[1 Inf],'Number of tasks in each session. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.') ...
+                );
+           
+            % read the ESS File that is provided.
+            if ~isempty(inputOptions.essFilePath)
+                obj.essFilePath = inputOptions.essFilePath;
                 
                 if exist(obj.essFilePath, 'file') % read the ESS information from the file                
-                    obj = obj.read(essFilePath);
+                    obj = obj.read(obj.essFilePath);
                 else  
                     % input file did not exist. Create an ESS file at that located 
                     % and populate it with empty fields according to input
@@ -61,8 +104,16 @@ classdef essDocument
                     obj.essVersion = '2.0';
                     obj.studyUuid = char(java.util.UUID.randomUUID);
                     
-                    % ToDo: here we sneed to replicate sessions, subjects
-                    % and taks based onthe numbers provided.
+                    obj.sessionTaskInfo(1:inputOptions.numberOfSessions) = obj.sessionTaskInfo;
+                    obj.tasksInfo(1:inputOptions.numberOfTasks) = obj.tasksInfo;
+                    
+                    subjectStructure = obj.sessionTaskInfo(1).subject;
+                    if inputOptions.numberOfSubjectsPerSession > 1
+                        for i=1:length(obj.sessionTaskInfo)
+                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;                            
+                        end;
+                    end;
+                    
                     
                     obj = obj.write(obj.essFilePath);
                     fprintf('Input file does not exist, creating  a new ESS file with empty fields at %s.\n', obj.essFilePath);
@@ -228,55 +279,70 @@ classdef essDocument
                         % currentNode is now a single-session node.
                         potentialNumberNodeArray = currentNode.getElementsByTagName('number');
                         if potentialNumberNodeArray.getLength > 0
-                            obj.sessionInfo(sessionCounter+1).number = obj.readStringFromNode(potentialNumberNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).number = obj.readStringFromNode(potentialNumberNodeArray.item(0));
                         else
-                            obj.sessionInfo(sessionCounter+1).number= '';
+                            obj.sessionTaskInfo(sessionCounter+1).number= '';
                         end;
                         
                         potentialTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialTaskLabelNodeArray.getLength > 0
-                            obj.sessionInfo(sessionCounter+1).taskLabel = obj.readStringFromNode(potentialTaskLabelNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).taskLabel = obj.readStringFromNode(potentialTaskLabelNodeArray.item(0));
                         else
-                            obj.sessionInfo(sessionCounter+1).number= '';
+                            obj.sessionTaskInfo(sessionCounter+1).number= '';
                         end;
                         
                         
                         potentialPurposeNodeArray = currentNode.getElementsByTagName('purpose');
                         if potentialPurposeNodeArray.getLength > 0
-                            obj.sessionInfo(sessionCounter+1).purpose = obj.readStringFromNode(potentialPurposeNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).purpose = obj.readStringFromNode(potentialPurposeNodeArray.item(0));
                         else
-                            obj.sessionInfo(sessionCounter+1).purpose= '';
+                            obj.sessionTaskInfo(sessionCounter+1).purpose= '';
                         end;
                         
                         potentialLabIdNodeArray = currentNode.getElementsByTagName('labId');
                         if potentialLabIdNodeArray.getLength > 0
-                            obj.sessionInfo(sessionCounter+1).labId = obj.readStringFromNode(potentialLabIdNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).labId = obj.readStringFromNode(potentialLabIdNodeArray.item(0));
                         else
-                            obj.sessionInfo(sessionCounter+1).labId= '';
+                            obj.sessionTaskInfo(sessionCounter+1).labId= '';
                         end;
                         
                         
                         potentialChannelNodeArray = currentNode.getElementsByTagName('channels');
                         if potentialChannelNodeArray.getLength > 0
-                            obj.sessionInfo(sessionCounter+1).channels = obj.readStringFromNode(potentialChannelNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).channels = obj.readStringFromNode(potentialChannelNodeArray.item(0));
                         else
-                            obj.sessionInfo(sessionCounter+1).channels= '';
+                            obj.sessionTaskInfo(sessionCounter+1).channels= '';
                         end;
                         
                         potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                         if potentialEegSamplingRateNodeArray.getLength > 0
-                            obj.sessionInfo(sessionCounter+1).eegSamplingRate= obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                         else
-                            obj.sessionInfo(sessionCounter+1).eegSamplingRate= '';
+                            obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= '';
                         end;
                         
                         potentialEegRecordingsNodeArray = currentNode.getElementsByTagName('eegRecordings'); % inside <eegRecordings> find <eegRecording>
                         if potentialEegRecordingsNodeArray.getLength > 0
+                            
+                            
                             potentialEegRecordingNodeArray = currentNode.getElementsByTagName('eegRecording');
                             for eegRecordingCounter = 0:(potentialEegRecordingNodeArray.getLength-1)
                                 if  potentialEegRecordingNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).eegRecording{eegRecordingCounter+1}= obj.readStringFromNode(potentialEegRecordingNodeArray.item(eegRecordingCounter));
+                                    obj.sessionTaskInfo(sessionCounter+1).eegRecording(eegRecordingCounter+1).filename = obj.readStringFromNode(potentialEegRecordingNodeArray.item(eegRecordingCounter));
                                 end;
+                            end;
+                            
+                            % do ESS 1.0 reading differently from 2.0+
+                            if str2num(obj.essVersion) <= 1
+                                
+                                
+                            else
+                                %                             potentialStartDateTimeNodeArray = currentNode.getElementsByTagName('startDateTime');
+                                %                             for eegRecordingCounter = 0:(potentialStartDateTimeNodeArray.getLength-1)
+                                %                                 if  potentialStartDateTimeNodeArray.getLength > 0
+                                %                                     obj.sessionTaskInfo(sessionCounter+1).eegRecording{eegRecordingCounter+1}= obj.readStringFromNode(potentialStartDateTimeNodeArray.item(eegRecordingCounter));
+                                %                                 end;
+                                %                             end;
                             end;
                         end;
                         
@@ -284,24 +350,24 @@ classdef essDocument
                         if potentialNotesNodeArray.getLength > 0
                             potentialNoteNodeArray = currentNode.getElementsByTagName('note');
                             if  potentialNoteNodeArray.getLength > 0
-                                obj.sessionInfo(sessionCounter+1).note= obj.readStringFromNode(potentialNoteNodeArray.item(0));
+                                obj.sessionTaskInfo(sessionCounter+1).note= obj.readStringFromNode(potentialNoteNodeArray.item(0));
                             else
-                                obj.sessionInfo(sessionCounter+1).note= '';
+                                obj.sessionTaskInfo(sessionCounter+1).note= '';
                             end;
                             
                             currentNode = potentialNotesNodeArray.item(0);
                             potentialLinkNameNodeArray = currentNode.getElementsByTagName('linkName');
                             if  potentialLinkNameNodeArray.getLength > 0
-                                obj.sessionInfo(sessionCounter+1).linkName = obj.readStringFromNode(potentialLinkNameNodeArray.item(0)); % the if empty line
+                                obj.sessionTaskInfo(sessionCounter+1).linkName = obj.readStringFromNode(potentialLinkNameNodeArray.item(0)); % the if empty line
                             else
-                                obj.sessionInfo(sessionCounter+1).linkName= '';
+                                obj.sessionTaskInfo(sessionCounter+1).linkName= '';
                             end;
                             
                             potentialLinkNodeArray = currentNode.getElementsByTagName('link');
                             if  potentialLinkNodeArray.getLength > 0
-                                obj.sessionInfo(sessionCounter+1).link  = obj.readStringFromNode(potentialLinkNodeArray.item(0));
+                                obj.sessionTaskInfo(sessionCounter+1).link  = obj.readStringFromNode(potentialLinkNodeArray.item(0));
                             else
-                                obj.sessionInfo(sessionCounter+1).link= '';
+                                obj.sessionTaskInfo(sessionCounter+1).link= '';
                             end;
                             
                         end;
@@ -317,118 +383,118 @@ classdef essDocument
                                 
                                 potentialSubjectLabIdNodeArray = currentNode.getElementsByTagName('labId');
                                 if potentialSubjectLabIdNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId = obj.readStringFromNode(potentialSubjectLabIdNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId = obj.readStringFromNode(potentialSubjectLabIdNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId= '';
                                 end;
                                 
-                                potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('labId');
-                                if potentialSubjectLabIdNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId = obj.readStringFromNode(potentialSubjectLabIdNodeArray.item(0));
+                                potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('inSessionNumber');
+                                if potentialSubjectInSessionNumberNodeArray.getLength > 0
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = obj.readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = '';
                                 end;
                                 
                                 potentialGroupNodeArray = currentNode.getElementsByTagName('group');
                                 if potentialGroupNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group = obj.readStringFromNode(potentialGroupNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group = obj.readStringFromNode(potentialGroupNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group= '';
                                 end;
                                 
                                 potentialGenderNodeArray = currentNode.getElementsByTagName('gender');
                                 if potentialGenderNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender = obj.readStringFromNode(potentialGenderNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender = obj.readStringFromNode(potentialGenderNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender= '';
                                 end;
                                 
                                 potentialYearOfBirthNodeArray = currentNode.getElementsByTagName('YOB');
                                 if potentialYearOfBirthNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB = obj.readStringFromNode(potentialYearOfBirthNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB = obj.readStringFromNode(potentialYearOfBirthNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB= '';
                                 end;
                                 
                                 potentialAgeNodeArray = currentNode.getElementsByTagName('age');
                                 if potentialAgeNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age = obj.readStringFromNode(potentialAgeNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age = obj.readStringFromNode(potentialAgeNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age= '';
                                 end;
                                 
                                 potentialHandNodeArray = currentNode.getElementsByTagName('hand');
                                 if potentialHandNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand = obj.readStringFromNode(potentialHandNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand = obj.readStringFromNode(potentialHandNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand= '';
                                 end;
                                 
                                 potentialVisionNodeArray = currentNode.getElementsByTagName('vision');
                                 if potentialVisionNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision = obj.readStringFromNode(potentialVisionNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision = obj.readStringFromNode(potentialVisionNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision= '';
                                 end;
                                 
                                 potentialHearingNodeArray = currentNode.getElementsByTagName('hearing');
                                 if potentialHearingNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing = obj.readStringFromNode(potentialHearingNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing = obj.readStringFromNode(potentialHearingNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing= '';
                                 end;
                                 
                                 potentialHeightNodeArray = currentNode.getElementsByTagName('height');
                                 if potentialHeightNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height = obj.readStringFromNode(potentialHeightNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height = obj.readStringFromNode(potentialHeightNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height= '';
                                 end;
                                 
                                 potentialWeightNodeArray = currentNode.getElementsByTagName('weight');
                                 if potentialWeightNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight = obj.readStringFromNode(potentialWeightNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight = obj.readStringFromNode(potentialWeightNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight= '';
                                 end;
                                 
                                 potentialChannelLocationsNodeArray = currentNode.getElementsByTagName('channelLocations');
                                 if potentialChannelLocationsNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations = obj.readStringFromNode(potentialChannelLocationsNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations = obj.readStringFromNode(potentialChannelLocationsNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations= '';
                                 end;
                                 
                                 potentialChannelLocationTypeNodeArray = currentNode.getElementsByTagName('channelLocationType');
                                 if potentialChannelLocationTypeNodeArray.getLength > 0
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType = obj.readStringFromNode(potentialChannelLocationTypeNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType = obj.readStringFromNode(potentialChannelLocationTypeNodeArray.item(0));
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType= '';
                                 end;
                                 
                                 potentialMedicationNodeArray = currentNode.getElementsByTagName('medication');
                                 if potentialMedicationNodeArray.getLength > 0
                                     potentialCaffeineNodeArray = currentNode.getElementsByTagName('caffeine');
                                     if potentialCaffeineNodeArray.getLength > 0
-                                        obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine = obj.readStringFromNode(potentialMedicationNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine = obj.readStringFromNode(potentialMedicationNodeArray.item(0));
                                     else
-                                        obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
+                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
                                     end
                                     
                                     potentialAlcoholNodeArray = currentNode.getElementsByTagName('alcohol');
                                     if potentialAlcoholNodeArray.getLength > 0
-                                        obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol = obj.readStringFromNode(potentialAlcoholNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol = obj.readStringFromNode(potentialAlcoholNodeArray.item(0));
                                     else
-                                        obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
+                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
                                     end
                                 else
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
-                                    obj.sessionInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
                                 end;
                                 
                             end;
                         else % if subject node is not provided, use an empty array.
-                            obj.sessionInfo(sessionCounter+1).subject = [];
+                            obj.sessionTaskInfo(sessionCounter+1).subject = [];
                         end; %end subject info
                         
                         
@@ -812,68 +878,72 @@ classdef essDocument
             sessionsRootNode = docRootNode.appendChild(sessionsElement);
             %docRootNode.appendChild(sessionsElement);
             
-            for i=1:length(obj.sessionInfo)
+            for i=1:length(obj.sessionTaskInfo)
                 sessionElement = docNode.createElement('session');
                 sessionRootNode= sessionsRootNode.appendChild(sessionElement);
                 
                 numberElement = docNode.createElement('number');
-                numberElement.appendChild(docNode.createTextNode (obj.sessionInfo(i).number));
+                numberElement.appendChild(docNode.createTextNode (obj.sessionTaskInfo(i).number));
                 sessionRootNode.appendChild(numberElement);
                 
                 sessionTaskLabelElement = docNode.createElement('taskLabel');
-                sessionTaskLabelElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).taskLabel));
+                sessionTaskLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).taskLabel));
                 sessionRootNode.appendChild(sessionTaskLabelElement);
                 
                 purposeElement = docNode.createElement('purpose');
-                purposeElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).purpose));
+                purposeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).purpose));
                 sessionRootNode.appendChild(purposeElement);
                 
                 labIdElement = docNode.createElement('labId');
-                labIdElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).labId));
+                labIdElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).labId));
                 sessionRootNode.appendChild(labIdElement);
                 
-                for j=1:length(obj.sessionInfo(i).subject)
+                for j=1:length(obj.sessionTaskInfo(i).subject)
                     subjectElement = docNode.createElement('subject');
                     subjectRootNode= sessionRootNode.appendChild(subjectElement);
                     
                     subjectLabIdElement = docNode.createElement('labId');
-                    subjectLabIdElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).labId));
-                    subjectRootNode.appendChild(subjectLabIdElement);
+                    subjectLabIdElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).labId));
+                    subjectRootNode.appendChild(subjectLabIdElement);                    
+                    
+                    subjectInSessionNumberElement = docNode.createElement('inSessionNumber');
+                    subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).inSessionNumber));
+                    subjectRootNode.appendChild(subjectInSessionNumberElement);
                     
                     subjectGroupElement = docNode.createElement('group');
-                    subjectGroupElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).group));
+                    subjectGroupElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).group));
                     subjectRootNode.appendChild(subjectGroupElement);
                     
                     subjectGenderElement = docNode.createElement('gender');
-                    subjectGenderElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).gender));
+                    subjectGenderElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).gender));
                     subjectRootNode.appendChild(subjectGenderElement);
                     
                     subjectYOBElement = docNode.createElement('YOB');
-                    subjectYOBElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).YOB));
+                    subjectYOBElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).YOB));
                     subjectRootNode.appendChild(subjectYOBElement);
                     
                     subjectAgeElement = docNode.createElement('age');
-                    subjectAgeElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).age));
+                    subjectAgeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).age));
                     subjectRootNode.appendChild(subjectAgeElement);
                     
                     subjectHandElement = docNode.createElement('hand');
-                    subjectHandElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).hand));
+                    subjectHandElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).hand));
                     subjectRootNode.appendChild(subjectHandElement);
                     
                     subjectVisionElement = docNode.createElement('vision');
-                    subjectVisionElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).vision));
+                    subjectVisionElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).vision));
                     subjectRootNode.appendChild(subjectVisionElement);
                     
                     subjectHearingElement = docNode.createElement('hearing');
-                    subjectHearingElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).hearing));
+                    subjectHearingElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).hearing));
                     subjectRootNode.appendChild(subjectHearingElement);
                     
                     subjectHeightElement = docNode.createElement('height');
-                    subjectHeightElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).height));
+                    subjectHeightElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).height));
                     subjectRootNode.appendChild(subjectHeightElement);
                     
                     subjectWeightElement = docNode.createElement('weight');
-                    subjectWeightElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).weight));
+                    subjectWeightElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).weight));
                     subjectRootNode.appendChild(subjectWeightElement);
                     
                     subjectMedicationElement = docNode.createElement('medication');
@@ -881,52 +951,52 @@ classdef essDocument
                     
                     % caffeine and alcohol elements producing error
                     caffeineElement = docNode.createElement('caffeine');
-                    caffeineElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).medication.caffeine));
+                    caffeineElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).medication.caffeine));
                     medicationRootNode.appendChild(caffeineElement);
                     
                     alcoholElement = docNode.createElement('alcohol');
-                    alcoholElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).medication.alcohol));
+                    alcoholElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).medication.alcohol));
                     medicationRootNode.appendChild(alcoholElement);
                     
                     
                     subjectChannelLocationsElement = docNode.createElement('channelLocations');
-                    subjectChannelLocationsElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).channelLocations));
+                    subjectChannelLocationsElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocations));
                     subjectRootNode.appendChild(subjectChannelLocationsElement);
                     
                     subjectChannelLocationTypeElement = docNode.createElement('channelLocationType');
-                    subjectChannelLocationTypeElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).subject(j).channelLocationType));
+                    subjectChannelLocationTypeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocationType));
                     subjectRootNode.appendChild(subjectChannelLocationTypeElement);
                 end;
                 
                 channelsElement = docNode.createElement('channels');
-                channelsElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).channels));
+                channelsElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).channels));
                 sessionRootNode.appendChild(channelsElement);
                 
                 eegSamplingRateElement = docNode.createElement('eegSamplingRate');
-                eegSamplingRateElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).eegSamplingRate));
+                eegSamplingRateElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).eegSamplingRate));
                 sessionRootNode.appendChild(eegSamplingRateElement);
                 
                 notesElement = docNode.createElement('notes');
                 notesRootNode= sessionRootNode.appendChild(notesElement);
                 
                 noteElement = docNode.createElement('note');
-                noteElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).note));
+                noteElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).note));
                 notesRootNode.appendChild(noteElement);
                 
                 noteLinkNameElement = docNode.createElement('linkName');
-                noteLinkNameElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).linkName));
+                noteLinkNameElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).linkName));
                 notesRootNode.appendChild(noteLinkNameElement);
                 
                 noteLinkElement = docNode.createElement('link');
-                noteLinkElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).link));
+                noteLinkElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).link));
                 notesRootNode.appendChild(noteLinkElement);
                 
                 eegRecordingsElement = docNode.createElement('eegRecordings');
                 eegRecordingsRootNode= sessionRootNode.appendChild(eegRecordingsElement);
                 
-                for k=1:length(obj.sessionInfo(i).eegRecording)
+                for k=1:length(obj.sessionTaskInfo(i).eegRecording)
                     eegRecordingElement = docNode.createElement('eegRecording');
-                    eegRecordingElement.appendChild(docNode.createTextNode(obj.sessionInfo(i).eegRecording{k}));
+                    eegRecordingElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).eegRecording(k).filename));
                     eegRecordingsRootNode.appendChild(eegRecordingElement);
                 end;
             end;
