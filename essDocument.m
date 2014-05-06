@@ -30,8 +30,8 @@ classdef essDocument
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'channels', ' ', 'eegSamplingRate', ' ', 'eegRecording', ...
-            struct('filename', ' ', 'startDateTime', ' '),...
+            'channels', ' ', 'eegSamplingRate', ' ', 'dataRecording', ...
+            struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -81,13 +81,13 @@ classdef essDocument
             % file.                       
             
             inputOptions = arg_define(1,varargin, ...
-                arg('essFilePath', 'test',[],'Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.'), ...
-                arg('numberOfSessions', 1,[1 Inf],'Number of recording sessions in the study. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
-                arg('numberOfSubjectsPerSession', 1,[1 Inf],'Number of subjects that participayed in each session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
-                arg('numberOfRecordingsPerSession', 1,[1 Inf],'Number of individual EEG recording files in each session. Sometimes data for a single session is recorded in multiple files.'), ...
-                arg('numberOfTasks', 1,[1 Inf],'Number of tasks in each session. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.') ...
-                );
-           
+                arg('essFilePath', 'test','','ESS XML Filename. Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.'), ...
+                arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
+                arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
+                arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...                
+                arg('taskLabels', {'main' ''},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr') ...
+            );
+                          
             % read the ESS File that is provided.
             if ~isempty(inputOptions.essFilePath)
                 obj.essFilePath = inputOptions.essFilePath;
@@ -104,8 +104,23 @@ classdef essDocument
                     obj.essVersion = '2.0';
                     obj.studyUuid = char(java.util.UUID.randomUUID);
                     
-                    obj.sessionTaskInfo(1:inputOptions.numberOfSessions) = obj.sessionTaskInfo;
-                    obj.tasksInfo(1:inputOptions.numberOfTasks) = obj.tasksInfo;
+                    % create number of sessions x number of task records in
+                    % sessionTaskInfo an fill them with provided session numbers and
+                    % task labels.
+                    numberOfSessionTaskTuples = inputOptions.numberOfSessions * length(inputOptions.taskLabels);
+                    obj.sessionTaskInfo(1:numberOfSessionTaskTuples) = obj.sessionTaskInfo;
+                    counter = 1;
+
+                    for i=1:inputOptions.numberOfSessions
+                        for j=1:length(inputOptions.taskLabels)
+                            obj.sessionTaskInfo(counter).sessionNumber = num2str(i);
+                            obj.sessionTaskInfo(counter).taskLabel = inputOptions.taskLabels{j};
+                            counter = counter + 1;
+                        end;                        
+                    end;
+                    
+                    
+                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;
                     
                     subjectStructure = obj.sessionTaskInfo(1).subject;
                     if inputOptions.numberOfSubjectsPerSession > 1
@@ -113,8 +128,7 @@ classdef essDocument
                             obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;                            
                         end;
                     end;
-                    
-                    
+                                        
                     obj = obj.write(obj.essFilePath);
                     fprintf('Input file does not exist, creating  a new ESS file with empty fields at %s.\n', obj.essFilePath);
                 end;
@@ -314,24 +328,58 @@ classdef essDocument
                             obj.sessionTaskInfo(sessionCounter+1).channels= '';
                         end;
                         
-                        potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
-                        if potentialEegSamplingRateNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
-                        else
-                            obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= '';
+                        % ToDo: eegSampling rate is replaced by sampling
+                        % rate in recording PArameterSet/Modality and this
+                        % needs to be updated here.
+                        if str2num(obj.essVersion) <= 1
+                            potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
+                            if potentialEegSamplingRateNodeArray.getLength > 0
+                                obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
+                            else
+                                obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= '';
+                            end;
                         end;
                         
-                        potentialEegRecordingsNodeArray = currentNode.getElementsByTagName('eegRecordings'); % inside <eegRecordings> find <eegRecording>
-                        if potentialEegRecordingsNodeArray.getLength > 0
-                            
-                            
-                            potentialEegRecordingNodeArray = currentNode.getElementsByTagName('eegRecording');
-                            for eegRecordingCounter = 0:(potentialEegRecordingNodeArray.getLength-1)
-                                if  potentialEegRecordingNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).eegRecording(eegRecordingCounter+1).filename = obj.readStringFromNode(potentialEegRecordingNodeArray.item(eegRecordingCounter));
+                        if str2num(obj.essVersion) <= 1 % for ESS 1.0
+                            potentialEegRecordingsNodeArray = currentNode.getElementsByTagName('eegRecordings'); % inside <eegRecordings> find <eegRecording>
+                            if potentialEegRecordingsNodeArray.getLength > 0
+                                currentNode = potentialEegRecordingsNodeArray.item(0);
+                                
+                                potentialEegRecordingNodeArray = currentNode.getElementsByTagName('eegRecording');
+                                for eegRecordingCounter = 0:(potentialEegRecordingNodeArray.getLength-1)
+                                    if  potentialEegRecordingNodeArray.getLength > 0
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(eegRecordingCounter+1).filename = obj.readStringFromNode(potentialEegRecordingNodeArray.item(eegRecordingCounter));
+                                    end;
                                 end;
-                            end;
-                            
+                            else % for ESS 2.0 and after
+                                potentialDataRecordingsNodeArray = currentNode.getElementsByTagName('dataRecordings'); % inside <eegRecordings> find <eegRecording>
+                                if potentialDataRecordingsNodeArray.getLength > 0   
+                                    currentNode = potentialDataRecordingsNodeArray.item(0);
+                                    potentialDataRecordingNodeArray = currentNode.getElementsByTagName('dataRecording');
+                                    for dataRecordingCounter = 0:(potentialDataRecordingNodeArray.getLength-1)
+                                        currentNode = potentialDataRecordingNodeArray.item(dataRecordingCounter);
+                                        
+                                        % inside each dataRecording
+                                        potentialFilenameNodeArray = currentNode.getElementsByTagName('filename');
+                                        if  potentialFilenameNodeArray.getLength > 0
+                                            obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = obj.readStringFromNode(potentialFilenameNodeArray.item(0));
+                                        end;
+                                        
+                                        
+                                        potentialStartDateNodeArray = currentNode.getElementsByTagName('startDateTime');
+                                        if  potentialStartDateNodeArray.getLength > 0
+                                            obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = obj.readStringFromNode(potentialStartDateNodeArray.item(0));
+                                        end;                                       
+                                        
+                                        potentialrecordingParameterSetLabelNodeArray = currentNode.getElementsByTagName('recordingParameterSetLabel');
+                                        if  potentialrecordingParameterSetLabelNodeArray.getLength > 0
+                                            obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = obj.readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
+                                        end;  
+                                        
+                                        
+                                    end;
+                                end;
+                                
                             % do ESS 1.0 reading differently from 2.0+
                             if str2num(obj.essVersion) <= 1
                                 
@@ -832,10 +880,14 @@ classdef essDocument
         function obj = write(obj, essFilePath)
             % obj = write(essFilePath)
             %
-            % writes the information contained in object p into an ESS-formatted XML file.
+            % Writes the information into an ESS-formatted XML file.
             
-            if nargin < 2
-                error('Please provide the name of the output file in the first input argument');
+            if nargin < 2 && isempty(obj.essFilePath)
+                    error('Please provide the name of the output file in the first input argument');
+            end;
+            
+            if nargin >=2
+                obj.essFilePath = essFilePath;
             end;
             
             docNode = com.mathworks.xml.XMLUtils.createDocument('study');
@@ -883,7 +935,7 @@ classdef essDocument
                 sessionRootNode= sessionsRootNode.appendChild(sessionElement);
                 
                 numberElement = docNode.createElement('number');
-                numberElement.appendChild(docNode.createTextNode (obj.sessionTaskInfo(i).number));
+                numberElement.appendChild(docNode.createTextNode (obj.sessionTaskInfo(i).sessionNumber));
                 sessionRootNode.appendChild(numberElement);
                 
                 sessionTaskLabelElement = docNode.createElement('taskLabel');
@@ -1183,7 +1235,7 @@ classdef essDocument
             
             docNode.insertBefore(proc, docNode.getFirstChild());
             
-            xmlwrite(essFilePath, docNode);
+            xmlwrite(obj.essFilePath, docNode);
         end;
     end;
 end
