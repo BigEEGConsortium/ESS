@@ -1044,9 +1044,67 @@ classdef essDocument
                 
             end;
             
+            % write recordingParameterSets
+            recordingParameterSetsElement = docNode.createElement('recordingParameterSets');
+            recordingParameterSetsRootNode = docRootNode.appendChild(recordingParameterSetsElement);
+            
+            for i=1:length(obj.recordingParameterSet)
+                recordingParameterSetElement = docNode.createElement('recordingParameterSet');
+                recordingParameterSetRootNode = recordingParameterSetsRootNode.appendChild(recordingParameterSetElement);
+                
+                recordingParameterSetLabelElement = docNode.createElement('recordingParameterSetLabel');
+                recordingParameterSetLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).recordingParameterSetLabel));
+                recordingParameterSetRootNode.appendChild(recordingParameterSetLabelElement);
+                
+                % create channelType node.
+                channelTypeElement = docNode.createElement('channelType');
+                channelTypeRootNode = recordingParameterSetRootNode.appendChild(channelTypeElement);
+                
+                
+                
+                for j=1:length(obj.recordingParameterSet(i).modality)
+                    % create modality  node 
+                    modalityElement = docNode.createElement('modality');
+                    modalityRootNode = channelTypeRootNode.appendChild(modalityElement);
+                    
+                    % create modality/type  node                   
+                    typeElement = docNode.createElement('type');
+                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
+                    modalityRootNode.appendChild(typeElement);
+                    
+                    % create modality/samplingRate  node
+                    samplingRateElement = docNode.createElement('samplingRate');
+                    samplingRateElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).samplingRate));
+                    modalityRootNode.appendChild(samplingRateElement);
+                    
+                    % create modality/type  node
+                    nameElement = docNode.createElement('name');
+                    nameElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).name));
+                    modalityRootNode.appendChild(nameElement);
+   
+                    
+                    % create modality/startChannel  node
+                    startChannelElement = docNode.createElement('startChannel');
+                    startChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).startChannel));
+                    modalityRootNode.appendChild(startChannelElement);
+                    
+                    % create modality/endChannel  node
+                    endChannelElement = docNode.createElement('endChannel');
+                    endChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).endChannel));
+                    modalityRootNode.appendChild(endChannelElement);
+                    
+                    % create modality/subjectInSessionNumber  node
+                    subjectInSessionNumberElement = docNode.createElement('subjectInSessionNumber');
+                    subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).subjectInSessionNumber));
+                    modalityRootNode.appendChild(subjectInSessionNumberElement);
+                    
+                end
+                
+            end;
+            
+            
             sessionsElement = docNode.createElement('sessions');
-            sessionsRootNode = docRootNode.appendChild(sessionsElement);
-            %docRootNode.appendChild(sessionsElement);
+            sessionsRootNode = docRootNode.appendChild(sessionsElement);            
             
             for i=1:length(obj.sessionTaskInfo)
                 sessionElement = docNode.createElement('session');

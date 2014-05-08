@@ -347,12 +347,52 @@ classdef essDocument
                                      % read modality/type
                                      potentialTypeNodeArray = currentNode.getElementsByTagName('type');
                                      if potentialTypeNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).recordingParameterSetLabel = obj.readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).type = obj.readStringFromNode(potentialTypeNodeArray.item(0));
                                      else
-                                         obj.recordingParameterSet(parameterSetCounter+1).recordingParameterSetLabel= '';
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).type = '';
+                                     end;
+                                     
+                                     % read modality/samplingRate
+                                     potentialSamplingRateNodeArray = currentNode.getElementsByTagName('samplingRate');
+                                     if potentialSamplingRateNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).samplingRate = obj.readStringFromNode(potentialSamplingRateNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).samplingRate = '';
                                      end;
                                      
                                      
+                                     % read modality/name
+                                     potentialNameNodeArray = currentNode.getElementsByTagName('name');
+                                     if potentialNameNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).name = '';
+                                     end;
+                                     
+                                     % read modality/startChannel
+                                     potentialStartChannelNodeArray = currentNode.getElementsByTagName('startChannel');
+                                     if potentialStartChannelNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).startChannel = obj.readStringFromNode(potentialStartChannelNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).startChannel = '';
+                                     end;
+                                     
+                                     % read modality/endChannel
+                                     potentialEndChannelNodeArray = currentNode.getElementsByTagName('endChannel');
+                                     if potentialEndChannelNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).endChannel = obj.readStringFromNode(potentialEndChannelNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).endChannel = '';
+                                     end;
+                                     
+                                  
+                                     % read modality/subjectInSessionNumber
+                                     potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('subjectInSessionNumber');
+                                     if potentialSubjectInSessionNumberNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).subjectInSessionNumber = obj.readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).subjectInSessionNumber = '';
+                                     end;
                                      
                                  end;
                             end;
@@ -1004,9 +1044,61 @@ classdef essDocument
                 
             end;
             
+            % write recordingParameterSets
+            recordingParameterSetsElement = docNode.createElement('recordingParameterSets');
+            recordingParameterSetsRootNode = docRootNode.appendChild(recordingParameterSetsElement);
+            
+            for i=1:length(obj.recordingParameterSet)
+                recordingParameterSetElement = docNode.createElement('recordingParameterSet');
+                recordingParameterSetRootNode = recordingParameterSetsRootNode.appendChild(recordingParameterSetElement);
+                
+                recordingParameterSetLabelElement = docNode.createElement('recordingParameterSetLabel');
+                recordingParameterSetLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).recordingParameterSetLabel));
+                recordingParameterSetRootNode.appendChild(recordingParameterSetLabelElement);
+                
+                % create channelType node.
+                channelTypeElement = docNode.createElement('channelType');
+                channelTypeRootNode = recordingParameterSetRootNode.appendChild(channelTypeElement);
+                
+                
+                
+                for j=1:length(obj.recordingParameterSet(i).modality)
+                    % create modality  node 
+                    modalityElement = docNode.createElement('modality');
+                    modalityRootNode = channelTypeRootNode.appendChild(modalityElement);
+                    
+                    % create modality/type  node                   
+                    typeElement = docNode.createElement('type');
+                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
+                    modalityRootNode.appendChild(typeElement);
+                    
+                    % create modality/samplingRate  node
+                    samplingRateElement = docNode.createElement('samplingRate');
+                    samplingRateElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).samplingRate));
+                    modalityRootNode.appendChild(samplingRateElement);
+                    
+                                        % create modality/type  node                   
+                    typeElement = docNode.createElement('type');
+                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
+                    modalityRootNode.appendChild(typeElement);
+                    
+                                        % create modality/type  node                   
+                    typeElement = docNode.createElement('type');
+                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
+                    modalityRootNode.appendChild(typeElement);
+                    
+                                        % create modality/type  node                   
+                    typeElement = docNode.createElement('type');
+                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
+                    modalityRootNode.appendChild(typeElement);
+                    
+                end
+                
+            end;
+            
+            
             sessionsElement = docNode.createElement('sessions');
-            sessionsRootNode = docRootNode.appendChild(sessionsElement);
-            %docRootNode.appendChild(sessionsElement);
+            sessionsRootNode = docRootNode.appendChild(sessionsElement);            
             
             for i=1:length(obj.sessionTaskInfo)
                 sessionElement = docNode.createElement('session');
