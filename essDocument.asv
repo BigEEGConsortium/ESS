@@ -45,8 +45,7 @@ classdef essDocument
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'channels', ' ', 'eegSamplingRate', ' ', 'dataRecording', ...
-            struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
+            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -195,6 +194,12 @@ classdef essDocument
             potentialEssVersionNodeArray = currentNode.getElementsByTagName('essVersion');
             obj.essVersion = obj.readStringFromNode(potentialEssVersionNodeArray.item(0));
             
+            % if the file is in ESS 1.0 create an EEG modality with the
+            % correct number for sampling rate.
+            obj.recordingParameterSet(1).recordingParameterSetLabel = 'default EEG for ESS 1.0';
+            obj.recordingParameterSet(1).modality(1).type = 'EEG';
+            
+            
             potentialDescriptionNodeArray = currentNode.getElementsByTagName('shortDescription');
             if nodeExistsAndHasAChild(potentialDescriptionNodeArray)
                 obj.studyShortDescription = strtrim(char(potentialDescriptionNodeArray.item(0).getFirstChild.getData));
@@ -307,11 +312,7 @@ classdef essDocument
                 obj.tasksInfo= [];
             end;
             
-            
-            %             recordingParameterSet = struct('recordingParameterSetLabel', ' ', ...
-            %                 'modality', struct('type', ' ', 'samplingRate', ' ', 'name', ' ', ...
-            %                 'startChannel', ' ', 'endChannel', ' ', 'subjectInSessionNumber', ' '));
-            
+            % recordingParameterSets
             currentNode = studyNode;
             potentialRecordingParameterSetsNodeArray = currentNode.getElementsByTagName('recordingParameterSets');
             if potentialRecordingParameterSetsNodeArray.getLength > 0
@@ -460,9 +461,7 @@ classdef essDocument
                         if str2num(obj.essVersion) <= 1
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
-                                obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
-                            else
-                                obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= '';
+                                obj.recordingParameterSet(1).modality(1).samplingRate = obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                             end;
                         end;
                         
@@ -1077,20 +1076,26 @@ classdef essDocument
                     samplingRateElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).samplingRate));
                     modalityRootNode.appendChild(samplingRateElement);
                     
-                                        % create modality/type  node                   
-                    typeElement = docNode.createElement('type');
-                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
-                    modalityRootNode.appendChild(typeElement);
+                    % create modality/type  node
+                    nameElement = docNode.createElement('name');
+                    nameElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).name));
+                    modalityRootNode.appendChild(nameElement);
+   
                     
-                                        % create modality/type  node                   
-                    typeElement = docNode.createElement('type');
-                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
-                    modalityRootNode.appendChild(typeElement);
+                    % create modality/startChannel  node
+                    startChannelElement = docNode.createElement('startChannel');
+                    startChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).startChannel));
+                    modalityRootNode.appendChild(startChannelElement);
                     
-                                        % create modality/type  node                   
-                    typeElement = docNode.createElement('type');
-                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
-                    modalityRootNode.appendChild(typeElement);
+                    % create modality/endChannel  node
+                    endChannelElement = docNode.createElement('endChannel');
+                    endChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).endChannel));
+                    modalityRootNode.appendChild(endChannelElement);
+                    
+                    % create modality/subjectInSessionNumber  node
+                    subjectInSessionNumberElement = docNode.createElement('subjectInSessionNumber');
+                    subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).subjectInSessionNumber));
+                    modalityRootNode.appendChild(subjectInSessionNumberElement);
                     
                 end
                 
@@ -1189,15 +1194,9 @@ classdef essDocument
                     subjectChannelLocationTypeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocationType));
                     subjectRootNode.appendChild(subjectChannelLocationTypeElement);
                 end;
-                
-                channelsElement = docNode.createElement('channels');
-                channelsElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).channels));
-                sessionRootNode.appendChild(channelsElement);
-                
-                eegSamplingRateElement = docNode.createElement('eegSamplingRate');
-                eegSamplingRateElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).eegSamplingRate));
-                sessionRootNode.appendChild(eegSamplingRateElement);
-                
+
+                % ToDo: take care of channel the same way as eegSampling
+                % rate
                 notesElement = docNode.createElement('notes');
                 notesRootNode= sessionRootNode.appendChild(notesElement);
                 

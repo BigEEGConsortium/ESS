@@ -45,8 +45,7 @@ classdef essDocument
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'channels', ' ', 'eegSamplingRate', ' ', 'dataRecording', ...
-            struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
+            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -60,9 +59,8 @@ classdef essDocument
             'label', ' ', 'description', ' ', 'tag', ' '));
         
         % Summary of study information.
-        summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' ', 'recordedModalities', ...
-            struct('name', ' ', 'recordingDevice', ' ', 'numberOfSensors', ' ', 'numberOfChannels', ' ',...
-            'numberOfCameras',' '), 'license', struct('type', ' ', 'text', ' ', 'link',' '));
+        summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' '...
+            , 'license', struct('type', ' ', 'text', ' ', 'link',' '));
         
         % List of publications produced from the data collected in this study.
         publicationsInfo = struct('citation', ' ', 'DOI', ' ', 'link', ' ');
@@ -195,6 +193,12 @@ classdef essDocument
             potentialEssVersionNodeArray = currentNode.getElementsByTagName('essVersion');
             obj.essVersion = obj.readStringFromNode(potentialEssVersionNodeArray.item(0));
             
+            % if the file is in ESS 1.0 create an EEG modality with the
+            % correct number for sampling rate.
+            obj.recordingParameterSet(1).recordingParameterSetLabel = 'default EEG for ESS 1.0';
+            obj.recordingParameterSet(1).modality(1).type = 'EEG';
+            
+            
             potentialDescriptionNodeArray = currentNode.getElementsByTagName('shortDescription');
             if nodeExistsAndHasAChild(potentialDescriptionNodeArray)
                 obj.studyShortDescription = strtrim(char(potentialDescriptionNodeArray.item(0).getFirstChild.getData));
@@ -307,11 +311,7 @@ classdef essDocument
                 obj.tasksInfo= [];
             end;
             
-            
-            %             recordingParameterSet = struct('recordingParameterSetLabel', ' ', ...
-            %                 'modality', struct('type', ' ', 'samplingRate', ' ', 'name', ' ', ...
-            %                 'startChannel', ' ', 'endChannel', ' ', 'subjectInSessionNumber', ' '));
-            
+            % recordingParameterSets
             currentNode = studyNode;
             potentialRecordingParameterSetsNodeArray = currentNode.getElementsByTagName('recordingParameterSets');
             if potentialRecordingParameterSetsNodeArray.getLength > 0
@@ -453,16 +453,15 @@ classdef essDocument
                         else
                             obj.sessionTaskInfo(sessionCounter+1).channels= '';
                         end;
-                        
-                        % ToDo: eegSampling rate is replaced by sampling
-                        % rate in recording PArameterSet/Modality and this
-                        % needs to be updated here.
-                        if str2num(obj.essVersion) <= 1
+                                                
+                        if str2num(obj.essVersion) <= 1 % for ESS 1.0
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
-                                obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
-                            else
-                                obj.sessionTaskInfo(sessionCounter+1).eegSamplingRate= '';
+                                % for now we asume all had the same
+                                % samling, a better way is to check all
+                                % samplig rates and create different
+                                % recodingParameter sets.
+                                obj.recordingParameterSet(1).modality(1).samplingRate = obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                             end;
                         end;
                         
@@ -751,55 +750,58 @@ classdef essDocument
                     obj.summaryInfo.allSubjectsHealthyAndNorma= '';
                 end;
                 
-                potentialRecordedModalitiesNodeArray = currentNode.getElementsByTagName('recordedModalities'); % inside <Sessions> .. find <session> <session>
-                if potentialRecordedModalitiesNodeArray.getLength > 0
-                    obj.summaryInfo.recordedModalities = strtrim(char(potentialRecordedModalitiesNodeArray.item(0).getFirstChild.getData));
-                    
-                    
-                    potentialModalityNodeArray = currentNode.getElementsByTagName('modality'); % inside <Sessions> .. find <session> <session>
-                    if potentialModalityNodeArray.getLength > 0
-                        for modalitycounter = 0:(potentialModalityNodeArray.getLength-1)
-                            currentNode = potentialModalityNodeArray.item(modalitycounter); % select a session and make it the current node.
-                            singleModalityNode = currentNode;
-                            
-                            potentialNameNodeArray = currentNode.getElementsByTagName('name');
-                            if potentialNameNodeArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).name = '';
-                            end;
-                            
-                            potentialRecordingDeviceNodeArray = currentNode.getElementsByTagName('recordingDevice');
-                            if potentialRecordingDeviceNodeArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = obj.readStringFromNode(potentialRecordingDeviceNodeArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = '';
-                            end;
-                            
-                            potentialNumberOfSensorsArray = currentNode.getElementsByTagName('numberOfSensors');
-                            if potentialNumberOfSensorsArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = obj.readStringFromNode(potentialNumberOfSensorsArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = '';
-                            end;
-                            
-                            potentialNumberOfChannelsArray = currentNode.getElementsByTagName('numberOfChannels');
-                            if potentialNumberOfChannelsArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = obj.readStringFromNode(potentialNumberOfChannelsArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = '';
-                            end;
-                            
-                            potentialNumberOfCamerasArray = currentNode.getElementsByTagName('numberOfCameras');
-                            if potentialNumberOfCamerasArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = obj.readStringFromNode(potentialNumberOfCamerasArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = '';
-                            end;
-                        end;
-                        
-                    end;
-                end;
+                % disabled as not used for ESS 2. ToDo: transfer this
+                % information to <recordingParameterSets> node.
+%                 potentialRecordedModalitiesNodeArray = currentNode.getElementsByTagName('recordedModalities'); % inside <Sessions> .. find <session> <session>
+%                 if potentialRecordedModalitiesNodeArray.getLength > 0
+%                     obj.summaryInfo.recordedModalities = strtrim(char(potentialRecordedModalitiesNodeArray.item(0).getFirstChild.getData));
+%                     
+%                     
+%                     potentialModalityNodeArray = currentNode.getElementsByTagName('modality'); % inside <Sessions> .. find <session> <session>
+%                     if potentialModalityNodeArray.getLength > 0
+%                         for modalitycounter = 0:(potentialModalityNodeArray.getLength-1)
+%                             currentNode = potentialModalityNodeArray.item(modalitycounter); % select a session and make it the current node.
+%                             singleModalityNode = currentNode;
+%                             
+%                             potentialNameNodeArray = currentNode.getElementsByTagName('name');
+%                             if potentialNameNodeArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).name = '';
+%                             end;
+%                             
+%                             potentialRecordingDeviceNodeArray = currentNode.getElementsByTagName('recordingDevice');
+%                             if potentialRecordingDeviceNodeArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = obj.readStringFromNode(potentialRecordingDeviceNodeArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = '';
+%                             end;
+%                             
+%                             potentialNumberOfSensorsArray = currentNode.getElementsByTagName('numberOfSensors');
+%                             if potentialNumberOfSensorsArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = obj.readStringFromNode(potentialNumberOfSensorsArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = '';
+%                             end;
+%                             
+%                             potentialNumberOfChannelsArray = currentNode.getElementsByTagName('numberOfChannels');
+%                             if potentialNumberOfChannelsArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = obj.readStringFromNode(potentialNumberOfChannelsArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = '';
+%                             end;
+%                             
+%                             potentialNumberOfCamerasArray = currentNode.getElementsByTagName('numberOfCameras');
+%                             if potentialNumberOfCamerasArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = obj.readStringFromNode(potentialNumberOfCamerasArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = '';
+%                             end;
+%                         end;
+%                         
+%                     end;
+%                 end;
+                
                 currentNode = studyNode;
                 potentialLicenseNodeArray = currentNode.getElementsByTagName('license');
                 if potentialLicenseNodeArray.getLength > 0
@@ -1195,15 +1197,9 @@ classdef essDocument
                     subjectChannelLocationTypeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocationType));
                     subjectRootNode.appendChild(subjectChannelLocationTypeElement);
                 end;
-                
-                channelsElement = docNode.createElement('channels');
-                channelsElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).channels));
-                sessionRootNode.appendChild(channelsElement);
-                
-                eegSamplingRateElement = docNode.createElement('eegSamplingRate');
-                eegSamplingRateElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).eegSamplingRate));
-                sessionRootNode.appendChild(eegSamplingRateElement);
-                
+
+                % ToDo: take care of channel the same way as eegSampling
+                % rate
                 notesElement = docNode.createElement('notes');
                 notesRootNode= sessionRootNode.appendChild(notesElement);
                 
@@ -1300,35 +1296,7 @@ classdef essDocument
             
             summaryElement = docNode.createElement('summary');
             summaryRootNode=docRootNode.appendChild(summaryElement);
-            
-            summaryRecordedModalitiesElement = docNode.createElement('recordedModalities');
-            summaryModalitiesRootNode=summaryRootNode.appendChild(summaryRecordedModalitiesElement);
-            
-            for q=1:length(obj.summaryInfo.recordedModalities)
-                summaryModalityElement = docNode.createElement('modality');
-                summaryModalityRootNode=summaryModalitiesRootNode.appendChild(summaryModalityElement);
-                
-                summaryModalityNameElement = docNode.createElement('name');
-                summaryModalityNameElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).name));
-                summaryModalityRootNode.appendChild(summaryModalityNameElement);
-                
-                summaryRecordingDeviceElement = docNode.createElement('recordingDevice');
-                summaryRecordingDeviceElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).recordingDevice));
-                summaryModalityRootNode.appendChild(summaryRecordingDeviceElement);
-                
-                summaryNumberOfSensorsElement = docNode.createElement('numberOfSensors');
-                summaryNumberOfSensorsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfSensors));
-                summaryModalityRootNode.appendChild(summaryNumberOfSensorsElement);
-                
-                summaryNumberOfChannelsElement = docNode.createElement('numberOfChannels');
-                summaryNumberOfChannelsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfChannels));
-                summaryModalityRootNode.appendChild(summaryNumberOfChannelsElement);
-                
-                summaryNumberOfCamerasElement = docNode.createElement('numberOfCameras');
-                summaryNumberOfCamerasElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfCameras));
-                summaryModalityRootNode.appendChild(summaryNumberOfCamerasElement);
-            end;
-            
+                        
             summaryTotalSizeElement = docNode.createElement('totalSize');
             summaryTotalSizeElement.appendChild(docNode.createTextNode(obj.summaryInfo.totalSize));
             summaryRootNode.appendChild(summaryTotalSizeElement);
