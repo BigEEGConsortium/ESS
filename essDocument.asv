@@ -45,7 +45,7 @@ classdef essDocument
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
+            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' ', 'eventInstanceFile', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -59,9 +59,8 @@ classdef essDocument
             'label', ' ', 'description', ' ', 'tag', ' '));
         
         % Summary of study information.
-        summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' ', 'recordedModalities', ...
-            struct('name', ' ', 'recordingDevice', ' ', 'numberOfSensors', ' ', 'numberOfChannels', ' ',...
-            'numberOfCameras',' '), 'license', struct('type', ' ', 'text', ' ', 'link',' '));
+        summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' '...
+            , 'license', struct('type', ' ', 'text', ' ', 'link',' '));
         
         % List of publications produced from the data collected in this study.
         publicationsInfo = struct('citation', ' ', 'DOI', ' ', 'link', ' ');
@@ -104,11 +103,13 @@ classdef essDocument
             end;
             
             inputOptions = arg_define(1,varargin, ...
-                arg('essFilePath', 'test','','ESS XML Filename. Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.'), ...
+                arg('essFilePath', '','','ESS XML Filename. Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
-                arg('taskLabels', {'main' ''},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr') ...
+                arg('taskLabels', {'main' ''},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
+                arg('forceOverwrite', true,[true false],'Forces a new fukLabels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
+                arg('recordingParameterSet', unassigned,[],'Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).') ...
                 );
             
             % read the ESS File that is provided.
@@ -117,6 +118,9 @@ classdef essDocument
                 
                 if exist(obj.essFilePath, 'file') % read the ESS information from the file
                     obj = obj.read(obj.essFilePath);
+                    if nargin > 1
+                        fprintf('ESS file already exists. Loadeding the file and ignoring other input \r parameters (used in creation of new ESS files. \n');
+                    end;
                 else
                     % input file did not exist. Create an ESS file at that located
                     % and populate it with empty fields according to input
@@ -127,28 +131,46 @@ classdef essDocument
                     obj.essVersion = '2.0';
                     obj.studyUuid = char(java.util.UUID.randomUUID);
                     
+                    % if data recodring parameter set if assigned, use it
+                    % for all the recordings.
+                    typicalDataRecording = obj.sessionTaskInfo(1).dataRecording;
+                    recordingParameterSetIsConstant = isfield(inputOptions, 'recordingParameterSet') && ~isempty(inputOptions.recordingParameterSet);
+                    if recordingParameterSetIsConstant
+                        obj.recordingParameterSet = inputOptions.recordingParameterSet;
+                        typicalDataRecording.recordingParameterSetLabel = inputOptions.recordingParameterSet.recordingParameterSetLabel;
+                    end;
+                    
                     % create number of sessions x number of task records in
                     % sessionTaskInfo an fill them with provided session numbers and
                     % task labels.
                     numberOfSessionTaskTuples = inputOptions.numberOfSessions * length(inputOptions.taskLabels);
                     obj.sessionTaskInfo(1:numberOfSessionTaskTuples) = obj.sessionTaskInfo;
                     counter = 1;
-                    
+                                                          
                     for i=1:inputOptions.numberOfSessions
                         for j=1:length(inputOptions.taskLabels)
                             obj.sessionTaskInfo(counter).sessionNumber = num2str(i);
                             obj.sessionTaskInfo(counter).taskLabel = inputOptions.taskLabels{j};
+                            
+                            for k=1:inputOptions.numberOfRecordingsPerSessionTask
+                                obj.sessionTaskInfo(counter).dataRecording = typicalDataRecording;
+                            end;
+                            
                             counter = counter + 1;
                         end;
                     end;
                     
                     
-                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;
+                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;                    
                     
                     subjectStructure = obj.sessionTaskInfo(1).subject;
                     if inputOptions.numberOfSubjectsPerSession > 1
                         for i=1:length(obj.sessionTaskInfo)
-                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;
+                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;   
+                            
+                            if inputOptions.numberOfSubjectsPerSession == 1
+                                obj.sessionTaskInfo(i).subject(1).inSessionNumber = 1;
+                            end;
                         end;
                     end;
                     
@@ -454,13 +476,14 @@ classdef essDocument
                         else
                             obj.sessionTaskInfo(sessionCounter+1).channels= '';
                         end;
-                        
-                        % ToDo: eegSampling rate is replaced by sampling
-                        % rate in recording PArameterSet/Modality and this
-                        % needs to be updated here.
-                        if str2num(obj.essVersion) <= 1
+                                                
+                        if str2num(obj.essVersion) <= 1 % for ESS 1.0
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
+                                % for now we asume all had the same
+                                % samling, a better way is to check all
+                                % samplig rates and create different
+                                % recodingParameter sets.
                                 obj.recordingParameterSet(1).modality(1).samplingRate = obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                             end;
                         end;
@@ -489,20 +512,33 @@ classdef essDocument
                                     potentialFilenameNodeArray = currentNode.getElementsByTagName('filename');
                                     if  potentialFilenameNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = obj.readStringFromNode(potentialFilenameNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = '';
                                     end;
                                     
                                     
                                     potentialStartDateNodeArray = currentNode.getElementsByTagName('startDateTime');
                                     if  potentialStartDateNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = obj.readStringFromNode(potentialStartDateNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = '';
                                     end;
                                     
                                     potentialrecordingParameterSetLabelNodeArray = currentNode.getElementsByTagName('recordingParameterSetLabel');
                                     if  potentialrecordingParameterSetLabelNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = obj.readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = '';
                                     end;
                                     
                                     
+                                    potentialEventInstanceFileNodeArray = currentNode.getElementsByTagName('eventInstanceFile');
+                                    if  potentialEventInstanceFileNodeArray.getLength > 0
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = obj.readStringFromNode(potentialEventInstanceFileNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = '';
+                                    end;
+
                                 end;
                             end;
                         end;
@@ -750,55 +786,58 @@ classdef essDocument
                     obj.summaryInfo.allSubjectsHealthyAndNorma= '';
                 end;
                 
-                potentialRecordedModalitiesNodeArray = currentNode.getElementsByTagName('recordedModalities'); % inside <Sessions> .. find <session> <session>
-                if potentialRecordedModalitiesNodeArray.getLength > 0
-                    obj.summaryInfo.recordedModalities = strtrim(char(potentialRecordedModalitiesNodeArray.item(0).getFirstChild.getData));
-                    
-                    
-                    potentialModalityNodeArray = currentNode.getElementsByTagName('modality'); % inside <Sessions> .. find <session> <session>
-                    if potentialModalityNodeArray.getLength > 0
-                        for modalitycounter = 0:(potentialModalityNodeArray.getLength-1)
-                            currentNode = potentialModalityNodeArray.item(modalitycounter); % select a session and make it the current node.
-                            singleModalityNode = currentNode;
-                            
-                            potentialNameNodeArray = currentNode.getElementsByTagName('name');
-                            if potentialNameNodeArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).name = '';
-                            end;
-                            
-                            potentialRecordingDeviceNodeArray = currentNode.getElementsByTagName('recordingDevice');
-                            if potentialRecordingDeviceNodeArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = obj.readStringFromNode(potentialRecordingDeviceNodeArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = '';
-                            end;
-                            
-                            potentialNumberOfSensorsArray = currentNode.getElementsByTagName('numberOfSensors');
-                            if potentialNumberOfSensorsArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = obj.readStringFromNode(potentialNumberOfSensorsArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = '';
-                            end;
-                            
-                            potentialNumberOfChannelsArray = currentNode.getElementsByTagName('numberOfChannels');
-                            if potentialNumberOfChannelsArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = obj.readStringFromNode(potentialNumberOfChannelsArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = '';
-                            end;
-                            
-                            potentialNumberOfCamerasArray = currentNode.getElementsByTagName('numberOfCameras');
-                            if potentialNumberOfCamerasArray.getLength > 0
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = obj.readStringFromNode(potentialNumberOfCamerasArray.item(0));
-                            else
-                                obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = '';
-                            end;
-                        end;
-                        
-                    end;
-                end;
+                % disabled as not used for ESS 2. ToDo: transfer this
+                % information to <recordingParameterSets> node.
+%                 potentialRecordedModalitiesNodeArray = currentNode.getElementsByTagName('recordedModalities'); % inside <Sessions> .. find <session> <session>
+%                 if potentialRecordedModalitiesNodeArray.getLength > 0
+%                     obj.summaryInfo.recordedModalities = strtrim(char(potentialRecordedModalitiesNodeArray.item(0).getFirstChild.getData));
+%                     
+%                     
+%                     potentialModalityNodeArray = currentNode.getElementsByTagName('modality'); % inside <Sessions> .. find <session> <session>
+%                     if potentialModalityNodeArray.getLength > 0
+%                         for modalitycounter = 0:(potentialModalityNodeArray.getLength-1)
+%                             currentNode = potentialModalityNodeArray.item(modalitycounter); % select a session and make it the current node.
+%                             singleModalityNode = currentNode;
+%                             
+%                             potentialNameNodeArray = currentNode.getElementsByTagName('name');
+%                             if potentialNameNodeArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).name = '';
+%                             end;
+%                             
+%                             potentialRecordingDeviceNodeArray = currentNode.getElementsByTagName('recordingDevice');
+%                             if potentialRecordingDeviceNodeArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = obj.readStringFromNode(potentialRecordingDeviceNodeArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = '';
+%                             end;
+%                             
+%                             potentialNumberOfSensorsArray = currentNode.getElementsByTagName('numberOfSensors');
+%                             if potentialNumberOfSensorsArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = obj.readStringFromNode(potentialNumberOfSensorsArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = '';
+%                             end;
+%                             
+%                             potentialNumberOfChannelsArray = currentNode.getElementsByTagName('numberOfChannels');
+%                             if potentialNumberOfChannelsArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = obj.readStringFromNode(potentialNumberOfChannelsArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = '';
+%                             end;
+%                             
+%                             potentialNumberOfCamerasArray = currentNode.getElementsByTagName('numberOfCameras');
+%                             if potentialNumberOfCamerasArray.getLength > 0
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = obj.readStringFromNode(potentialNumberOfCamerasArray.item(0));
+%                             else
+%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = '';
+%                             end;
+%                         end;
+%                         
+%                     end;
+%                 end;
+                
                 currentNode = studyNode;
                 potentialLicenseNodeArray = currentNode.getElementsByTagName('license');
                 if potentialLicenseNodeArray.getLength > 0
@@ -1234,6 +1273,13 @@ classdef essDocument
                     dataRecordingRecordingParameterSetLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).recordingParameterSetLabel));
                     dataRecordingElement.appendChild(dataRecordingRecordingParameterSetLabelElement);
                     
+                    
+                    
+                    % create the eventInstanceFile node under dataRecording node.
+                    dataRecordingEventInstanceFilelElement = docNode.createElement('eventInstanceFile');
+                    dataRecordingEventInstanceFilelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).eventInstanceFile));
+                    dataRecordingElement.appendChild(dataRecordingEventInstanceFilelElement);
+                    
                     dataRecordingsRootNode.appendChild(dataRecordingElement);
                 end;
             end;
@@ -1293,35 +1339,7 @@ classdef essDocument
             
             summaryElement = docNode.createElement('summary');
             summaryRootNode=docRootNode.appendChild(summaryElement);
-            
-            summaryRecordedModalitiesElement = docNode.createElement('recordedModalities');
-            summaryModalitiesRootNode=summaryRootNode.appendChild(summaryRecordedModalitiesElement);
-            
-            for q=1:length(obj.summaryInfo.recordedModalities)
-                summaryModalityElement = docNode.createElement('modality');
-                summaryModalityRootNode=summaryModalitiesRootNode.appendChild(summaryModalityElement);
-                
-                summaryModalityNameElement = docNode.createElement('name');
-                summaryModalityNameElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).name));
-                summaryModalityRootNode.appendChild(summaryModalityNameElement);
-                
-                summaryRecordingDeviceElement = docNode.createElement('recordingDevice');
-                summaryRecordingDeviceElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).recordingDevice));
-                summaryModalityRootNode.appendChild(summaryRecordingDeviceElement);
-                
-                summaryNumberOfSensorsElement = docNode.createElement('numberOfSensors');
-                summaryNumberOfSensorsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfSensors));
-                summaryModalityRootNode.appendChild(summaryNumberOfSensorsElement);
-                
-                summaryNumberOfChannelsElement = docNode.createElement('numberOfChannels');
-                summaryNumberOfChannelsElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfChannels));
-                summaryModalityRootNode.appendChild(summaryNumberOfChannelsElement);
-                
-                summaryNumberOfCamerasElement = docNode.createElement('numberOfCameras');
-                summaryNumberOfCamerasElement.appendChild(docNode.createTextNode(obj.summaryInfo.recordedModalities(q).numberOfCameras));
-                summaryModalityRootNode.appendChild(summaryNumberOfCamerasElement);
-            end;
-            
+                        
             summaryTotalSizeElement = docNode.createElement('totalSize');
             summaryTotalSizeElement.appendChild(docNode.createTextNode(obj.summaryInfo.totalSize));
             summaryRootNode.appendChild(summaryTotalSizeElement);

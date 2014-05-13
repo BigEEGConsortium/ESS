@@ -45,7 +45,7 @@ classdef essDocument
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' '),...
+            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' ', 'eventInstanceFile', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -103,19 +103,24 @@ classdef essDocument
             end;
             
             inputOptions = arg_define(1,varargin, ...
-                arg('essFilePath', 'test','','ESS XML Filename. Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.'), ...
+                arg('essFilePath', '','','ESS XML Filename. Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
-                arg('taskLabels', {'main' ''},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr') ...
+                arg('taskLabels', {'main' ''},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
+                arg('createNewFile', true,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
+                arg('recordingParameterSet', unassigned,[],'Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).') ...
                 );
             
             % read the ESS File that is provided.
             if ~isempty(inputOptions.essFilePath)
                 obj.essFilePath = inputOptions.essFilePath;
                 
-                if exist(obj.essFilePath, 'file') % read the ESS information from the file
+                if exist(obj.essFilePath, 'file') && ~inputOptions.createNewFile % read the ESS information from the file
                     obj = obj.read(obj.essFilePath);
+                    if nargin > 1
+                        fprintf('An ESS file already exists at the specified location. Loading the file and ignoring other input parameters.\n');
+                    end;
                 else
                     % input file did not exist. Create an ESS file at that located
                     % and populate it with empty fields according to input
@@ -126,33 +131,54 @@ classdef essDocument
                     obj.essVersion = '2.0';
                     obj.studyUuid = char(java.util.UUID.randomUUID);
                     
+                    % if data recodring parameter set if assigned, use it
+                    % for all the recordings.
+                    typicalDataRecording = obj.sessionTaskInfo(1).dataRecording;
+                    recordingParameterSetIsConstant = isfield(inputOptions, 'recordingParameterSet') && ~isempty(inputOptions.recordingParameterSet);
+                    if recordingParameterSetIsConstant
+                        obj.recordingParameterSet = inputOptions.recordingParameterSet;
+                        typicalDataRecording.recordingParameterSetLabel = inputOptions.recordingParameterSet.recordingParameterSetLabel;
+                    end;
+                    
                     % create number of sessions x number of task records in
                     % sessionTaskInfo an fill them with provided session numbers and
                     % task labels.
                     numberOfSessionTaskTuples = inputOptions.numberOfSessions * length(inputOptions.taskLabels);
                     obj.sessionTaskInfo(1:numberOfSessionTaskTuples) = obj.sessionTaskInfo;
                     counter = 1;
-                    
+                                                          
                     for i=1:inputOptions.numberOfSessions
                         for j=1:length(inputOptions.taskLabels)
                             obj.sessionTaskInfo(counter).sessionNumber = num2str(i);
                             obj.sessionTaskInfo(counter).taskLabel = inputOptions.taskLabels{j};
+                            
+                            for k=1:inputOptions.numberOfRecordingsPerSessionTask
+                                obj.sessionTaskInfo(counter).dataRecording = typicalDataRecording;
+                            end;
+                            
                             counter = counter + 1;
                         end;
                     end;
                     
                     
-                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;
+                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;                    
                     
                     subjectStructure = obj.sessionTaskInfo(1).subject;
                     if inputOptions.numberOfSubjectsPerSession > 1
                         for i=1:length(obj.sessionTaskInfo)
-                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;
+                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;   
+                            
+                            if inputOptions.numberOfSubjectsPerSession == 1
+                                obj.sessionTaskInfo(i).subject(1).inSessionNumber = 1;
+                            end;
                         end;
                     end;
                     
                     obj = obj.write(obj.essFilePath);
-                    fprintf('Input file does not exist, creating  a new ESS file with empty fields at %s.\n', obj.essFilePath);
+                    if exist(obj.essFilePath, 'file')
+                    else
+                        fprintf('Input file does not exist, creating a new ESS file with empty fields at %s.\n', obj.essFilePath);
+                    end;
                 end;
             end;
         end;
@@ -489,20 +515,33 @@ classdef essDocument
                                     potentialFilenameNodeArray = currentNode.getElementsByTagName('filename');
                                     if  potentialFilenameNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = obj.readStringFromNode(potentialFilenameNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = '';
                                     end;
                                     
                                     
                                     potentialStartDateNodeArray = currentNode.getElementsByTagName('startDateTime');
                                     if  potentialStartDateNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = obj.readStringFromNode(potentialStartDateNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = '';
                                     end;
                                     
                                     potentialrecordingParameterSetLabelNodeArray = currentNode.getElementsByTagName('recordingParameterSetLabel');
                                     if  potentialrecordingParameterSetLabelNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = obj.readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = '';
                                     end;
                                     
                                     
+                                    potentialEventInstanceFileNodeArray = currentNode.getElementsByTagName('eventInstanceFile');
+                                    if  potentialEventInstanceFileNodeArray.getLength > 0
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = obj.readStringFromNode(potentialEventInstanceFileNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = '';
+                                    end;
+
                                 end;
                             end;
                         end;
@@ -1236,6 +1275,13 @@ classdef essDocument
                     dataRecordingRecordingParameterSetLabelElement = docNode.createElement('recordingParameterSetLabel');
                     dataRecordingRecordingParameterSetLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).recordingParameterSetLabel));
                     dataRecordingElement.appendChild(dataRecordingRecordingParameterSetLabelElement);
+                    
+                    
+                    
+                    % create the eventInstanceFile node under dataRecording node.
+                    dataRecordingEventInstanceFilelElement = docNode.createElement('eventInstanceFile');
+                    dataRecordingEventInstanceFilelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).eventInstanceFile));
+                    dataRecordingElement.appendChild(dataRecordingEventInstanceFilelElement);
                     
                     dataRecordingsRootNode.appendChild(dataRecordingElement);
                 end;
