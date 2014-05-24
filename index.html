@@ -28,8 +28,10 @@
 
     <div class="container">
       <section id="main_content">
-        <h2>
-<a name="using-other-peoples-eeg-data-is-painful" class="anchor" href="#using-other-peoples-eeg-data-is-painful"><span class="octicon octicon-link"></span></a>Using other people’s EEG data is painful</h2>
+        <p>EEG Study Schema (ESS) makes it easy for researcher in the field of EEG/BCI to package, share and automatize the analysis workflow of their study data.</p>
+
+<h2>
+<a name="using-other-peoples-eeg-data-could-be-painful" class="anchor" href="#using-other-peoples-eeg-data-could-be-painful"><span class="octicon octicon-link"></span></a>Using other people’s EEG data could be painful</h2>
 
 <p>Often one has to do detective work to find out:</p>
 
@@ -40,7 +42,7 @@
 </ol><h2>
 <a name="to-remove-eeg-data-sharing-pain-we-have-created-a-set-of-standards-hed-and-ess-and-tools" class="anchor" href="#to-remove-eeg-data-sharing-pain-we-have-created-a-set-of-standards-hed-and-ess-and-tools"><span class="octicon octicon-link"></span></a>To remove ‘EEG data sharing pain' we have created a set of standards (HED and ESS) and tools</h2>
 
-<p>ESS is</p>
+<p>ESS is designed from a user-centered viewpoint that emphasizes simplicity and ease of use. It is created to contain all the information a researcher unfamiliar with a particular EEG (or MEG) Study needs to further analyze the data. It is</p>
 
 <ul>
 <li>An XML-based specification </li>
@@ -49,7 +51,17 @@
 </li>
 <li>Both human- and machine-readable</li>
 <li>The XML file may be readily formatted into a readable description of the EEG study </li>
-</ul><p>ESS has two parts (a) a convention for structering raw EEG recording files (b) an XML file that holds all the information necessary to analyze an EEG study. Together ESS and HED provide a metadata hierarchy for describing and documenting electrophysiological studies and their recorded data. ESS is designed from a user-centered viewpoint that emphasizes simplicity and ease of use. It is created to contain all the information a researcher unfamiliar with a particular EEG (or MEG) Study needs to further analyze the data. </p>
+</ul><p>ESS also has a convention that specifies how to name and arrange raw session EEG recording files into folders.</p>
+
+<h2>
+<a name="ess-20-is-ready" class="anchor" href="#ess-20-is-ready"><span class="octicon octicon-link"></span></a>ESS 2.0 is ready</h2>
+
+<p>You can see <a href="https://docs.google.com/document/d/1JFnyVpY60jhP3FDL2fMqSmoisN5EreQBxD5YnrAo0pU/edit?usp=sharing">ESS 2.0 specification here</a>. It is now capable of dealing with multiple modalities (e.g. Motion Capture, Eye-Tracking,...), and studies where EEG recording parameters (e.g. sampling rate) vary across sessions.</p>
+
+<h2>
+<a name="ess-tools" class="anchor" href="#ess-tools"><span class="octicon octicon-link"></span></a>ESS tools</h2>
+
+<p>Matlab-based tools are available in our <a href="https://github.com/bigdelys/ESS">Github repository</a> to read and write ESS XML files.</p>
 
 <hr><p>ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.</p>
       </section>
