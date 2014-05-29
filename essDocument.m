@@ -27,6 +27,13 @@ classdef essDocument
         % Unique identifier (uuid) with 32 random  alphanumeric characters and four hyphens). It is used to uniquely identify each ESS document.
         studyUuid = ' ';
         
+        % the URI pointing to the root folder of associated ESS folder. If the ESS file is located
+        % in the default root folder, this should be ‘.’ (current directory). If for example the data files
+        % and the root folder are placed on a remote FTP location, <rootURI> should be set to
+        % ‘ftp://domain.com/study’. The concatenation or <rootURI> and <filename> for each file
+        % should always produce a valid, downloadable URI.
+        rootURI = '.';
+        
         % Information about the project under which this experiment is
         % performed.
         projectInfo = struct('organization', ' ',  'grantId', ' ');
@@ -40,7 +47,8 @@ classdef essDocument
         %         associated with dataRecording nodes.
         recordingParameterSet = struct('recordingParameterSetLabel', ' ', ...
             'modality', struct('type', ' ', 'samplingRate', ' ', 'name', ' ', ...
-            'startChannel', ' ', 'endChannel', ' ', 'subjectInSessionNumber', ' '));
+            'startChannel', ' ', 'endChannel', ' ', 'subjectInSessionNumber', ' ',...
+            'referenceLocation',' ', 'referenceLabel', ' '));
         
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
@@ -107,7 +115,7 @@ classdef essDocument
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
-                arg('taskLabels', {'main' ''},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
+                arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
                 arg('createNewFile', true,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
                 arg('recordingParameterSet', unassigned,[],'Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).') ...
                 );
@@ -253,6 +261,14 @@ classdef essDocument
                 obj.studyUuid = obj.readStringFromNode(potentialTitleNodeArray.item(0));
             else
                 obj.studyUuid = '';
+            end;
+            
+            
+            rootURINodeArray = currentNode.getElementsByTagName('rootURI');
+            if nodeExistsAndHasAChild(rootURINodeArray)
+                obj.rootURI = obj.readStringFromNode(rootURINodeArray.item(0));
+            else
+                obj.rootURI = '.';
             end;
             
             % start project node
@@ -420,6 +436,23 @@ classdef essDocument
                                          obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).subjectInSessionNumber = '';
                                      end;
                                      
+                                     % read modality/referenceLocation
+                                     potentialReferenceLocationNodeArray = currentNode.getElementsByTagName('referenceLocation');
+                                     if potentialReferenceLocationNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLocation = obj.readStringFromNode(potentialReferenceLocationNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLocation = '';
+                                     end;
+                                     
+                                     
+                                     % read modality/referenceLabel
+                                     potentialReferenceLabelNodeArray = currentNode.getElementsByTagName('referenceLabel');
+                                     if potentialReferenceLabelNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLabel = obj.readStringFromNode(potentialReferenceLabelNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLabel = '';
+                                     end;
+                                     
                                  end;
                             end;
                         end;
@@ -533,8 +566,7 @@ classdef essDocument
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = '';
                                     end;
-                                    
-                                    
+                                                                        
                                     potentialEventInstanceFileNodeArray = currentNode.getElementsByTagName('eventInstanceFile');
                                     if  potentialEventInstanceFileNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = obj.readStringFromNode(potentialEventInstanceFileNodeArray.item(0));
@@ -789,58 +821,7 @@ classdef essDocument
                     obj.summaryInfo.allSubjectsHealthyAndNorma= '';
                 end;
                 
-                % disabled as not used for ESS 2. ToDo: transfer this
-                % information to <recordingParameterSets> node.
-%                 potentialRecordedModalitiesNodeArray = currentNode.getElementsByTagName('recordedModalities'); % inside <Sessions> .. find <session> <session>
-%                 if potentialRecordedModalitiesNodeArray.getLength > 0
-%                     obj.summaryInfo.recordedModalities = strtrim(char(potentialRecordedModalitiesNodeArray.item(0).getFirstChild.getData));
-%                     
-%                     
-%                     potentialModalityNodeArray = currentNode.getElementsByTagName('modality'); % inside <Sessions> .. find <session> <session>
-%                     if potentialModalityNodeArray.getLength > 0
-%                         for modalitycounter = 0:(potentialModalityNodeArray.getLength-1)
-%                             currentNode = potentialModalityNodeArray.item(modalitycounter); % select a session and make it the current node.
-%                             singleModalityNode = currentNode;
-%                             
-%                             potentialNameNodeArray = currentNode.getElementsByTagName('name');
-%                             if potentialNameNodeArray.getLength > 0
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
-%                             else
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).name = '';
-%                             end;
-%                             
-%                             potentialRecordingDeviceNodeArray = currentNode.getElementsByTagName('recordingDevice');
-%                             if potentialRecordingDeviceNodeArray.getLength > 0
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = obj.readStringFromNode(potentialRecordingDeviceNodeArray.item(0));
-%                             else
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).recordingDevice = '';
-%                             end;
-%                             
-%                             potentialNumberOfSensorsArray = currentNode.getElementsByTagName('numberOfSensors');
-%                             if potentialNumberOfSensorsArray.getLength > 0
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = obj.readStringFromNode(potentialNumberOfSensorsArray.item(0));
-%                             else
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfSensors = '';
-%                             end;
-%                             
-%                             potentialNumberOfChannelsArray = currentNode.getElementsByTagName('numberOfChannels');
-%                             if potentialNumberOfChannelsArray.getLength > 0
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = obj.readStringFromNode(potentialNumberOfChannelsArray.item(0));
-%                             else
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfChannels = '';
-%                             end;
-%                             
-%                             potentialNumberOfCamerasArray = currentNode.getElementsByTagName('numberOfCameras');
-%                             if potentialNumberOfCamerasArray.getLength > 0
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = obj.readStringFromNode(potentialNumberOfCamerasArray.item(0));
-%                             else
-%                                 obj.summaryInfo.recordedModalities(modalitycounter+1).numberOfCameras = '';
-%                             end;
-%                         end;
-%                         
-%                     end;
-%                 end;
-                
+              
                 currentNode = studyNode;
                 potentialLicenseNodeArray = currentNode.getElementsByTagName('license');
                 if potentialLicenseNodeArray.getLength > 0
@@ -1068,6 +1049,10 @@ classdef essDocument
             uuidElement.appendChild(docNode.createTextNode(obj.studyUuid));
             docRootNode.appendChild(uuidElement);
             
+            rootURIElement = docNode.createElement('rootURI');
+            rootURIElement.appendChild(docNode.createTextNode(obj.rootURI));
+            docRootNode.appendChild(rootURIElement);
+            
             projectElement = docNode.createElement('project');
             projectRootNode=docRootNode.appendChild(projectElement);
             
@@ -1138,6 +1123,18 @@ classdef essDocument
                     subjectInSessionNumberElement = docNode.createElement('subjectInSessionNumber');
                     subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).subjectInSessionNumber));
                     modalityRootNode.appendChild(subjectInSessionNumberElement);
+                    
+                    
+                    % create modality/referenceLocation node
+                    referenceLabelElement = docNode.createElement('referenceLocation');
+                    referenceLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).referenceLocation));
+                    modalityRootNode.appendChild(referenceLabelElement);
+                    
+                    
+                    % create modality/referenceLabel node
+                    referenceLabelElement = docNode.createElement('referenceLabel');
+                    referenceLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).referenceLabel));
+                    modalityRootNode.appendChild(referenceLabelElement);
                     
                 end
                 
