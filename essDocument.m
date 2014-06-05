@@ -46,7 +46,7 @@ classdef essDocument
         %         defined. Otherwise multiple recordingParameterSet are defined and
         %         associated with dataRecording nodes.
         recordingParameterSet = struct('recordingParameterSetLabel', ' ', ...
-            'modality', struct('type', ' ', 'samplingRate', ' ', 'name', ' ', ...
+            'modality', struct('type', ' ', 'samplingRate', ' ', 'name', ' ', 'description', ' ',...
             'startChannel', ' ', 'endChannel', ' ', 'subjectInSessionNumber', ' ',...
             'referenceLocation',' ', 'referenceLabel', ' '));
         
@@ -409,6 +409,14 @@ classdef essDocument
                                          obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
                                      else
                                          obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).name = '';
+                                     end;
+                                     
+                                     % read modality/description
+                                     potentialDescriptionNodeArray = currentNode.getElementsByTagName('description');
+                                     if potentialDescriptionNodeArray.getLength > 0
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).description = obj.readStringFromNode(potentialDescriptionNodeArray.item(0));
+                                     else
+                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).description = '';
                                      end;
                                      
                                      % read modality/startChannel
@@ -1103,13 +1111,17 @@ classdef essDocument
                     samplingRateElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).samplingRate));
                     modalityRootNode.appendChild(samplingRateElement);
                     
-                    % create modality/type  node
+                    % create modality/type node
                     nameElement = docNode.createElement('name');
                     nameElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).name));
                     modalityRootNode.appendChild(nameElement);
    
+                    % create modality/description node
+                    descriptionElement = docNode.createElement('description');
+                    descriptionElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).description));
+                    modalityRootNode.appendChild(descriptionElement);
                     
-                    % create modality/startChannel  node
+                    % create modality/startChannel node
                     startChannelElement = docNode.createElement('startChannel');
                     startChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).startChannel));
                     modalityRootNode.appendChild(startChannelElement);
