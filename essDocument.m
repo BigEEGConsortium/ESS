@@ -5,8 +5,8 @@ classdef essDocument
     % (e.g. add a ne session) and then save using the write() method into a =new ESS XML file.
     %
     % Written by Nima Bigdely-Shamlo and Jessica Hsi.
-    % Copyright © 2014 Syntrogi, Inc.
-    % Copyright © 2013-2014 University of California San Diego.
+    % Copyright ? 2014 Syntrogi, Inc.
+    % Copyright ? 2013-2014 University of California San Diego.
     % Released under BSD License.
     
     properties
@@ -28,9 +28,9 @@ classdef essDocument
         studyUuid = ' ';
         
         % the URI pointing to the root folder of associated ESS folder. If the ESS file is located
-        % in the default root folder, this should be ‘.’ (current directory). If for example the data files
+        % in the default root folder, this should be ?.? (current directory). If for example the data files
         % and the root folder are placed on a remote FTP location, <rootURI> should be set to
-        % ‘ftp://domain.com/study’. The concatenation or <rootURI> and <filename> for each file
+        % ?ftp://domain.com/study?. The concatenation or <rootURI> and <filename> for each file
         % should always produce a valid, downloadable URI.
         rootURI = '.';
         
@@ -115,7 +115,7 @@ classdef essDocument
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
-                arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
+                arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ?eyes closed? task, followed by a ?target detection? task and a ?mind wandering?, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
                 arg('recordingParameterSet', unassigned,[],'Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).') ...
                 );
@@ -1941,7 +1941,11 @@ classdef essDocument
                 eventLatency(i) = EEG.event(i).latency / EEG.srate;
                 
                 id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
-                eventHedString{i} = studyEventCodeHedString{id};
+                if any(id)
+                    eventHedString{i} = studyEventCodeHedString{id};
+                else
+                    eventHedString{i} = '';
+                end;
             end;
             
             fid = fopen(fullFilePath, 'w');
