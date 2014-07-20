@@ -116,7 +116,7 @@ classdef essDocument
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
                 arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
-                arg('createNewFile', true,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
+                arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
                 arg('recordingParameterSet', unassigned,[],'Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).') ...
                 );
             
@@ -154,7 +154,7 @@ classdef essDocument
                     numberOfSessionTaskTuples = inputOptions.numberOfSessions * length(inputOptions.taskLabels);
                     obj.sessionTaskInfo(1:numberOfSessionTaskTuples) = obj.sessionTaskInfo;
                     counter = 1;
-                                                          
+                    
                     for i=1:inputOptions.numberOfSessions
                         for j=1:length(inputOptions.taskLabels)
                             obj.sessionTaskInfo(counter).sessionNumber = num2str(i);
@@ -169,12 +169,12 @@ classdef essDocument
                     end;
                     
                     
-                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;                    
+                    obj.tasksInfo(1:length(inputOptions.taskLabels)) = obj.tasksInfo;
                     
                     subjectStructure = obj.sessionTaskInfo(1).subject;
                     if inputOptions.numberOfSubjectsPerSession > 1
                         for i=1:length(obj.sessionTaskInfo)
-                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;   
+                            obj.sessionTaskInfo(i).subject(1:inputOptions.numberOfSubjectsPerSession) = subjectStructure;
                             
                             if inputOptions.numberOfSubjectsPerSession == 1
                                 obj.sessionTaskInfo(i).subject(1).inSessionNumber = 1;
@@ -191,25 +191,23 @@ classdef essDocument
             end;
         end;
         
-        function outString  = readStringFromNode(obj, node)
-            firstChild = node.getFirstChild;
-            if isempty(firstChild)
-                outString = '';
-            else
-                outString = strtrim(char(firstChild.getData));
-            end;
-        end;
-        
         function obj = read(obj, essFilePath)
+            %  obj = read(essFilePath);
+            %
+            % Reads the information contained an ESS-formatted XML file and placed it into object properties.
             
             function result = nodeExistsAndHasAChild(node)
                 result = node.getLength > 0 && ~isempty( node.item(0).getFirstChild);
             end
             
-            
-            %  obj = read(essFilePath);
-            %
-            % Reads the information contained an ESS-formatted XML file and placed it into object properties.
+            function outString  = readStringFromNode(node)
+                firstChild = node.getFirstChild;
+                if isempty(firstChild)
+                    outString = '';
+                else
+                    outString = strtrim(char(firstChild.getData));
+                end;
+            end
             
             xmlDocument = xmlread(essFilePath);
             potentialStudyNodeArray = xmlDocument.getElementsByTagName('study');
@@ -225,13 +223,12 @@ classdef essDocument
             % read ESS version.
             currentNode = studyNode;
             potentialEssVersionNodeArray = currentNode.getElementsByTagName('essVersion');
-            obj.essVersion = obj.readStringFromNode(potentialEssVersionNodeArray.item(0));
+            obj.essVersion = readStringFromNode(potentialEssVersionNodeArray.item(0));
             
             % if the file is in ESS 1.0 create an EEG modality with the
             % correct number for sampling rate.
             obj.recordingParameterSet(1).recordingParameterSetLabel = 'default EEG for ESS 1.0';
             obj.recordingParameterSet(1).modality(1).type = 'EEG';
-            
             
             potentialDescriptionNodeArray = currentNode.getElementsByTagName('shortDescription');
             if nodeExistsAndHasAChild(potentialDescriptionNodeArray)
@@ -258,7 +255,7 @@ classdef essDocument
             
             potentialTitleNodeArray = currentNode.getElementsByTagName('uuid');
             if nodeExistsAndHasAChild(potentialTitleNodeArray)
-                obj.studyUuid = obj.readStringFromNode(potentialTitleNodeArray.item(0));
+                obj.studyUuid = readStringFromNode(potentialTitleNodeArray.item(0));
             else
                 obj.studyUuid = '';
             end;
@@ -266,7 +263,7 @@ classdef essDocument
             
             rootURINodeArray = currentNode.getElementsByTagName('rootURI');
             if nodeExistsAndHasAChild(rootURINodeArray)
-                obj.rootURI = obj.readStringFromNode(rootURINodeArray.item(0));
+                obj.rootURI = readStringFromNode(rootURINodeArray.item(0));
             else
                 obj.rootURI = '.';
             end;
@@ -295,23 +292,22 @@ classdef essDocument
                         end;
                         
                         if ~isempty(theItemNumber)
-                            obj.projectInfo(fundingCounter+1).organization = obj.readStringFromNode(potentialFundingOrganizationNodeArray.item(theItemNumber));
+                            obj.projectInfo(fundingCounter+1).organization = readStringFromNode(potentialFundingOrganizationNodeArray.item(theItemNumber));
                         else
                             obj.projectInfo(fundingCounter+1).organization  = '';
                         end;
                         
                         potentialFundingGrantIdNodeArray = currentNode.getElementsByTagName('grantId');
                         if potentialFundingGrantIdNodeArray.getLength > 0
-                            obj.projectInfo(fundingCounter+1).grantId = obj.readStringFromNode(potentialFundingGrantIdNodeArray.item(0));
+                            obj.projectInfo(fundingCounter+1).grantId = readStringFromNode(potentialFundingGrantIdNodeArray.item(0));
                         else
                             obj.projectInfo(fundingCounter+1).grantId = '';
                         end;
                     end;
                 end;
-            else %project information has not been provided, we need to create the appropriate subfields though.
+            else % project information has not been provided, we need to create the appropriate subfields though.
                 obj.projectInfo = struct('organization', '', 'grantId', '');
             end;
-            
             
             
             % start tasks node
@@ -329,21 +325,21 @@ classdef essDocument
                         
                         potentialTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialTaskLabelNodeArray.getLength > 0
-                            obj.tasksInfo(taskCounter+1).taskLabel = obj.readStringFromNode(potentialTaskLabelNodeArray.item(0));
+                            obj.tasksInfo(taskCounter+1).taskLabel = readStringFromNode(potentialTaskLabelNodeArray.item(0));
                         else
                             obj.tasksInfo(taskCounter+1).taskLabel  = '';
                         end;
                         
                         potentialTaskTagNodeArray = currentNode.getElementsByTagName('tag');
                         if potentialTaskTagNodeArray.getLength > 0
-                            obj.tasksInfo(taskCounter+1).tag = obj.readStringFromNode(potentialTaskTagNodeArray.item(0));
+                            obj.tasksInfo(taskCounter+1).tag = readStringFromNode(potentialTaskTagNodeArray.item(0));
                         else
                             obj.tasksInfo(taskCounter+1).tag = '';
                         end;
                         
                         potentialTaskDescriptionNodeArray = currentNode.getElementsByTagName('description');
                         if potentialTaskDescriptionNodeArray.getLength > 0
-                            obj.tasksInfo(taskCounter+1).description = obj.readStringFromNode(potentialTaskDescriptionNodeArray.item(0));
+                            obj.tasksInfo(taskCounter+1).description = readStringFromNode(potentialTaskDescriptionNodeArray.item(0));
                         else
                             obj.tasksInfo(taskCounter+1).description = '';
                         end;
@@ -357,11 +353,11 @@ classdef essDocument
             currentNode = studyNode;
             potentialRecordingParameterSetsNodeArray = currentNode.getElementsByTagName('recordingParameterSets');
             if potentialRecordingParameterSetsNodeArray.getLength > 0
-                 currentNode = potentialRecordingParameterSetsNodeArray.item(0); % only use the first recordingParameterSets node
-                 
-                 potentialRecordingParameterSetNodeArray = currentNode.getElementsByTagName('recordingParameterSetLabel');
-                 if potentialRecordingParameterSetNodeArray.getLength > 0
-                     % go over all recording paramer sets
+                currentNode = potentialRecordingParameterSetsNodeArray.item(0); % only use the first recordingParameterSets node
+                
+                potentialRecordingParameterSetNodeArray = currentNode.getElementsByTagName('recordingParameterSet');
+                if potentialRecordingParameterSetNodeArray.getLength > 0
+                    % go over all recording paramer sets
                     for parameterSetCounter = 0:(potentialRecordingParameterSetNodeArray.getLength-1)
                         currentNode = potentialRecordingParameterSetNodeArray.item(parameterSetCounter); % select a parameter set and make it the current node.
                         
@@ -369,7 +365,7 @@ classdef essDocument
                         % read recordingParameterSetLabel
                         potentialrecordingParameterSetLabelNodeArray = currentNode.getElementsByTagName('recordingParameterSetLabel');
                         if potentialrecordingParameterSetLabelNodeArray.getLength > 0
-                            obj.recordingParameterSet(parameterSetCounter+1).recordingParameterSetLabel = obj.readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
+                            obj.recordingParameterSet(parameterSetCounter+1).recordingParameterSetLabel = readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
                         else
                             obj.recordingParameterSet(parameterSetCounter+1).recordingParameterSetLabel= '';
                         end;
@@ -381,94 +377,94 @@ classdef essDocument
                             currentNode = potentialChannelTypeNodeArray.item(0); % only use the first channelType node
                             
                             % go over modality nodes.
-                            potentialModalityNodeArray = currentNode.getElementsByTagName('modality'); 
+                            potentialModalityNodeArray = currentNode.getElementsByTagName('modality');
                             if potentialModalityNodeArray.getLength > 0
-                                 for modalityCounter = 0:(potentialModalityNodeArray.getLength-1)
-                                     currentNode = potentialModalityNodeArray.item(modalityCounter);
-                                     
-                                     % read modality/type
-                                     potentialTypeNodeArray = currentNode.getElementsByTagName('type');
-                                     if potentialTypeNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).type = obj.readStringFromNode(potentialTypeNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).type = '';
-                                     end;
-                                     
-                                     % read modality/samplingRate
-                                     potentialSamplingRateNodeArray = currentNode.getElementsByTagName('samplingRate');
-                                     if potentialSamplingRateNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).samplingRate = obj.readStringFromNode(potentialSamplingRateNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).samplingRate = '';
-                                     end;
-                                     
-                                     
-                                     % read modality/name
-                                     potentialNameNodeArray = currentNode.getElementsByTagName('name');
-                                     if potentialNameNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).name = obj.readStringFromNode(potentialNameNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).name = '';
-                                     end;
-                                     
-                                     % read modality/description
-                                     potentialDescriptionNodeArray = currentNode.getElementsByTagName('description');
-                                     if potentialDescriptionNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).description = obj.readStringFromNode(potentialDescriptionNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).description = '';
-                                     end;
-                                     
-                                     % read modality/startChannel
-                                     potentialStartChannelNodeArray = currentNode.getElementsByTagName('startChannel');
-                                     if potentialStartChannelNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).startChannel = obj.readStringFromNode(potentialStartChannelNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).startChannel = '';
-                                     end;
-                                     
-                                     % read modality/endChannel
-                                     potentialEndChannelNodeArray = currentNode.getElementsByTagName('endChannel');
-                                     if potentialEndChannelNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).endChannel = obj.readStringFromNode(potentialEndChannelNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).endChannel = '';
-                                     end;
-                                     
-                                  
-                                     % read modality/subjectInSessionNumber
-                                     potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('subjectInSessionNumber');
-                                     if potentialSubjectInSessionNumberNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).subjectInSessionNumber = obj.readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).subjectInSessionNumber = '';
-                                     end;
-                                     
-                                     % read modality/referenceLocation
-                                     potentialReferenceLocationNodeArray = currentNode.getElementsByTagName('referenceLocation');
-                                     if potentialReferenceLocationNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLocation = obj.readStringFromNode(potentialReferenceLocationNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLocation = '';
-                                     end;
-                                     
-                                     
-                                     % read modality/referenceLabel
-                                     potentialReferenceLabelNodeArray = currentNode.getElementsByTagName('referenceLabel');
-                                     if potentialReferenceLabelNodeArray.getLength > 0
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLabel = obj.readStringFromNode(potentialReferenceLabelNodeArray.item(0));
-                                     else
-                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter).referenceLabel = '';
-                                     end;
-                                     
-                                 end;
+                                for modalityCounter = 0:(potentialModalityNodeArray.getLength-1)
+                                    currentNode = potentialModalityNodeArray.item(modalityCounter);
+                                    
+                                    % read modality/type
+                                    potentialTypeNodeArray = currentNode.getElementsByTagName('type');
+                                    if potentialTypeNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).type = readStringFromNode(potentialTypeNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).type = '';
+                                    end;
+                                    
+                                    % read modality/samplingRate
+                                    potentialSamplingRateNodeArray = currentNode.getElementsByTagName('samplingRate');
+                                    if potentialSamplingRateNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).samplingRate = readStringFromNode(potentialSamplingRateNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).samplingRate = '';
+                                    end;
+                                    
+                                    
+                                    % read modality/name
+                                    potentialNameNodeArray = currentNode.getElementsByTagName('name');
+                                    if potentialNameNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).name = readStringFromNode(potentialNameNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).name = '';
+                                    end;
+                                    
+                                    % read modality/description
+                                    potentialDescriptionNodeArray = currentNode.getElementsByTagName('description');
+                                    if potentialDescriptionNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).description = readStringFromNode(potentialDescriptionNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).description = '';
+                                    end;
+                                    
+                                    % read modality/startChannel
+                                    potentialStartChannelNodeArray = currentNode.getElementsByTagName('startChannel');
+                                    if potentialStartChannelNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).startChannel = readStringFromNode(potentialStartChannelNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).startChannel = '';
+                                    end;
+                                    
+                                    % read modality/endChannel
+                                    potentialEndChannelNodeArray = currentNode.getElementsByTagName('endChannel');
+                                    if potentialEndChannelNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).endChannel = readStringFromNode(potentialEndChannelNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).endChannel = '';
+                                    end;
+                                    
+                                    
+                                    % read modality/subjectInSessionNumber
+                                    potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('subjectInSessionNumber');
+                                    if potentialSubjectInSessionNumberNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).subjectInSessionNumber = readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).subjectInSessionNumber = '';
+                                    end;
+                                    
+                                    % read modality/referenceLocation
+                                    potentialReferenceLocationNodeArray = currentNode.getElementsByTagName('referenceLocation');
+                                    if potentialReferenceLocationNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).referenceLocation = readStringFromNode(potentialReferenceLocationNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).referenceLocation = '';
+                                    end;
+                                    
+                                    
+                                    % read modality/referenceLabel
+                                    potentialReferenceLabelNodeArray = currentNode.getElementsByTagName('referenceLabel');
+                                    if potentialReferenceLabelNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).referenceLabel = readStringFromNode(potentialReferenceLabelNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).referenceLabel = '';
+                                    end;
+                                    
+                                end;
                             end;
                         end;
-                            
-                            
+                        
+                        
                     end;
-                 end;
-                 
+                end;
+                
             end;
             
             currentNode = studyNode;
@@ -486,14 +482,14 @@ classdef essDocument
                         % currentNode is now a single-session node.
                         potentialNumberNodeArray = currentNode.getElementsByTagName('number');
                         if potentialNumberNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).sessionNumber = obj.readStringFromNode(potentialNumberNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).sessionNumber = readStringFromNode(potentialNumberNodeArray.item(0));
                         else
                             obj.sessionTaskInfo(sessionCounter+1).sessionNumber= '';
                         end;
                         
                         potentialTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialTaskLabelNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).taskLabel = obj.readStringFromNode(potentialTaskLabelNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).taskLabel = readStringFromNode(potentialTaskLabelNodeArray.item(0));
                         else
                             obj.sessionTaskInfo(sessionCounter+1).taskLabel= '';
                         end;
@@ -501,14 +497,14 @@ classdef essDocument
                         
                         potentialPurposeNodeArray = currentNode.getElementsByTagName('purpose');
                         if potentialPurposeNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).purpose = obj.readStringFromNode(potentialPurposeNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).purpose = readStringFromNode(potentialPurposeNodeArray.item(0));
                         else
                             obj.sessionTaskInfo(sessionCounter+1).purpose= '';
                         end;
                         
                         potentialLabIdNodeArray = currentNode.getElementsByTagName('labId');
                         if potentialLabIdNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).labId = obj.readStringFromNode(potentialLabIdNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).labId = readStringFromNode(potentialLabIdNodeArray.item(0));
                         else
                             obj.sessionTaskInfo(sessionCounter+1).labId= '';
                         end;
@@ -516,11 +512,11 @@ classdef essDocument
                         
                         potentialChannelNodeArray = currentNode.getElementsByTagName('channels');
                         if potentialChannelNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).channels = obj.readStringFromNode(potentialChannelNodeArray.item(0));
+                            obj.sessionTaskInfo(sessionCounter+1).channels = readStringFromNode(potentialChannelNodeArray.item(0));
                         else
                             obj.sessionTaskInfo(sessionCounter+1).channels= '';
                         end;
-                                                
+                        
                         if str2num(obj.essVersion) <= 1 % for ESS 1.0
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
@@ -528,7 +524,7 @@ classdef essDocument
                                 % samling, a better way is to check all
                                 % samplig rates and create different
                                 % recodingParameter sets.
-                                obj.recordingParameterSet(1).modality(1).samplingRate = obj.readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
+                                obj.recordingParameterSet(1).modality(1).samplingRate = readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                             end;
                         end;
                         
@@ -540,7 +536,7 @@ classdef essDocument
                                 potentialEegRecordingNodeArray = currentNode.getElementsByTagName('eegRecording');
                                 for eegRecordingCounter = 0:(potentialEegRecordingNodeArray.getLength-1)
                                     if  potentialEegRecordingNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(eegRecordingCounter+1).filename = obj.readStringFromNode(potentialEegRecordingNodeArray.item(eegRecordingCounter));
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(eegRecordingCounter+1).filename = readStringFromNode(potentialEegRecordingNodeArray.item(eegRecordingCounter));
                                     end;
                                 end;
                             end;
@@ -555,7 +551,7 @@ classdef essDocument
                                     % inside each dataRecording
                                     potentialFilenameNodeArray = currentNode.getElementsByTagName('filename');
                                     if  potentialFilenameNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = obj.readStringFromNode(potentialFilenameNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = readStringFromNode(potentialFilenameNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = '';
                                     end;
@@ -563,25 +559,25 @@ classdef essDocument
                                     
                                     potentialStartDateNodeArray = currentNode.getElementsByTagName('startDateTime');
                                     if  potentialStartDateNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = obj.readStringFromNode(potentialStartDateNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = readStringFromNode(potentialStartDateNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = '';
                                     end;
                                     
                                     potentialrecordingParameterSetLabelNodeArray = currentNode.getElementsByTagName('recordingParameterSetLabel');
                                     if  potentialrecordingParameterSetLabelNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = obj.readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = readStringFromNode(potentialrecordingParameterSetLabelNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).recordingParameterSetLabel = '';
                                     end;
-                                                                        
+                                    
                                     potentialEventInstanceFileNodeArray = currentNode.getElementsByTagName('eventInstanceFile');
                                     if  potentialEventInstanceFileNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = obj.readStringFromNode(potentialEventInstanceFileNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = readStringFromNode(potentialEventInstanceFileNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = '';
                                     end;
-
+                                    
                                 end;
                             end;
                         end;
@@ -590,7 +586,7 @@ classdef essDocument
                         if potentialNotesNodeArray.getLength > 0
                             potentialNoteNodeArray = currentNode.getElementsByTagName('note');
                             if  potentialNoteNodeArray.getLength > 0
-                                obj.sessionTaskInfo(sessionCounter+1).note= obj.readStringFromNode(potentialNoteNodeArray.item(0));
+                                obj.sessionTaskInfo(sessionCounter+1).note= readStringFromNode(potentialNoteNodeArray.item(0));
                             else
                                 obj.sessionTaskInfo(sessionCounter+1).note= '';
                             end;
@@ -598,14 +594,14 @@ classdef essDocument
                             currentNode = potentialNotesNodeArray.item(0);
                             potentialLinkNameNodeArray = currentNode.getElementsByTagName('linkName');
                             if  potentialLinkNameNodeArray.getLength > 0
-                                obj.sessionTaskInfo(sessionCounter+1).linkName = obj.readStringFromNode(potentialLinkNameNodeArray.item(0)); % the if empty line
+                                obj.sessionTaskInfo(sessionCounter+1).linkName = readStringFromNode(potentialLinkNameNodeArray.item(0)); % the if empty line
                             else
                                 obj.sessionTaskInfo(sessionCounter+1).linkName= '';
                             end;
                             
                             potentialLinkNodeArray = currentNode.getElementsByTagName('link');
                             if  potentialLinkNodeArray.getLength > 0
-                                obj.sessionTaskInfo(sessionCounter+1).link  = obj.readStringFromNode(potentialLinkNodeArray.item(0));
+                                obj.sessionTaskInfo(sessionCounter+1).link  = readStringFromNode(potentialLinkNodeArray.item(0));
                             else
                                 obj.sessionTaskInfo(sessionCounter+1).link= '';
                             end;
@@ -623,91 +619,91 @@ classdef essDocument
                                 
                                 potentialSubjectLabIdNodeArray = currentNode.getElementsByTagName('labId');
                                 if potentialSubjectLabIdNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId = obj.readStringFromNode(potentialSubjectLabIdNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId = readStringFromNode(potentialSubjectLabIdNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).labId= '';
                                 end;
                                 
                                 potentialSubjectInSessionNumberNodeArray = currentNode.getElementsByTagName('inSessionNumber');
                                 if potentialSubjectInSessionNumberNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = obj.readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = readStringFromNode(potentialSubjectInSessionNumberNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).inSessionNumber = '';
                                 end;
                                 
                                 potentialGroupNodeArray = currentNode.getElementsByTagName('group');
                                 if potentialGroupNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group = obj.readStringFromNode(potentialGroupNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group = readStringFromNode(potentialGroupNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).group= '';
                                 end;
                                 
                                 potentialGenderNodeArray = currentNode.getElementsByTagName('gender');
                                 if potentialGenderNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender = obj.readStringFromNode(potentialGenderNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender = readStringFromNode(potentialGenderNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).gender= '';
                                 end;
                                 
                                 potentialYearOfBirthNodeArray = currentNode.getElementsByTagName('YOB');
                                 if potentialYearOfBirthNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB = obj.readStringFromNode(potentialYearOfBirthNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB = readStringFromNode(potentialYearOfBirthNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).YOB= '';
                                 end;
                                 
                                 potentialAgeNodeArray = currentNode.getElementsByTagName('age');
                                 if potentialAgeNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age = obj.readStringFromNode(potentialAgeNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age = readStringFromNode(potentialAgeNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).age= '';
                                 end;
                                 
                                 potentialHandNodeArray = currentNode.getElementsByTagName('hand');
                                 if potentialHandNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand = obj.readStringFromNode(potentialHandNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand = readStringFromNode(potentialHandNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hand= '';
                                 end;
                                 
                                 potentialVisionNodeArray = currentNode.getElementsByTagName('vision');
                                 if potentialVisionNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision = obj.readStringFromNode(potentialVisionNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision = readStringFromNode(potentialVisionNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).vision= '';
                                 end;
                                 
                                 potentialHearingNodeArray = currentNode.getElementsByTagName('hearing');
                                 if potentialHearingNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing = obj.readStringFromNode(potentialHearingNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing = readStringFromNode(potentialHearingNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).hearing= '';
                                 end;
                                 
                                 potentialHeightNodeArray = currentNode.getElementsByTagName('height');
                                 if potentialHeightNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height = obj.readStringFromNode(potentialHeightNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height = readStringFromNode(potentialHeightNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).height= '';
                                 end;
                                 
                                 potentialWeightNodeArray = currentNode.getElementsByTagName('weight');
                                 if potentialWeightNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight = obj.readStringFromNode(potentialWeightNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight = readStringFromNode(potentialWeightNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).weight= '';
                                 end;
                                 
                                 potentialChannelLocationsNodeArray = currentNode.getElementsByTagName('channelLocations');
                                 if potentialChannelLocationsNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations = obj.readStringFromNode(potentialChannelLocationsNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations = readStringFromNode(potentialChannelLocationsNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations= '';
                                 end;
                                 
                                 potentialChannelLocationTypeNodeArray = currentNode.getElementsByTagName('channelLocationType');
                                 if potentialChannelLocationTypeNodeArray.getLength > 0
-                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType = obj.readStringFromNode(potentialChannelLocationTypeNodeArray.item(0));
+                                    obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType = readStringFromNode(potentialChannelLocationTypeNodeArray.item(0));
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocationType= '';
                                 end;
@@ -716,14 +712,14 @@ classdef essDocument
                                 if potentialMedicationNodeArray.getLength > 0
                                     potentialCaffeineNodeArray = currentNode.getElementsByTagName('caffeine');
                                     if potentialCaffeineNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine = obj.readStringFromNode(potentialMedicationNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine = readStringFromNode(potentialMedicationNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.caffeine= '';
                                     end
                                     
                                     potentialAlcoholNodeArray = currentNode.getElementsByTagName('alcohol');
                                     if potentialAlcoholNodeArray.getLength > 0
-                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol = obj.readStringFromNode(potentialAlcoholNodeArray.item(0));
+                                        obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol = readStringFromNode(potentialAlcoholNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).medication.alcohol= '';
                                     end
@@ -743,9 +739,6 @@ classdef essDocument
                 
             end; %ends sessions node
             
-            
-            
-            
             currentNode = studyNode;
             %start event codes
             potentialEventCodesNodeArray = currentNode.getElementsByTagName('eventCodes');
@@ -761,14 +754,14 @@ classdef essDocument
                         
                         potentialCodeNodeArray = currentNode.getElementsByTagName('code');
                         if potentialCodeNodeArray.getLength > 0
-                            obj.eventCodesInfo(eventCodeCounter+1).code = obj.readStringFromNode(potentialCodeNodeArray.item(0));
+                            obj.eventCodesInfo(eventCodeCounter+1).code = readStringFromNode(potentialCodeNodeArray.item(0));
                         else
                             obj.eventCodesInfo(eventCodeCounter+1).code = '';
                         end;
                         
                         potentialCodeTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialCodeTaskLabelNodeArray.getLength > 0
-                            obj.eventCodesInfo(eventCodeCounter+1).taskLabel = obj.readStringFromNode(potentialCodeTaskLabelNodeArray.item(0));
+                            obj.eventCodesInfo(eventCodeCounter+1).taskLabel = readStringFromNode(potentialCodeTaskLabelNodeArray.item(0));
                         else
                             obj.eventCodesInfo(eventCodeCounter+1).taskLabel = '';
                         end;
@@ -781,21 +774,21 @@ classdef essDocument
                                 
                                 potentialConditionLabelArray = currentNode.getElementsByTagName('label');
                                 if potentialConditionLabelArray.getLength > 0
-                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).label = obj.readStringFromNode(potentialConditionLabelArray.item(0));
+                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).label = readStringFromNode(potentialConditionLabelArray.item(0));
                                 else
                                     obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).label = '';
                                 end;
                                 
                                 potentialConditionDescriptionArray = currentNode.getElementsByTagName('description');
                                 if potentialConditionDescriptionArray.getLength > 0
-                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).description = obj.readStringFromNode(potentialConditionDescriptionArray.item(0));
+                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).description = readStringFromNode(potentialConditionDescriptionArray.item(0));
                                 else
                                     obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).description = '';
                                 end;
                                 
                                 potentialConditionTagArray = currentNode.getElementsByTagName('tag');
                                 if potentialConditionTagArray.getLength > 0
-                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).tag = obj.readStringFromNode(potentialConditionTagArray.item(0));
+                                    obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).tag = readStringFromNode(potentialConditionTagArray.item(0));
                                 else
                                     obj.eventCodesInfo(eventCodeCounter+1).condition(codeConditionCounter+1).tag = '';
                                 end;
@@ -818,18 +811,18 @@ classdef essDocument
                 
                 potentialTotalSizeArray = currentNode.getElementsByTagName('totalSize');
                 if potentialTotalSizeArray.getLength > 0
-                    obj.summaryInfo.totalSize = obj.readStringFromNode(potentialTotalSizeArray.item(0));
+                    obj.summaryInfo.totalSize = readStringFromNode(potentialTotalSizeArray.item(0));
                 else isempty(obj.summaryInfo.totalSize)
                     obj.summaryInfo.totalSize= '';
                 end;
                 potentialAllSubjectsHealthyAndNormalArray = currentNode.getElementsByTagName('allSubjectsHealthyAndNormal');
                 if potentialAllSubjectsHealthyAndNormalArray.getLength > 0
-                    obj.summaryInfo.allSubjectsHealthyAndNormal = obj.readStringFromNode(potentialAllSubjectsHealthyAndNormalArray.item(0));
+                    obj.summaryInfo.allSubjectsHealthyAndNormal = readStringFromNode(potentialAllSubjectsHealthyAndNormalArray.item(0));
                 else
                     obj.summaryInfo.allSubjectsHealthyAndNorma= '';
                 end;
                 
-              
+                
                 currentNode = studyNode;
                 potentialLicenseNodeArray = currentNode.getElementsByTagName('license');
                 if potentialLicenseNodeArray.getLength > 0
@@ -837,7 +830,7 @@ classdef essDocument
                     obj.summaryInfo.license = strtrim(char(potentialLicenseNodeArray.item(0).getFirstChild.getData));
                     potentialLicenseTypeArray = currentNode.getElementsByTagName('type');
                     if potentialLicenseTypeArray.getLength > 0
-                        obj.summaryInfo.license.type = obj.readStringFromNode(potentialLicenseTypeArray.item(0));
+                        obj.summaryInfo.license.type = readStringFromNode(potentialLicenseTypeArray.item(0));
                     end;
                     if isempty(obj.summaryInfo.license.type)
                         obj.summaryInfo.license.type= '';
@@ -845,12 +838,12 @@ classdef essDocument
                     
                     potentialLicenseTextArray = currentNode.getElementsByTagName('text');
                     if potentialLicenseTextArray.getLength > 0
-                        obj.summaryInfo.license.text = obj.readStringFromNode(potentialLicenseTextArray.item(0));
+                        obj.summaryInfo.license.text = readStringFromNode(potentialLicenseTextArray.item(0));
                     end;
                     
                     potentialLicenseLinkArray = currentNode.getElementsByTagName('link');
                     if potentialLicenseLinkArray.getLength > 0
-                        obj.summaryInfo.license.link = obj.readStringFromNode(potentialLicenseLinkArray.item(0));
+                        obj.summaryInfo.license.link = readStringFromNode(potentialLicenseLinkArray.item(0));
                     end;
                     
                 end;
@@ -874,21 +867,21 @@ classdef essDocument
                         
                         potentialPublicationCitationNodeArray = currentNode.getElementsByTagName('citation');
                         if potentialPublicationCitationNodeArray.getLength > 0
-                            obj.publicationsInfo(publicationCounter+1).citation = obj.readStringFromNode(potentialPublicationCitationNodeArray.item(0));
+                            obj.publicationsInfo(publicationCounter+1).citation = readStringFromNode(potentialPublicationCitationNodeArray.item(0));
                         else
                             obj.publicationsInfo(publicationCounter+1).citation ='';
                         end;
                         
                         potentialPublicationDOINodeArray = currentNode.getElementsByTagName('DOI');
                         if potentialPublicationDOINodeArray.getLength > 0
-                            obj.publicationsInfo(publicationCounter+1).DOI = obj.readStringFromNode(potentialPublicationDOINodeArray.item(0));
+                            obj.publicationsInfo(publicationCounter+1).DOI = readStringFromNode(potentialPublicationDOINodeArray.item(0));
                         else
                             obj.publicationsInfo(publicationCounter+1).DOI = '';
                         end;
                         
                         potentialPublicationLinkNodeArray = currentNode.getElementsByTagName('link');
                         if potentialPublicationLinkNodeArray.getLength > 0
-                            obj.publicationsInfo(publicationCounter+1).link = obj.readStringFromNode(potentialPublicationLinkNodeArray.item(0));
+                            obj.publicationsInfo(publicationCounter+1).link = readStringFromNode(potentialPublicationLinkNodeArray.item(0));
                         else
                             obj.publicationsInfo(publicationCounter+1).link = '';
                         end;
@@ -916,14 +909,14 @@ classdef essDocument
                         %name is not showing up
                         potentialExperimenterNameNodeArray = currentNode.getElementsByTagName('name');
                         if potentialExperimenterNameNodeArray.getLength > 0
-                            obj.experimentersInfo(experimenterCounter+1).name = obj.readStringFromNode(potentialExperimenterNameNodeArray.item(0));
+                            obj.experimentersInfo(experimenterCounter+1).name = readStringFromNode(potentialExperimenterNameNodeArray.item(0));
                         else
                             obj.experimentersInfo(experimenterCounter+1).name = '';
                         end;
                         
                         potentialExperimenterRoleNodeArray = currentNode.getElementsByTagName('role');
                         if potentialExperimenterRoleNodeArray.getLength > 0
-                            obj.experimentersInfo(experimenterCounter+1).role = obj.readStringFromNode(potentialExperimenterRoleNodeArray.item(0));
+                            obj.experimentersInfo(experimenterCounter+1).role = readStringFromNode(potentialExperimenterRoleNodeArray.item(0));
                         else
                             obj.experimentersInfo(experimenterCounter+1) = '';
                         end;
@@ -945,20 +938,20 @@ classdef essDocument
                 currentNode = potentialContactNodeArray.item(0); % go inside the contact node
                 potentialContactNameNodeArray = currentNode.getElementsByTagName('name');
                 if potentialContactNameNodeArray.getLength > 0
-                    obj.contactInfo.name = obj.readStringFromNode(potentialContactNameNodeArray.item(0));
+                    obj.contactInfo.name = readStringFromNode(potentialContactNameNodeArray.item(0));
                 else
                     obj.contactInfo.name = '';
                 end;
                 
                 potentialContactPhoneNodeArray = currentNode.getElementsByTagName('phone');
                 if potentialContactPhoneNodeArray.getLength > 0
-                    obj.contactInfo.phone = obj.readStringFromNode(potentialContactPhoneNodeArray.item(0));
+                    obj.contactInfo.phone = readStringFromNode(potentialContactPhoneNodeArray.item(0));
                 else
                     obj.contactInfo.phone= '';
                 end;
                 potentialContactEmailNodeArray = currentNode.getElementsByTagName('email');
                 if potentialContactEmailNodeArray.getLength > 0
-                    obj.contactInfo.email = obj.readStringFromNode(potentialContactEmailNodeArray.item(0));
+                    obj.contactInfo.email = readStringFromNode(potentialContactEmailNodeArray.item(0));
                 else
                     obj.contactInfo.email= '';
                 end;
@@ -986,14 +979,14 @@ classdef essDocument
                 currentNode = potentialOrgNodeArray.item(theItemNumber);
                 potentialOrgNameNodeArray = currentNode.getElementsByTagName('name');
                 if potentialOrgNameNodeArray.getLength > 0
-                    obj.organizationInfo.name = obj.readStringFromNode(potentialOrgNameNodeArray.item(0));
+                    obj.organizationInfo.name = readStringFromNode(potentialOrgNameNodeArray.item(0));
                 else
                     obj.organizationInfo.name = '';
                 end;
                 
                 potentialOrganizationLogoNodeArray = currentNode.getElementsByTagName('logoLink');
                 if potentialOrganizationLogoNodeArray.getLength > 0
-                    obj.organizationInfo.logoLink = obj.readStringFromNode(potentialOrganizationLogoNodeArray.item(0));
+                    obj.organizationInfo.logoLink = readStringFromNode(potentialOrganizationLogoNodeArray.item(0));
                 else
                     obj.organizationInfo.logoLink ='';
                 end;
@@ -1005,7 +998,7 @@ classdef essDocument
             currentNode = studyNode;
             potentialCopyrightNodeArray = currentNode.getElementsByTagName('copyright');
             if potentialCopyrightNodeArray.getLength > 1
-                obj.copyrightInfo = obj.readStringFromNode(potentialCopyrightNodeArray.item(0));
+                obj.copyrightInfo = readStringFromNode(potentialCopyrightNodeArray.item(0));
             else
                 obj.copyrightInfo = '';
             end;%end copyright Info
@@ -1013,10 +1006,14 @@ classdef essDocument
             currentNode = studyNode;
             potentialIRBNodeArray = currentNode.getElementsByTagName('IRB');
             if potentialIRBNodeArray.getLength > 0
-                obj.irbInfo = obj.readStringFromNode(potentialIRBNodeArray.item(0));
+                obj.irbInfo = readStringFromNode(potentialIRBNodeArray.item(0));
             else
                 obj.irbInfo = '';
             end;
+            
+            % sort data recordings for each (session, task) tuple by time
+            % (startDateTime)
+            obj = sortDataRecordingsByStartTime(obj);
             
         end;
         
@@ -1097,11 +1094,11 @@ classdef essDocument
                 
                 
                 for j=1:length(obj.recordingParameterSet(i).modality)
-                    % create modality  node 
+                    % create modality  node
                     modalityElement = docNode.createElement('modality');
                     modalityRootNode = channelTypeRootNode.appendChild(modalityElement);
                     
-                    % create modality/type  node                   
+                    % create modality/type  node
                     typeElement = docNode.createElement('type');
                     typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
                     modalityRootNode.appendChild(typeElement);
@@ -1115,7 +1112,7 @@ classdef essDocument
                     nameElement = docNode.createElement('name');
                     nameElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).name));
                     modalityRootNode.appendChild(nameElement);
-   
+                    
                     % create modality/description node
                     descriptionElement = docNode.createElement('description');
                     descriptionElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).description));
@@ -1154,7 +1151,7 @@ classdef essDocument
             
             
             sessionsElement = docNode.createElement('sessions');
-            sessionsRootNode = docRootNode.appendChild(sessionsElement);            
+            sessionsRootNode = docRootNode.appendChild(sessionsElement);
             
             for i=1:length(obj.sessionTaskInfo)
                 sessionElement = docNode.createElement('session');
@@ -1245,7 +1242,7 @@ classdef essDocument
                     subjectChannelLocationTypeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocationType));
                     subjectRootNode.appendChild(subjectChannelLocationTypeElement);
                 end;
-
+                
                 % ToDo: take care of channel the same way as eegSampling
                 % rate
                 notesElement = docNode.createElement('notes');
@@ -1351,7 +1348,7 @@ classdef essDocument
             
             summaryElement = docNode.createElement('summary');
             summaryRootNode=docRootNode.appendChild(summaryElement);
-                        
+            
             summaryTotalSizeElement = docNode.createElement('totalSize');
             summaryTotalSizeElement.appendChild(docNode.createTextNode(obj.summaryInfo.totalSize));
             summaryRootNode.appendChild(summaryTotalSizeElement);
@@ -1451,6 +1448,732 @@ classdef essDocument
             docNode.insertBefore(proc, docNode.getFirstChild());
             
             xmlwrite(obj.essFilePath, docNode);
+        end;
+        
+        function [obj, issue]= validate(obj, fixIssues)
+            
+            function itIs = isAvailable(inputString) % the inut string has actual content (not just an empty space, - , or NA for not available/applicable)
+                inputString = strtrim(inputString);
+                itIs = ~isempty(inputString) && ~strcmpi(inputString, 'NA') && ~strcmp(inputString, '-');
+            end
+            
+            function itIs = isProperNumber(inputString, mustBeInteger, minValue, allowedUnits)
+                % check to see if the input value is a valid number. It can
+                % have a unit too, e.g. 25 Hz or 25Hz
+                
+                if nargin < 2
+                    mustBeInteger = false;
+                end;
+                
+                if nargin < 3
+                    minValue = -Inf;
+                end;
+                
+                if nargin < 4
+                    allowedUnits = {};
+                end;
+                
+                inputString = strtrim(inputString);
+                
+                % separate the unit part
+                
+                allowedUnitsLenght = [];
+                for iii=1:length(allowedUnits)
+                    allowedUnitsLenght(iii) = length(allowedUnits{iii});
+                end;
+                
+                % sort based on lenth so match firt by the longest
+                [dummy ord] = sort(allowedUnitsLenght, 'descend');
+                allowedUnits  = allowedUnits(ord);
+                
+                for iii=1:length(allowedUnits)
+                    id = strfind(lower(inputString), lower(allowedUnits{iii}));
+                    if ~isempty(id)
+                        inputString = inputString(1:id-1);
+                    end;
+                end;
+                
+                asNumber = str2double(strtrim(inputString));
+                if length(asNumber) > 1 || isnan(asNumber) || isempty(asNumber)
+                    itIs = false;
+                else
+                    itIs = true;
+                    
+                    if asNumber < minValue
+                        itIs = false;
+                    end;
+                    
+                    if mustBeInteger && round(asNumber) ~= asNumber
+                        itIs = false;
+                    end;
+                end;
+                
+            end
+            
+            if nargin < 2
+                fixIssues = true;
+            end;
+            
+            issue = []; % a structure with description and howItWasFixed fields.
+            
+            if ~isAvailable(obj.studyTitle)
+                issue(end+1).description = 'Study title is not available. This value is required.';
+            end;
+            
+            if ~isAvailable(obj.studyShortDescription)
+                issue(end+1).description = 'Study Short Description is not available. This value is required.';
+            end;
+            
+            if ~isAvailable(obj.studyDescription)
+                issue(end+1).description = 'Study Description is not available. This value is required.';
+            end;
+            
+            if length(obj.studyUuid) < 10 % uuid shoudllbe at least 10 random characters
+                issue(end+1).description = 'UUID is empty or less than 10 (random) characeters.';
+                if fixIssues
+                    obj.studyUuid = char(java.util.UUID.randomUUID);
+                    issue(end).howItWasFixed = 'A new UUID set.';
+                end;
+            end;
+            
+            
+            if ~isAvailable(obj.rootURI) % rootURI shoudl be . or some other URI
+                issue(end+1).description = 'root URI is not available.';
+                
+                if fixIssues
+                    obj.rootURI = '.';
+                    issue(end).howItWasFixed = 'Root URI is set to ''.'' .';
+                end;
+            end;
+            
+            % make sure there is at least one recording parameter set
+            if isempty(obj.recordingParameterSet)
+                issue(end+1).description = 'There has to be at least one Recording Parameter Set defined.';
+            end;
+            
+            % validate task information and find out how many tasks are present
+            numberOfTasks = max(1, length(obj.tasksInfo));
+            taskLabels = {};
+            for i=1:length(obj.tasksInfo)
+                taskLabels{end+1} = obj.tasksInfo(i).taskLabel;
+                
+                if ~isAvailable(obj.tasksInfo(i).taskLabel)
+                    issue(end+1).description = sprintf('Task label is not available for task %d.', i);
+                end;
+                
+                if ~isAvailable(obj.tasksInfo(i).description)
+                    issue(end+1).description = sprintf('Task description is not available for task %d.', i);
+                end;
+            end;
+            
+            
+            % validate session values
+            sessionNumbers = [];
+            for i=1:length(obj.sessionTaskInfo)
+                sessionNumber  = str2double(obj.sessionTaskInfo(i).sessionNumber);
+                % session numbers must be an integer number
+                if isnan(sessionNumber) || round(sessionNumber) ~= sessionNumber || sessionNumber < 1
+                    issue(end+1).description = sprintf('Sesion number in sessionTaskInfo(%d).sessionNumber is not a positive integer.', i); %#ok<AGROW>
+                    if fixIssues
+                        obj.sessionTaskInfo(i).sessionNumber = num2str(i);
+                        issue(end).howItWasFixed = sprintf('Session Number of ''%d'' assigned to the item.', i);
+                        numberOfFixedIssues = numberOfFixedIssues + 1;
+                    end;
+                else
+                    sessionNumbers = [sessionNumbers sessionNumber];
+                end;
+                
+                % validate subject existence
+                if isempty(obj.sessionTaskInfo(i).subject)
+                    issue(end+1).description = sprintf('Sesion %s does not have any subjects.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                else % check if inSessionNumber is set for all subejcts in the session
+                    for j=1:length(obj.sessionTaskInfo(i).subject)
+                        if ~isAvailable(obj.sessionTaskInfo(i).subject(j).inSessionNumber)
+                            issue(end+1).description =  sprintf('Subject %d of sesion %s does not an inSessionNumber.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            
+                            if fixIssues && length(obj.sessionTaskInfo(i).subject) == 1
+                                issue(end).howItWasFixed = 'inSessionNumber was assigned to 1';
+                            end;
+                        end;
+                    end;
+                end;
+                
+                % validate th existence of valid data recordings for the session
+                if isempty(obj.sessionTaskInfo(i).dataRecording)
+                    issue(end+1).description = sprintf('Sesion %s does not have any data recording.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                else
+                    for j=1:length(obj.sessionTaskInfo(i).dataRecording)
+                        
+                        % check filename
+                        if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).filename)
+                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a filename.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                        else % file has to be found according to ESS convention
+                            
+                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber);
+                            
+                            nextToXMLFilePath = [nextToXMLFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
+                            fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
+                            
+                            if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
+                                issue(end+1).description = [sprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
+                                issue(end).issueType = 'missing file';
+                            end;
+                        end;
+                        
+                        % check eventInstanceFile
+                        if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile)
+                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                        else % file has to be found according to ESS convention
+                            fullEssFilePath = [obj.rootURI filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
+                            if ~exist(fullEssFilePath, 'file')
+                                issue(end+1).description = [sprintf('Event Instance file specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find ', j, obj.sessionTaskInfo(i).sessionNumber) fullEssFilePath '.'];
+                                issue(end).issueType = 'missing file';
+                            end;
+                        end;
+                        
+                        % check startDateTime to be in ISO 8601 format
+                        dateTime = strtrim(obj.sessionTaskInfo(i).dataRecording(j).startDateTime);
+                        if isempty(datenum8601(dateTime))
+                            issue(end+1).description =  sprintf('startDateTime specified in data recoding %d of sesion number %s does not have a valid ISO 8601 Date String.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            
+                            dateTimeIso8601 = [];
+                            try
+                                dateNumber = datenum(dateTime);
+                                dateTimeIso8601 = datestr(dateNumber);
+                            catch e
+                            end;
+                            
+                            if ~isempty(dateTimeIso8601)
+                                issue(end).howItWasFixed = [dateTime ' changed to ' dateTimeIso8601];
+                            end;
+                            
+                        end;
+                        
+                        % make sure a valid recordingParameterSetLabel is assigned
+                        % for each recording
+                        if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
+                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a Recording Parameterset Label.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                        else % file has to be found according to ESS convention
+                            % check to see if the label matches any of the
+                            % labels in recordingParameterSet
+                            matchFound = false;
+                            for k=1:length(obj.recordingParameterSet)
+                                if strcmpi(obj.recordingParameterSet(k).recordingParameterSetLabel, obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
+                                    matchFound = true;
+                                    break;
+                                end;
+                            end;
+                            
+                            if ~matchFound
+                                issue(end+1).description = sprintf('Recording parameter set label ''%s'' defined in Data recoding %d of sesion number %s does not match any labels in recordingParameterSet', obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel, j, obj.sessionTaskInfo(i).sessionNumber );
+                            end;
+                            
+                        end;
+                        
+                    end;
+                end;
+                
+                
+                % validate the task label in the session
+                if numberOfTasks > 1 && ~isAvailable(obj.sessionTaskInfo(i).taskLabel)
+                    issue(end+1).description = sprintf('The study has more than one task but the task label is not available for sesion number %d', i);
+                else
+                    if ~ismember(obj.sessionTaskInfo(i).taskLabel, taskLabels)
+                        issue(end+1).description = sprintf('The task label %s in session number %d does not match defined tasks.', obj.sessionTaskInfo(i).taskLabel, i);
+                    end;
+                end;
+                
+                
+            end;
+            
+            % check to see if session numbers are from 1:N (no missing
+            % numbers)
+            missingSessionNumber = setdiff(1:max(sessionNumbers), unique(sessionNumbers));
+            if ~isempty(missingSessionNumber)
+                issue(end+1).description = sprintf('Some session numbers are missing. These numbers have to be from 1 up to the number of sesssions.\n Here are the missing numbers: %s.', num2str(missingSessionNumber));
+            end;
+            
+            % validating recordingParameterSet
+            if isempty(obj.recordingParameterSet)
+                issue(end+1).description = sprintf('There is no recording parameter set defined. You need to at least have on ene of these to hold number of EEG channels, etc.');
+            else
+                for i=1:length(obj.recordingParameterSet)
+                    if ~isAvailable(obj.recordingParameterSet(i).recordingParameterSetLabel)
+                        issue(end+1).description = sprintf('The label of recording parameter set %d is empty.', i);
+                    end;
+                    
+                    if isempty(obj.recordingParameterSet(i).modality)
+                        issue(end+1).description = sprintf('There are no modalities defined for recording parameter set %d (labeled ''%s'')', i, obj.recordingParameterSet(i).recordingParameterSetLabel);
+                    else
+                        for j=1:length(obj.recordingParameterSet(i).modality)
+                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).type)
+                                issue(end+1).description = sprintf('The type of modality %d of recording parameter set %d is empty.', j, i);
+                            end;
+                            
+                            % we need sampling rate at least for EEG
+                            if strcmpi(obj.recordingParameterSet(i).modality(j).type, 'EEG')
+                                if ~isProperNumber(obj.recordingParameterSet(i).modality(j).samplingRate, false, 0, {'Hz' 'hz' 'HZ'})
+                                    issue(end+1).description = sprintf('Sampling rate value of EEG (modality %d) in recording parameter set %d is empty or invalid (it is ''%s'').', j, i, obj.recordingParameterSet(i).modality(j).samplingRate);
+                                end;
+                                
+                                % Reference location is needed for EEG
+                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).referenceLocation)
+                                    issue(end+1).description = sprintf('Refernce location of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                end;
+                            end;
+                            
+                            % start channel
+                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).startChannel)
+                                issue(end+1).description = sprintf('Start channel of modality %d of recording parameter set %d is empty.', j, i);
+                            end;
+                            
+                            % end channel
+                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).endChannel)
+                                issue(end+1).description = sprintf('End channel of modality %d of recording parameter set %d is empty.', j, i);
+                            end;
+                            
+                            % we need a description when data type is not any of
+                            % EEG, Mocap, or Gaze
+                            
+                            if ~ismember(lower(obj.recordingParameterSet(i).modality(j).type), {'eeg', 'mocap', 'gaze'}) ...
+                                    && ~isAvailable(obj.recordingParameterSet(i).modality(j).description)
+                                issue(end+1).description = sprintf('Description is missing for type %s in modality %d of recording parameter set %d. \n     A description is required for any type other than EEG, Mocap and Gaze.', obj.recordingParameterSet(i).modality(j).type, j, i);
+                            end;
+                            
+                        end;
+                    end;
+                end;
+            end;
+            
+            if isempty(obj.eventCodesInfo)
+                issue(end+1).description = sprintf('No event code information is provided.');
+            else
+                for i=1:length(obj.eventCodesInfo)
+                    if ~isAvailable(obj.eventCodesInfo(i).code)
+                        issue(end+1).description = sprintf('Event code for record %d is missing.', i);
+                    end;
+                    
+                    % confirmity with tasks
+                    if numberOfTasks > 1 && ~isAvailable(obj.eventCodesInfo(i).taskLabel)
+                        issue(end+1).description = sprintf('The study has more than one task but there is no task label defined for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
+                    end;
+                    
+                    if isAvailable(obj.eventCodesInfo(i).taskLabel) && ~ismember(lower(obj.eventCodesInfo(i).taskLabel), lower(taskLabels))
+                        issue(end+1).description = sprintf('Task label %s defined for event code %s in record %d does not have any corresponding task definition.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code, i);
+                    end;
+                    
+                    if isempty(obj.eventCodesInfo(i).condition)
+                        issue(end+1).description = sprintf('Condition information is missing for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
+                    else
+                        for j=1:length(obj.eventCodesInfo(i).condition)
+                            if ~(isAvailable(obj.eventCodesInfo(i).condition(j).label) || isAvailable(obj.eventCodesInfo(i).condition(j).description) || isAvailable(obj.eventCodesInfo(i).condition(j).tag))
+                                issue(end+1).description = sprintf('Condition information is missing for condition %d of event code %s in record %d.', obj.eventCodesInfo(i).code, j, i);
+                            end;
+                        end;
+                    end;
+                    
+                end;
+                
+                if ~isAvailable(obj.summaryInfo.allSubjectsHealthyAndNormal)
+                    issue(end+1).description = sprintf('You need to specify whether all subjects are healthy and normal in the Summary Information');
+                else
+                    if ~ismember(lower(obj.summaryInfo.allSubjectsHealthyAndNormal), {'yes', 'no'})
+                        issue(end+1).description = sprintf('The value of allSubjectsHealthyAndNormal has to be either ''Yes'' or ''No''.');
+                        if fixIssues && ismember(lower(obj.summaryInfo.allSubjectsHealthyAndNormal), {'y', 'n', 'true', 'false', 't', 'f'})
+                            originalValue = obj.summaryInfo.allSubjectsHealthyAndNormal;
+                            switch lower(obj.summaryInfo.allSubjectsHealthyAndNormal)
+                                case {'y', 'true', 't'}
+                                    obj.summaryInfo.allSubjectsHealthyAndNormal = 'Yes';
+                                case {'n', 'false', 'f'}
+                                    obj.summaryInfo.allSubjectsHealthyAndNormal = 'No';
+                            end;
+                            
+                            issue(end).howItWasFixed = [originalValue ' interpreted as ' obj.summaryInfo.allSubjectsHealthyAndNormal ' and placed in the field.'];
+                        end;
+                    end;
+                end;
+                
+                if ~isAvailable(obj.summaryInfo.totalSize) || ~isProperNumber(obj.summaryInfo.totalSize, false, 0, {'Mb' 'GB' 'Gbytes' 'giga bytes' 'gbs' 'bytes' 'KB' 'kilo bytes' 'kilo byte' 'byte' 'kbs'})
+                    issue(end+1).description = sprintf('Total Size value specified in Summary Information is missing or not valid.');
+                    % ToDo: add automatic calculation of size code here
+                end;
+                
+            end;
+            
+            
+            % make sure the fields exist
+            if ~isfield(issue, 'howItWasFixed')
+                issue(1).howItWasFixed = [];
+            end;
+            
+            if ~isfield(issue, 'issueType')
+                issue(1).issueType = [];
+            end;
+            
+            fprintf('Fixed issues:');
+            numberOfFixedIssues = 0;
+            for i=1:length(issue)
+                if ~isempty(issue(i).howItWasFixed)
+                    numberOfFixedIssues = numberOfFixedIssues + 1;
+                    fprintf('%d - %s\n', numberOfFixedIssues, issue(i).description);
+                    fprintf('    Fixed: %s\n', issue(i).howItWasFixed);
+                end;
+            end;
+            
+            if numberOfFixedIssues == 0
+                fprintf(' None.\n');
+            end;
+            
+            % display fixed and outstanding issues
+            fprintf('Outstanding issues:\n');
+            
+            fprintf('- Missing Files\n');
+            numberOfMissingFileIssues = 0;
+            for i=1:length(issue)
+                if isempty(issue(i).howItWasFixed) && strcmpi(issue(i).issueType, 'missing file');
+                    numberOfMissingFileIssues = numberOfMissingFileIssues + 1;
+                    fprintf('  %d - %s\n', numberOfMissingFileIssues, issue(i).description);
+                end;
+            end;
+            
+            if numberOfMissingFileIssues == 0
+                fprintf('   None.\n');
+            end;
+            
+            fprintf('- ESS XML\n');
+            numberOfXMLIssues = 0;
+            for i=1:length(issue)
+                if isempty(issue(i).howItWasFixed) && ~strcmpi(issue(i).issueType, 'missing file');
+                    numberOfXMLIssues = numberOfXMLIssues + 1;
+                    fprintf('  %d - %s\n', numberOfXMLIssues, issue(i).description);
+                end;
+            end;
+            
+        end;
+        
+        function obj = sortDataRecordingsByStartTime(obj)
+            % sort data recordings according to their startDateTime
+            for i = 1:length(obj.sessionTaskInfo)
+                
+                for j=1:length(obj.sessionTaskInfo(i).dataRecording)
+                    serialDateNumberForRecording = datenum8601(obj.sessionTaskInfo(i).dataRecording(j).startDateTime);
+                    if isempty(serialDateNumberForRecording)
+                        serialDateNumberForRecording = 0; % assume it is the earliest
+                    end;
+                    serialDateNumber(j) = serialDateNumberForRecording;
+                end;
+                
+                [dummy ord] = sort(serialDateNumber, 'ascend');
+                obj.sessionTaskInfo(i).dataRecording = obj.sessionTaskInfo(i).dataRecording(ord);
+            end;
+        end;
+        
+        function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
+            % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
+            
+            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber);
+            
+            if nargin < 4 % use the ESS convention folder location if none is provided.
+                filePath = fullEssFolder;
+                
+                if ~exist(fullEssFolder, 'dir')
+                    mkdir(fullEssFolder);
+                end;
+            end;
+            
+            if nargin < 5 % use ESS convention event instance file if no filename is provided.
+                % form subjectInSessionNumber
+                id = strcmpi(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).recordingParameterSetLabel, {obj.recordingParameterSet.recordingParameterSetLabel});
+                subjectInSessionNumberCell = setdiff(unique({obj.recordingParameterSet(id).modality.subjectInSessionNumber}), {'', '-', 'NA'});
+                subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
+                
+                
+                fileName = obj.essConventionFileName('event', obj.studyTitle, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
+                    subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber);
+            end;
+            
+            fullFilePath = [filePath filesep fileName];
+            
+            EEG = [];
+            for i=1:length(allSearchFolders)
+                if isempty(EEG)
+                    try
+                        % ToDo: use io_loadset here to load any file type and not just
+                        % .set
+                        EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
+                    catch
+                    end;
+                end;
+            end;
+            
+            studyEventCode = {obj.eventCodesInfo.code};
+            studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
+            
+            
+            studyEventCodeHedString = {};
+            for i = 1:length(obj.eventCodesInfo)
+                studyEventCodeHedString{i} = obj.eventCodesInfo(i).condition.tag;
+                
+                % add tags for label and description if they do not already exist
+                hedTags = strtrim(strsplit(studyEventCodeHedString{i}, ','));
+                labelTagExists = strfind(lower(hedTags), 'event/label/');
+                descriptionTagExists = strfind(lower(hedTags), 'event/description/');
+                
+                if all(cellfun(@isempty, labelTagExists))
+                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Label/' obj.eventCodesInfo(i).condition.label];
+                end;
+                
+                if all(cellfun(@isempty, descriptionTagExists))
+                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Description/' obj.eventCodesInfo(i).condition.description];
+                end;
+                
+            end;
+            
+            currentTask = obj.sessionTaskInfo(sessionTaskNumber).taskLabel;
+            currentTaskMask = strcmp(currentTask, studyEventCodeTaskLabel);
+            
+            for i=1:length(EEG.event)
+                type = EEG.event(i).type;
+                if isnumeric(type)
+                    type = num2str(type);
+                end;
+                eventType{i} = type;
+                eventLatency(i) = EEG.event(i).latency / EEG.srate;
+                
+                id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
+                eventHedString{i} = studyEventCodeHedString{id};
+            end;
+            
+            fid = fopen(fullFilePath, 'w');
+            for i=1:length(eventType)
+                fprintf(fid, '%s\t%s\t%s', eventType{i}, num2str(eventLatency(i)), eventHedString{i});
+                
+                if i<length(eventType)
+                    fprintf(fid, '\n');
+                end;
+            end;
+            
+            fclose(fid);
+            
+            [pathstr,name,ext]  = fileparts(fullFilePath);
+            obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile = [name ext];
+        end;
+        
+        function [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber)
+            % look both next to the ESS file and in the ESS
+            % convention location for data recoording and event instance
+            % files.
+            
+            if isnumeric(sessionNumber)
+                sessionNumber = num2str(sessionNumber);
+            end;
+            
+            essFileFolder = fileparts(obj.essFilePath);
+            
+            if isempty(obj.rootURI)
+                rootFolder = essFileFolder;
+            elseif obj.rootURI(1) == '.'
+                rootFolder = [essFileFolder filesep obj.rootURI(2:end)];
+            end;
+            
+            % look both next to the ESS file and in the ESS
+            % convention location for data recoording
+            % files.
+            nextToXMLFolder = rootFolder;
+            fullEssFolder = [rootFolder filesep 'session' filesep sessionNumber];
+            
+            allSearchFolders = {nextToXMLFolder fullEssFolder};
+        end;
+        
+        function createEssConventionFolder(obj, essFolder)
+            mkdir(essFolder);
+            mkdir([essFolder filesep 'session']);
+            mkdir([essFolder filesep 'publications']);
+            
+            % find the number of session from number of sessionTasks
+            sessionNumber = {obj.sessionTaskInfo.sessionNumber};
+            uniqueSessionNumber = unique(sessionNumber);
+            for i=1:length(uniqueSessionNumber)
+                mkdir([essFolder filesep 'session' filesep uniqueSessionNumber{i}]);
+            end;
+            
+            % copy and rename the data recording files
+            essFileFolder = fileparts(obj.essFilePath);
+            
+            if isempty(obj.rootURI)
+                rootFolder = essFileFolder;
+            elseif obj.rootURI(1) == '.'
+                rootFolder = [essFileFolder filesep obj.rootURI(2:end)];
+            end;
+            
+            obj = sortDataRecordingsByStartTime(obj);
+            
+            progress('init', 'Copying data recording and event instance files.');
+            typeOfFile = {'eeg' 'event'};
+            for i = 1:length(obj.sessionTaskInfo)
+                progress(i/length(obj.sessionTaskInfo), sprintf('Copying files for session-task %d of %d',i, length(obj.sessionTaskInfo)));
+                
+                for j=1:length(obj.sessionTaskInfo(i).dataRecording)
+                    
+                    for k =1:length(typeOfFile)
+                        
+                        switch typeOfFile{k}
+                            case 'eeg'
+                                fileNameFromObj = obj.sessionTaskInfo(i).dataRecording(j).filename;
+                            case 'event'
+                                fileNameFromObj = obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile;
+                        end;
+                        
+                        
+                        nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
+                        fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                        
+                        if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
+                            fileFinalPath = fullEssFilePath;
+                        elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
+                            fileFinalPath = nextToXMLFilePath;
+                        elseif ~isempty(fileNameFromObj)
+                            fileFinalPath = [];
+                            fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                            fprintf('You might want to run validate() routine.\n');
+                        else % the file was empty
+                            fileFinalPath = [];
+                            if strcmpi(typeOfFile{k}, 'eeg')
+                                fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                                fprintf('You might want to run validate() routine.\n');
+                            else % event
+                                fprintf('Event Instance file for for data recoding %d of sesion number %s is not specified.\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                                fprintf('Will attempt to create it from the data recording file.\n');
+                            end;
+                        end;
+                        
+                        % either the eeg file should exist or an empty
+                        % event instance file is specified and needs to be
+                        % created from a data recording file.
+                        if ~isempty(fileFinalPath) || (isempty(fileNameFromObj) && strcmpi(typeOfFile{k}, 'event'))
+                            essConventionfolder = [filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber];
+                            
+                            switch typeOfFile{k}
+                                case 'eeg'
+                                    [dummy1 dummy2 extension] = fileparts(fileFinalPath);
+                                case 'event'
+                                    extension = '.tsv';
+                            end;
+                            
+                            % form subjectInSessionNumber
+                            id = strcmpi(obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel, {obj.recordingParameterSet.recordingParameterSetLabel});
+                            subjectInSessionNumberCell = setdiff(unique({obj.recordingParameterSet(id).modality.subjectInSessionNumber}), {'', '-', 'NA'});
+                            subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
+                            
+                            % copy the data recording file
+                            filenameInEss = obj.essConventionFileName(typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, '', extension);
+                            
+                            if exist(fileFinalPath, 'file')
+                                copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
+                            else                               
+                                switch typeOfFile{k}
+                                    case 'eeg'
+                                        fprintf('Copy failed: file %s does not exist.\n', fileFinalPath);
+                                    case 'event'
+                                        obj = writeEventInstanceFile(obj, i, j, [essFolder filesep essConventionfolder]);
+                                end;                                                                
+                            end;
+                        end;
+                    end;
+                end;
+            end;
+            
+            % write the XML file
+            obj.write([essFolder filesep 'study_description.xml']);
+            
+            % copy static files (assets)
+            thisClassFilenameAndPath = mfilename('fullpath');
+            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+            
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'xml_style.xsl'], [essFolder filesep 'xml_style.xsl']);
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'Readme.txt'], [essFolder filesep 'Readme.txt']);
+            
+            % if license if CC0, copy the license file into the folder.
+            if strcmpi(obj.summaryInfo.license.type, 'cc0')
+                copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [essFolder filesep 'License.txt']);
+            end;
+            
+        end;
+        
+    end;
+    methods (Static)
+        function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
+            
+            if ~ismember(lower(eegOrEvent), {'eeg', 'event'})
+                error('eegOrEvent (first) input variable has to be either ''eeg'' or ''event''.');
+            end;
+            
+            % replace spaces in study title with underlines
+            studyTitle(studyTitle == ' ') = '_';
+            
+            if ~ischar(sessionNumber)
+                sessionNumber = num2str(sessionNumber);
+            end;
+            
+            if ~ischar(subjectInSessionNumber)
+                subjectInSessionNumber = num2str(subjectInSessionNumber);
+            end;
+            
+            if ~ischar(recordingNumber)
+                recordingNumber = num2str(recordingNumber);
+            end;
+            
+            % always use tsv extension for event file
+            eegOrEvent = lower(eegOrEvent);
+            if strcmp(eegOrEvent, 'event');
+                extension = 'tsv';
+            end;
+            
+            if extension(1) == '.'
+                extension = extension(2:end);
+            end;
+            
+            part1 = [eegOrEvent '_' studyTitle '_session_' sessionNumber '_subject_' subjectInSessionNumber '_task_' taskLabel];
+            part2 = ['_recording_' recordingNumber '.' extension];
+            
+            if nargin > 6 && ~isempty(freePart) % freePart exists
+                name = [part1  '_' freePart part2];
+            else
+                name = [part1 part2];
+            end;
+        end;
+        
+        function itMatches = fileNameMatchesEssConvention(name, eegOrEvent, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, recordingNumber)
+            
+            % replace spaces in study title with underlines
+            studyTitle(studyTitle == ' ') = '_';
+            
+            if ~ischar(sessionNumber)
+                sessionNumber = num2str(sessionNumber);
+            end;
+            
+            if ~ischar(subjectInSessionNumber)
+                subjectInSessionNumber = num2str(subjectInSessionNumber);
+            end;
+            
+            if ~ischar(recordingNumber)
+                recordingNumber = num2str(recordingNumber);
+            end;
+            
+            extension = name(end-2:end);
+            if strcmpi(eegOrEvent, 'event') && ~strcmpi(extension, 'tsv')
+                itMatches = false;
+                fprintf('The only accepted extension of Event Instance file is .tsv.\n');
+                return;
+            end;
+            
+            [dummyName, part1, part2]= essDocument.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, recordingNumber, '', extension);
+            
+            itMatches = length(name)>=length(dummyName) && strcmp(name(1:length(part1)), part1) && strcmp(name((end - length(part2)+1):end), part2);
         end;
     end;
 end
