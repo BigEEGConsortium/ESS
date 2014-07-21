@@ -2070,8 +2070,37 @@ classdef essDocument
                             subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
                             
                             % copy the data recording file
-                            filenameInEss = obj.essConventionFileName(typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, '', extension);
+                            
+                            % extract data recording filename and see if it
+                            % should be used as the 'free (optional) part'
+                            % in ESS naming comnvention.
+                            
+                            % when the event instance file name is empty,
+                            % use the file name of the eeg as the free part
+                            if strcmpi(typeOfFile{k}, 'event') && isempty(fileFinalPath)
+                                fileForFreePart = obj.sessionTaskInfo(i).dataRecording(j).filename;
+                            else
+                                fileForFreePart = fileFinalPath;
+                            end;
+                            
+                            if ~isempty(fileForFreePart) 
+                            [path name ext] = fileparts(fileForFreePart);
+                            % see if the file name is already in ESS
+                            % format, hence no namce change is necessary
+                            itMatches = essDocument.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
+                            else
+                                itMatches = [];
+                                name = [];
+                            end;
+                            % only change the file name during copy if it
+                            % does not match ESS convention
+                            if itMatches
+                                filenameInEss = [name ext];
+                            else
+                                filenameInEss = obj.essConventionFileName(typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                            end;
                             
                             if exist(fileFinalPath, 'file')
                                 copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
@@ -2080,7 +2109,7 @@ classdef essDocument
                                     case 'eeg'
                                         fprintf('Copy failed: file %s does not exist.\n', fileFinalPath);
                                     case 'event'
-                                        obj = writeEventInstanceFile(obj, i, j, [essFolder filesep essConventionfolder]);
+                                        obj = writeEventInstanceFile(obj, i, j, [essFolder filesep essConventionfolder], filenameInEss);
                                 end;                                                                
                             end;
                         end;
