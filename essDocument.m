@@ -1624,11 +1624,15 @@ classdef essDocument
                         if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile)
                             issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         else % file has to be found according to ESS convention
-                            fullEssFilePath = [obj.rootURI filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
-                            if ~exist(fullEssFilePath, 'file')
-                                issue(end+1).description = [sprintf('Event Instance file specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find ', j, obj.sessionTaskInfo(i).sessionNumber) fullEssFilePath '.'];
+                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber);
+                            
+                            nextToXMLFilePath = [nextToXMLFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
+                            fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
+                            
+                            if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
+                                issue(end+1).description = [sprintf('Event Instance file specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
-                            end;
+                            end;                           
                         end;
                         
                         % check startDateTime to be in ISO 8601 format
@@ -1800,55 +1804,57 @@ classdef essDocument
                 
             end;
             
-            
-            % make sure the fields exist
-            if ~isfield(issue, 'howItWasFixed')
-                issue(1).howItWasFixed = [];
-            end;
-            
-            if ~isfield(issue, 'issueType')
-                issue(1).issueType = [];
-            end;
-            
-            fprintf('Fixed issues:');
-            numberOfFixedIssues = 0;
-            for i=1:length(issue)
-                if ~isempty(issue(i).howItWasFixed)
-                    numberOfFixedIssues = numberOfFixedIssues + 1;
-                    fprintf('%d - %s\n', numberOfFixedIssues, issue(i).description);
-                    fprintf('    Fixed: %s\n', issue(i).howItWasFixed);
+            if isempty(issue)
+                fprintf('There are no issues. Great!\n');
+            else
+                % make sure the fields exist
+                if ~isfield(issue, 'howItWasFixed')
+                    issue(1).howItWasFixed = [];
+                end;
+                
+                if ~isfield(issue, 'issueType')
+                    issue(1).issueType = [];
+                end;
+                
+                fprintf('Fixed issues:');
+                numberOfFixedIssues = 0;
+                for i=1:length(issue)
+                    if ~isempty(issue(i).howItWasFixed)
+                        numberOfFixedIssues = numberOfFixedIssues + 1;
+                        fprintf('%d - %s\n', numberOfFixedIssues, issue(i).description);
+                        fprintf('    Fixed: %s\n', issue(i).howItWasFixed);
+                    end;
+                end;
+                
+                if numberOfFixedIssues == 0
+                    fprintf(' None.\n');
+                end;
+                
+                % display fixed and outstanding issues
+                fprintf('Outstanding issues:\n');
+                
+                fprintf('- Missing Files\n');
+                numberOfMissingFileIssues = 0;
+                for i=1:length(issue)
+                    if isempty(issue(i).howItWasFixed) && strcmpi(issue(i).issueType, 'missing file');
+                        numberOfMissingFileIssues = numberOfMissingFileIssues + 1;
+                        fprintf('  %d - %s\n', numberOfMissingFileIssues, issue(i).description);
+                    end;
+                end;
+                
+                if numberOfMissingFileIssues == 0
+                    fprintf('   None.\n');
+                end;
+                
+                fprintf('- ESS XML\n');
+                numberOfXMLIssues = 0;
+                for i=1:length(issue)
+                    if isempty(issue(i).howItWasFixed) && ~strcmpi(issue(i).issueType, 'missing file');
+                        numberOfXMLIssues = numberOfXMLIssues + 1;
+                        fprintf('  %d - %s\n', numberOfXMLIssues, issue(i).description);
+                    end;
                 end;
             end;
-            
-            if numberOfFixedIssues == 0
-                fprintf(' None.\n');
-            end;
-            
-            % display fixed and outstanding issues
-            fprintf('Outstanding issues:\n');
-            
-            fprintf('- Missing Files\n');
-            numberOfMissingFileIssues = 0;
-            for i=1:length(issue)
-                if isempty(issue(i).howItWasFixed) && strcmpi(issue(i).issueType, 'missing file');
-                    numberOfMissingFileIssues = numberOfMissingFileIssues + 1;
-                    fprintf('  %d - %s\n', numberOfMissingFileIssues, issue(i).description);
-                end;
-            end;
-            
-            if numberOfMissingFileIssues == 0
-                fprintf('   None.\n');
-            end;
-            
-            fprintf('- ESS XML\n');
-            numberOfXMLIssues = 0;
-            for i=1:length(issue)
-                if isempty(issue(i).howItWasFixed) && ~strcmpi(issue(i).issueType, 'missing file');
-                    numberOfXMLIssues = numberOfXMLIssues + 1;
-                    fprintf('  %d - %s\n', numberOfXMLIssues, issue(i).description);
-                end;
-            end;
-            
         end;
         
         function obj = sortDataRecordingsByStartTime(obj)
@@ -1989,7 +1995,7 @@ classdef essDocument
             allSearchFolders = {nextToXMLFolder fullEssFolder};
         end;
         
-        function createEssConventionFolder(obj, essFolder)
+        function obj = createEssConventionFolder(obj, essFolder)
             mkdir(essFolder);
             mkdir([essFolder filesep 'session']);
             mkdir([essFolder filesep 'publications']);
@@ -2013,7 +2019,7 @@ classdef essDocument
             obj = sortDataRecordingsByStartTime(obj);
             
             progress('init', 'Copying data recording and event instance files.');
-            typeOfFile = {'eeg' 'event'};
+            typeOfFile = {'event' 'eeg'}; 
             for i = 1:length(obj.sessionTaskInfo)
                 progress(i/length(obj.sessionTaskInfo), sprintf('Copying files for session-task %d of %d',i, length(obj.sessionTaskInfo)));
                 
@@ -2086,7 +2092,7 @@ classdef essDocument
                             if ~isempty(fileForFreePart) 
                             [path name ext] = fileparts(fileForFreePart);
                             % see if the file name is already in ESS
-                            % format, hence no namce change is necessary
+                            % format, hence no name change is necessary
                             itMatches = essDocument.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
                             else
@@ -2104,6 +2110,7 @@ classdef essDocument
                             
                             if exist(fileFinalPath, 'file')
                                 copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
+                                obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
                             else                               
                                 switch typeOfFile{k}
                                     case 'eeg'
