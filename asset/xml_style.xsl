@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<!-- Start of defining keys for finding distinct values -->
 	<xsl:key name="SubjectGroupValue" match="/study/sessions/session/subject" use="group"/>
+	<xsl:key name="ModalityTypeGroupValue" match="/study/recordingParameterSets/recordingParameterSet/channelType/modality" use="type" />
+ 	maybe could be used later: <xsl:key name="keyRecordingParameterSetLabel" match="/study/recordingParameterSets/recordingParameterSet" use="recordingParameterSetLabel" /> -->
+<!-- End of definig keys -->
 	<xsl:template match="/">
 		<html>
 			<head>
@@ -17,7 +21,7 @@
 			</head>
 			<style type="text/css">
 body
-{margin:30px;font-family:arial,helvetica,sans-serif;}
+{margin:30px;font-family:arial,helvetica,sans-serif; background-color:white}
 table
 {
 border-collapse: collapse;
@@ -44,11 +48,15 @@ font-size= 7pt
 
 </style>
 			<body>
-				<img style="" alt="=">
+			<xsl:for-each select="/study/organization">
+			<xsl:if test="logoLink != 'NA'">
+				<img style="" alt="">
 					<xsl:attribute name="src">
-						<xsl:value-of select="/study/organization/logoLink"/>
+						<xsl:value-of select="logoLink"/>
 					</xsl:attribute>
 				</img>
+				</xsl:if>
+				</xsl:for-each>
 				<h2>
 					<xsl:for-each select="study">
 						<tr>
@@ -58,7 +66,17 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</h2>
-				<h3>Description:</h3>
+				<h3>Short Description:</h3>
+				<p>
+					<xsl:for-each select="study">
+						<tr>
+							<td>
+								<xsl:value-of select="shortDescription"/>
+							</td>
+						</tr>
+					</xsl:for-each>
+				</p>
+				<h3>Full Description:</h3>
 				<p>
 					<xsl:for-each select="study">
 						<tr>
@@ -67,7 +85,7 @@ font-size= 7pt
 							</td>
 						</tr>
 					</xsl:for-each>
-				</p>
+				</p>				
 				<h3>Summary:</h3>
 			
 				<table>
@@ -101,7 +119,7 @@ font-size= 7pt
 									<xsl:if test="position()!=last()">
 										<xsl:text>, </xsl:text>
 									</xsl:if>
-								</xsl:for-each>
+						</xsl:for-each>
 							</td>
 						</tr>
 						<tr>
@@ -111,14 +129,14 @@ font-size= 7pt
 							</xsl:for-each>
 						</tr>
 						<tr>
-							<td>Number of Channels (min to max): 
-							<xsl:for-each select="/study/sessions/session/channels">
+							<td>Number of Channels (all modalities, min to max): 
+							<xsl:for-each select="/study/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
 									<xsl:sort data-type="number" order="ascending"/>
 									<xsl:if test="position()=1">
 										<xsl:value-of select="."/>
 									</xsl:if>
 								</xsl:for-each> to
-							<xsl:for-each select="/study/sessions/session/channels">
+							<xsl:for-each select="/study/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
 									<xsl:sort data-type="number" order="descending"/>
 									<xsl:if test="position()=1">
 										<xsl:value-of select="."/>
@@ -128,30 +146,13 @@ font-size= 7pt
 						</tr>
 						<tr>
 							<td>Recorded Modalities: 
-							<xsl:for-each select="/study/summary/recordedModalities/modality">
-									<xsl:value-of select="name"/>
-									<xsl:choose>
-										<xsl:when test="numberOfSensors != ''"> (<xsl:value-of select="recordingDevice"/>, <xsl:value-of select="numberOfSensors"/> sensors <xsl:value-of select="numberOfChannels"/>
-											<xsl:value-of select="numberOfCameras"/>)</xsl:when>
-											<xsl:when test="numberOfChannels = '1' "> (<xsl:value-of select="recordingDevice"/>
-											<xsl:value-of select="numberOfSensors"/>, <xsl:value-of select="numberOfChannels"/> channel<xsl:value-of select="numberOfCameras"/>)</xsl:when>
-										<xsl:when test="numberOfChannels != ''"> (<xsl:value-of select="recordingDevice"/>
-											<xsl:value-of select="numberOfSensors"/>, <xsl:value-of select="numberOfChannels"/> channels<xsl:value-of select="numberOfCameras"/>)</xsl:when>
-										<xsl:when test="numberOfCameras = '1' "> (<xsl:value-of select="recordingDevice"/>
-											<xsl:value-of select="numberOfSensors"/>
-											<xsl:value-of select="numberOfChannels"/>, <xsl:value-of select="numberOfCameras"/> camera)</xsl:when>
-										<xsl:when test="numberOfCameras != ''"> (<xsl:value-of select="recordingDevice"/>
-											<xsl:value-of select="numberOfSensors"/>
-											<xsl:value-of select="numberOfChannels"/>, <xsl:value-of select="numberOfCameras"/> cameras)</xsl:when>
-										<xsl:when test="recordingDevice = ''"> <xsl:value-of select="recordingDevice"/> <xsl:value-of select="numberOfSensors"/><xsl:value-of select="numberOfChannels"/>
-											<xsl:value-of select="numberOfCameras"/></xsl:when>
-										<xsl:otherwise> (<xsl:value-of select="recordingDevice"/>)</xsl:otherwise>
-									</xsl:choose>
+							<xsl:for-each select="/study/recordingParameterSets/recordingParameterSet/channelType/modality[generate-id()=generate-id(key('ModalityTypeGroupValue' , type)[1])]">
+									<xsl:value-of select="concat(type, '', '')"/>
 									<xsl:if test="position()!=last()">
 										<xsl:text>, </xsl:text>
 									</xsl:if>
-								</xsl:for-each>
-							</td>
+							</xsl:for-each>
+							</td>						
 						</tr>
 						<tr>
 							<td>Total Size: <xsl:value-of select="totalSize"/>
@@ -161,6 +162,10 @@ font-size= 7pt
 							<td>License Type: <xsl:value-of select="license/type"/>
 							</td>
 						</tr>
+						<tr>
+							<td>Funding Organization: <xsl:value-of select="/study/project/funding/organization"/>
+							</td>
+						</tr>						
 					</xsl:for-each>
 				</table>
 				<xsl:choose>
@@ -223,9 +228,9 @@ font-size= 7pt
 						<td colspan="6" align="center" bgcolor="#CCCCCC">
 							<strong>Subject</strong>
 						</td>
-						<td rowspan="2" align="center" bgcolor="#CCCCCC">
+						<!--<td rowspan="2" align="center" bgcolor="#CCCCCC">
 							<strong>EEG Sampling Rate (Hz)</strong>
-						</td>
+						</td> -->
 						<td rowspan="2" width="200" align="center" bgcolor="#CCCCCC">
 							<strong>Notes</strong>
 						</td>
@@ -235,9 +240,9 @@ font-size= 7pt
 						<td rowspan="2" align="center" bgcolor="#CCCCCC">
 							<strong>Channel Locations</strong>
 						</td>
-						<td rowspan="2" align="center" bgcolor="#CCCCCC">
+						<!--<td rowspan="2" align="center" bgcolor="#CCCCCC">
 							<strong>Number of Channels</strong>
-						</td>
+						</td>-->
 						<td rowspan="2" align="center" bgcolor="#CCCCCC">
 							<strong>Channel Location Type</strong>
 						</td>
@@ -318,9 +323,9 @@ font-size= 7pt
 									</p>
 								</xsl:for-each>
 							</td>
-							<td>
+							<!--<td>
 								<xsl:value-of select="eegSamplingRate"/>
-							</td>
+							</td>-->
 							<td>
 								<xsl:for-each select="notes">
 									<xsl:value-of select="note"/>
@@ -337,9 +342,9 @@ font-size= 7pt
 							<td>
 								<a target="_blank">
 									<xsl:attribute name="href">
-										<xsl:value-of select="eegRecordings"/>
+										<xsl:value-of select="dataRecordings/dataRecording/filename"/>
 									</xsl:attribute>
-									<xsl:value-of select="eegRecordings"/>
+									<xsl:value-of select="dataRecordings/dataRecording/filename"/>
 								</a>
 							</td>
 							<td>
@@ -354,9 +359,9 @@ font-size= 7pt
 									</p>
 								</xsl:for-each>
 							</td>
-							<td>
-								<xsl:value-of select="channels"/>
-							</td>
+							<!--<td>
+								 <xsl:value-of select="channels"/>
+							</td> -->
 							<td>
 								<xsl:for-each select="subject">
 									<p>
@@ -525,6 +530,7 @@ font-size= 7pt
 						</tr>
 					</p>
 				</xsl:for-each>
+				<p>This report is automically generated from an XML file in EEG Study Schema (ESS) version <xsl:for-each select="study"><xsl:value-of select="essVersion"/>	</xsl:for-each>. To learn more about ESS and download tools for automated import of ESS-formatted information (e.g. into Matlab) please visit  <a href="http://www.eegstudy.org">eegstudy.org</a>.</p>
 			</body>
 		</html>
 	</xsl:template>

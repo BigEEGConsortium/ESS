@@ -1,4 +1,4 @@
-function x = dirsize(path)
+function [x, sizeasString]= dirsize(path)
     s = dir(path);
     name = {s.name};
     isdir = [s.isdir] & ~strcmp(name,'.') & ~strcmp(name,'..');
@@ -9,4 +9,25 @@ function x = dirsize(path)
         sub_f_size = sum([cellfun(@dirsize, subfolder)]);
     end
     x = this_size + sub_f_size;
-end % dirsize 
+    
+    precision = 4;
+    if x < 1024
+        sizeasString = [num2str(x, precision) ' Bytes'];
+    elseif x<1024^2
+        sizeasString = [num2str(x/1024,precision) ' KB'];
+    elseif x<1024^3
+        sizeasString = [num2str(x/1024^2,precision) ' MB'];
+    elseif x<1024^4
+        sizeasString = [num2str(x/1024^3, precision) ' MB'];
+    elseif x<1024^5
+        sizeasString = [num2str(x/1024^4,precision) ' GB'];
+    elseif x<1024^6
+        sizeasString = [num2str(x/1024^5, precision) ' TB'];
+    elseif x<1024^7
+        sizeasString = [num2str(x/1024^6, precision) ' PB']; 
+    elseif x<1024^8
+        sizeasString = [num2str(x/1024^4, precision) ' YB'];
+    elseif x<1024^9
+        sizeasString = num2str(x); 
+    end;
+end % dirsize

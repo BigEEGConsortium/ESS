@@ -13,6 +13,6 @@ If you are using Google Chrome, open the study_description.html file to view the
 
 4. The 'Source Code' Folder: if available, includes the presentation code, along with the stimuli needed to run the actual experiment.
 
-The ;License; Text: if available, refers to the full text of the specific license used to release the information.
+The 'License Text' if available, refers to the full text of the specific license used to release the information.
 
 

@@ -1588,6 +1588,7 @@ classdef essDocument
                     issue(end+1).description = sprintf('Sesion %s does not have any subjects.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                 else % check if inSessionNumber is set for all subejcts in the session
                     for j=1:length(obj.sessionTaskInfo(i).subject)
+                        
                         if ~isAvailable(obj.sessionTaskInfo(i).subject(j).inSessionNumber)
                             issue(end+1).description =  sprintf('Subject %d of sesion %s does not an inSessionNumber.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                             
@@ -1595,7 +1596,36 @@ classdef essDocument
                                 issue(end).howItWasFixed = 'inSessionNumber was assigned to 1';
                             end;
                         end;
-                    end;
+                        
+                        % check the existence of referred channel locations
+                        if strcmpi('custom', obj.sessionTaskInfo(i).subject(j).channelLocationType)...
+                                && (isempty(obj.sessionTaskInfo(i).subject(j).channelLocations)...
+                                 || strcmpi('NA', obj.sessionTaskInfo(i).subject(j).channelLocations))
+                             issue(end+1).description =  sprintf('Subject %d of sesion %s does not have a channelLocations while \r its channelLocationType is defined as ''cusstom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                        end;
+                       
+                        % check if the channel location file actually
+                        % exists.
+                        if isAvailable(obj.sessionTaskInfo(i).subject(j).channelLocations)
+                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber);
+                            
+                            fileFound = false;
+                            searchFullPath = {};
+                            for z = 1:length(allSearchFolders)
+                                searchFullPath{z} = [allSearchFolders{z} filesep obj.sessionTaskInfo(i).subject(j).channelLocations];
+                                if exist(searchFullPath{z}, 'file')
+                                   fileFound = true;
+                                end;
+                            end;
+                            
+                            if ~fileFound
+                                issue(end+1).description =  sprintf('Channel location file recoding of subject %d of sesion number %s cannot be found \r at any of these locations: %s .', j, obj.sessionTaskInfo(i).sessionNumber, strjoin_adjoiner_first(', ', searchFullPath)); %#ok<AGROW>
+                                issue(end).issueType = 'missing file';
+                            end;
+                            
+                        end;
+                        
+                    end;                 
                 end;
                 
                 % validate th existence of valid data recordings for the session
@@ -1686,7 +1716,6 @@ classdef essDocument
                         issue(end+1).description = sprintf('The task label %s in session number %d does not match defined tasks.', obj.sessionTaskInfo(i).taskLabel, i);
                     end;
                 end;
-                
                 
             end;
             
@@ -1799,7 +1828,6 @@ classdef essDocument
                 
                 if ~isAvailable(obj.summaryInfo.totalSize) || ~isProperNumber(obj.summaryInfo.totalSize, false, 0, {'Mb' 'GB' 'Gbytes' 'giga bytes' 'gbs' 'bytes' 'KB' 'kilo bytes' 'kilo byte' 'byte' 'kbs'})
                     issue(end+1).description = sprintf('Total Size value specified in Summary Information is missing or not valid.');
-                    % ToDo: add automatic calculation of size code here
                 end;
                 
             end;
@@ -2019,9 +2047,59 @@ classdef essDocument
             obj = sortDataRecordingsByStartTime(obj);
             
             progress('init', 'Copying data recording and event instance files.');
-            typeOfFile = {'event' 'eeg'}; 
+            typeOfFile = {'event' 'eeg'};
             for i = 1:length(obj.sessionTaskInfo)
                 progress(i/length(obj.sessionTaskInfo), sprintf('Copying files for session-task %d of %d',i, length(obj.sessionTaskInfo)));
+                
+                for j=1:length(obj.sessionTaskInfo(i).subject)
+                    fileNameFromObj = obj.sessionTaskInfo(i).subject(j).channelLocations;
+                    if ~(strcmpi(fileNameFromObj, 'na') || isempty(fileNameFromObj))
+                        
+                        nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
+                        fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                        
+                        fileFinalPath = [];
+                        if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
+                            fileFinalPath = fullEssFilePath;
+                        elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
+                            fileFinalPath = nextToXMLFilePath;
+                        else % the file cannot be found
+                            fileFinalPath = [];
+                            fprintf('Channel location file for for subject %d of sesion number %s cannot be found.\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                        end;
+                        
+                        if ~isempty(fileFinalPath)
+                            
+                            essConventionfolder = [filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber];
+                            [dummy1 dummy2 extension] = fileparts(fileFinalPath);
+                            subjectInSessionNumber = obj.sessionTaskInfo(i).subject(j).inSessionNumber;
+                            
+                            % include original filename
+                            fileForFreePart = obj.sessionTaskInfo(i).dataRecording(j).filename;
+                            [path name ext] = fileparts(fileForFreePart);
+                            
+                            itMatches = essDocument.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
+                            
+                            if itMatches
+                                filenameInEss = [name ext];
+                            else
+                                filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                            end;
+                            
+                            if exist(fileFinalPath, 'file')
+                                copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
+                                obj.sessionTaskInfo(i).subject(j).channelLocations = filenameInEss;
+                            else
+                                fprintf('Copy failed: file %s does not exist.\n', fileFinalPath);
+                            end;
+                            
+                        end;
+                        
+                    end;
+                end;
+                
                 
                 for j=1:length(obj.sessionTaskInfo(i).dataRecording)
                     
@@ -2123,10 +2201,7 @@ classdef essDocument
                     end;
                 end;
             end;
-            
-            % write the XML file
-            obj.write([essFolder filesep 'study_description.xml']);
-            
+                       
             % copy static files (assets)
             thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
@@ -2139,6 +2214,12 @@ classdef essDocument
                 copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [essFolder filesep 'License.txt']);
             end;
             
+            % update total study size
+            [dummy, obj.summaryInfo.totalSize]= dirsize(path);
+            
+            % write the XML file
+            obj.write([essFolder filesep 'study_description.xml']);
+            
         end;
         
     end;
@@ -2146,8 +2227,8 @@ classdef essDocument
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             
-            if ~ismember(lower(eegOrEvent), {'eeg', 'event'})
-                error('eegOrEvent (first) input variable has to be either ''eeg'' or ''event''.');
+            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations'})
+                error('eegOrEvent (first) input variable has to be either ''eeg'', ''event'' or ''channel_locations.');
             end;
             
             % replace spaces in study title with underlines
