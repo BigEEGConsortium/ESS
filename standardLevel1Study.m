@@ -97,7 +97,7 @@ classdef standardLevel1Study
     methods
         
         function obj = standardLevel1Study(varargin)
-            % obj = essDocument(essFilePath)
+            % obj = standardLevel1Study(essFilePath)
             % create a instance of the object. If essFilePath is provided (optimal) it also read the
             % file.
             
@@ -2185,7 +2185,7 @@ classdef standardLevel1Study
                             [path name ext] = fileparts(fileForFreePart);
                             % see if the file name is already in ESS
                             % format, hence no name change is necessary
-                            itMatches = essDocument.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                            itMatches = standardLevel1Study.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
                             else
                                 itMatches = [];
@@ -2305,7 +2305,7 @@ classdef standardLevel1Study
                 return;
             end;
             
-            [dummyName, part1, part2]= essDocument.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+            [dummyName, part1, part2]= standardLevel1Study.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, '', extension);
             
             itMatches = length(name)>=length(dummyName) && strcmp(name(1:length(part1)), part1) && strcmp(name((end - length(part2)+1):end), part2);
