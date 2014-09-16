@@ -1,12 +1,12 @@
-classdef essDocument
-    % Allow reading, writing and manipulatoion of information contained in ESS-formatted XML files.
-    % EEG Studdy Schema (ESS) contains EEG study meta-data information (subject information, sessions file
+classdef standardLevel1Study
+    % Allow reading, writing and manipulatoion of information contained in ESS-formatted Standard Level 1 XML files.
+    % EEG Studdy Schema (ESS) Level 1 contains EEG study meta-data information (subject information, sessions file
     % associations...). On read data are loaded in the object properties, you can change this data
     % (e.g. add a ne session) and then save using the write() method into a =new ESS XML file.
     %
     % Written by Nima Bigdely-Shamlo and Jessica Hsi.
-    % Copyright ? 2014 Syntrogi, Inc.
-    % Copyright ? 2013-2014 University of California San Diego.
+    % Copyright 2014 Syntrogi, Inc.
+    % Copyright 2013-2014 University of California San Diego.
     % Released under BSD License.
     
     properties
@@ -96,7 +96,7 @@ classdef essDocument
     
     methods
         
-        function obj = essDocument(varargin)
+        function obj = standardLevel1Study(varargin)
             % obj = essDocument(essFilePath)
             % create a instance of the object. If essFilePath is provided (optimal) it also read the
             % file.
@@ -111,7 +111,7 @@ classdef essDocument
             end;
             
             inputOptions = arg_define(1,varargin, ...
-                arg('essFilePath', '','','ESS XML Filename. Name of the ESS XML file associated with the essDocuments. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
+                arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the studyLevel1Study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
@@ -2092,7 +2092,7 @@ classdef essDocument
                             fileForFreePart = obj.sessionTaskInfo(i).dataRecording(j).filename;
                             [path name ext] = fileparts(fileForFreePart);
                             
-                            itMatches = essDocument.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                            itMatches = standardLevel1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
                             
                             if itMatches
