@@ -48,7 +48,7 @@ classdef standardLevel1Study
         recordingParameterSet = struct('recordingParameterSetLabel', ' ', ...
             'modality', struct('type', ' ', 'samplingRate', ' ', 'name', ' ', 'description', ' ',...
             'startChannel', ' ', 'endChannel', ' ', 'subjectInSessionNumber', ' ',...
-            'referenceLocation',' ', 'referenceLabel', ' ', 'channelLocationType', ' ', 'channelLabel', ' '));
+            'referenceLocation',' ', 'referenceLabel', ' ', 'channelLocationType', ' ', 'channelLabel', ' ', 'nonScalpChannelLabel', ' '));
         
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
@@ -473,6 +473,13 @@ classdef standardLevel1Study
                                         obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).channelLabel= '';
                                     end;
                                     
+                                    % read modality/nonScalpChannelLabel
+                                    potentialNonScalpChannelLabelNodeArray = currentNode.getElementsByTagName('nonScalpChannelLabel');
+                                    if potentialNonScalpChannelLabelNodeArray.getLength > 0
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).nonScalpChannelLabel = readStringFromNode(potentialNonScalpChannelLabelNodeArray.item(0));
+                                    else
+                                        obj.recordingParameterSet(parameterSetCounter+1).modality(modalityCounter + 1).nonScalpChannelLabel= '';
+                                    end;
                                 end;
                             end;
                         end;
@@ -1163,6 +1170,11 @@ classdef standardLevel1Study
                     channelLabelElement = docNode.createElement('channelLabel');
                     channelLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).channelLabel));
                     modalityRootNode.appendChild(channelLabelElement);
+                    
+                    % create modality/nonScalpChannelLabel node
+                    nonScalpChannelLabelElement = docNode.createElement('nonScalpChannelLabel');
+                    nonScalpChannelLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel));
+                    modalityRootNode.appendChild(nonScalpChannelLabelElement);
                 end
                 
             end;
@@ -1581,6 +1593,84 @@ classdef standardLevel1Study
             end;
             
             
+            % validating recordingParameterSet
+            listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation = {};
+            if isempty(obj.recordingParameterSet)
+                issue(end+1).description = sprintf('There is no recording parameter set defined. You need to at least have on ene of these to hold number of EEG channels, etc.');
+            else
+                for i=1:length(obj.recordingParameterSet)
+                    if ~isAvailable(obj.recordingParameterSet(i).recordingParameterSetLabel)
+                        issue(end+1).description = sprintf('The label of recording parameter set %d is empty.', i);
+                    end;
+                    
+                    if isempty(obj.recordingParameterSet(i).modality)
+                        issue(end+1).description = sprintf('There are no modalities defined for recording parameter set %d (labeled ''%s'')', i, obj.recordingParameterSet(i).recordingParameterSetLabel);
+                    else
+                        for j=1:length(obj.recordingParameterSet(i).modality)
+                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).type)
+                                issue(end+1).description = sprintf('The type of modality %d of recording parameter set %d is empty.', j, i);
+                            end;
+                            
+                            % we need sampling rate at least for EEG
+                            if strcmpi(obj.recordingParameterSet(i).modality(j).type, 'EEG')
+                                if ~isProperNumber(obj.recordingParameterSet(i).modality(j).samplingRate, false, 0, {'Hz' 'hz' 'HZ'})
+                                    issue(end+1).description = sprintf('Sampling rate value of EEG (modality %d) in recording parameter set %d is empty or invalid (it is ''%s'').', j, i, obj.recordingParameterSet(i).modality(j).samplingRate);
+                                end;
+                                
+                                % Reference location is needed for EEG
+                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).referenceLocation)
+                                    issue(end+1).description = sprintf('Refernce location of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                end;
+                                
+                                % Channel Location Type is needed for EEG
+                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).channelLocationType)
+                                    issue(end+1).description = sprintf('Channel location type of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                else
+                                    if ~ismember(lower(obj.recordingParameterSet(i).modality(j).channelLocationType), {'10-20', '10-10', '10-5', 'EGI', 'Custom'})
+                                        issue(end+1).description = sprintf('Invalid channel location type (%s) is specified for EEG (modality %d) in recording parameter set %d.\r Valid type are 10-20, 10-10, 10-5, EGI and Custom.', obj.recordingParameterSet(i).modality(j).channelLocationType, j, i);
+                                    end;
+                                    
+                                    if strcmpi('custom', obj.recordingParameterSet(i).modality(j).channelLocationType)
+                                        listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation(end+1) = obj.recordingParameterSet(i).recordingParameterSetLabel;
+                                    end;
+                                end;
+                                                                
+                                % Channel labels are needed for EEG
+                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).channelLabel)
+                                    issue(end+1).description = sprintf('Channel labels of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                end;
+                                
+                                % Non-scalp channel labels are needed for
+                                % EEG
+                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel)
+                                    issue(end+1).description = sprintf('Non-scalp channel labels of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                end;
+                            end;
+                            
+                            % start channel
+                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).startChannel)
+                                issue(end+1).description = sprintf('Start channel of modality %d of recording parameter set %d is empty.', j, i);
+                            end;
+                            
+                            % end channel
+                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).endChannel)
+                                issue(end+1).description = sprintf('End channel of modality %d of recording parameter set %d is empty.', j, i);
+                            end;
+                            
+                            % we need a description when data type is not any of
+                            % EEG, Mocap, or Gaze
+                            
+                            if ~ismember(lower(obj.recordingParameterSet(i).modality(j).type), {'eeg', 'mocap', 'gaze'}) ...
+                                    && ~isAvailable(obj.recordingParameterSet(i).modality(j).description)
+                                issue(end+1).description = sprintf('Description is missing for type %s in modality %d of recording parameter set %d. \n     A description is required for any type other than EEG, Mocap and Gaze.', obj.recordingParameterSet(i).modality(j).type, j, i);
+                            end;
+                            
+                        end;
+                    end;
+                end;
+            end;
+            
+            
             % validate session values
             sessionNumbers = [];
             for i=1:length(obj.sessionTaskInfo)
@@ -1595,6 +1685,16 @@ classdef standardLevel1Study
                     end;
                 else
                     sessionNumbers = [sessionNumbers sessionNumber];
+                end;
+                
+                % if channel location type is specified as Custom (versus e.g. 10-20) 
+                % for a recording, each subject has to have a channel
+                % location file.
+                eegChannelLocationFileIsNeeded = false;
+                for rcordingCounter=1:length(obj.sessionTaskInfo(i).dataRecording)
+                    if ismember(obj.sessionTaskInfo(i).dataRecording(rcordingCounter).recordingParameterSetLabel, listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation)
+                        eegChannelLocationFileIsNeeded = true;
+                    end;
                 end;
                 
                 % validate subject existence
@@ -1612,10 +1712,11 @@ classdef standardLevel1Study
                         end;
                         
                         % check the existence of referred channel locations
-                        if strcmpi('custom', obj.sessionTaskInfo(i).subject(j).channelLocationType)...
-                                && (isempty(obj.sessionTaskInfo(i).subject(j).channelLocations)...
+                        % and make sure they are specified if channel
+                        % location type is specified as Custom (versus e.g. 10-20).                                                                        
+                        if eegChannelLocationFileIsNeeded && (isempty(obj.sessionTaskInfo(i).subject(j).channelLocations)...
                                  || strcmpi('NA', obj.sessionTaskInfo(i).subject(j).channelLocations))
-                             issue(end+1).description =  sprintf('Subject %d of sesion %s does not have a channelLocations while \r its channelLocationType is defined as ''cusstom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                             issue(end+1).description =  sprintf('Subject %d of sesion %s does not have a channelLocations while \r its channelLocationType is defined as ''custom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         end;
                        
                         % check if the channel location file actually
@@ -1738,59 +1839,7 @@ classdef standardLevel1Study
             missingSessionNumber = setdiff(1:max(sessionNumbers), unique(sessionNumbers));
             if ~isempty(missingSessionNumber)
                 issue(end+1).description = sprintf('Some session numbers are missing. These numbers have to be from 1 up to the number of sesssions.\n Here are the missing numbers: %s.', num2str(missingSessionNumber));
-            end;
-            
-            % validating recordingParameterSet
-            if isempty(obj.recordingParameterSet)
-                issue(end+1).description = sprintf('There is no recording parameter set defined. You need to at least have on ene of these to hold number of EEG channels, etc.');
-            else
-                for i=1:length(obj.recordingParameterSet)
-                    if ~isAvailable(obj.recordingParameterSet(i).recordingParameterSetLabel)
-                        issue(end+1).description = sprintf('The label of recording parameter set %d is empty.', i);
-                    end;
-                    
-                    if isempty(obj.recordingParameterSet(i).modality)
-                        issue(end+1).description = sprintf('There are no modalities defined for recording parameter set %d (labeled ''%s'')', i, obj.recordingParameterSet(i).recordingParameterSetLabel);
-                    else
-                        for j=1:length(obj.recordingParameterSet(i).modality)
-                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).type)
-                                issue(end+1).description = sprintf('The type of modality %d of recording parameter set %d is empty.', j, i);
-                            end;
-                            
-                            % we need sampling rate at least for EEG
-                            if strcmpi(obj.recordingParameterSet(i).modality(j).type, 'EEG')
-                                if ~isProperNumber(obj.recordingParameterSet(i).modality(j).samplingRate, false, 0, {'Hz' 'hz' 'HZ'})
-                                    issue(end+1).description = sprintf('Sampling rate value of EEG (modality %d) in recording parameter set %d is empty or invalid (it is ''%s'').', j, i, obj.recordingParameterSet(i).modality(j).samplingRate);
-                                end;
-                                
-                                % Reference location is needed for EEG
-                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).referenceLocation)
-                                    issue(end+1).description = sprintf('Refernce location of EEG (modality %d) in recording parameter set %d is empty.', j, i);
-                                end;
-                            end;
-                            
-                            % start channel
-                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).startChannel)
-                                issue(end+1).description = sprintf('Start channel of modality %d of recording parameter set %d is empty.', j, i);
-                            end;
-                            
-                            % end channel
-                            if ~isAvailable(obj.recordingParameterSet(i).modality(j).endChannel)
-                                issue(end+1).description = sprintf('End channel of modality %d of recording parameter set %d is empty.', j, i);
-                            end;
-                            
-                            % we need a description when data type is not any of
-                            % EEG, Mocap, or Gaze
-                            
-                            if ~ismember(lower(obj.recordingParameterSet(i).modality(j).type), {'eeg', 'mocap', 'gaze'}) ...
-                                    && ~isAvailable(obj.recordingParameterSet(i).modality(j).description)
-                                issue(end+1).description = sprintf('Description is missing for type %s in modality %d of recording parameter set %d. \n     A description is required for any type other than EEG, Mocap and Gaze.', obj.recordingParameterSet(i).modality(j).type, j, i);
-                            end;
-                            
-                        end;
-                    end;
-                end;
-            end;
+            end;            
             
             if isempty(obj.eventCodesInfo)
                 issue(end+1).description = sprintf('No event code information is provided.');
