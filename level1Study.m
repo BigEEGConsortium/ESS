@@ -1,4 +1,4 @@
-classdef standardLevel1Study
+classdef level1Study
     % Allow reading, writing and manipulatoion of information contained in ESS-formatted Standard Level 1 XML files.
     % EEG Studdy Schema (ESS) Level 1 contains EEG study meta-data information (subject information, sessions file
     % associations...). On read data are loaded in the object properties, you can change this data
@@ -91,13 +91,13 @@ classdef standardLevel1Study
         
         % Filename (including path) of the ESS XML file associated with the
         % object.
-        essFilePath        % the file (including folder) associated with the document (e.g. the file the document was last saved to , or originally read from)
+        essFilePath  
     end;
     
     methods
         
-        function obj = standardLevel1Study(varargin)
-            % obj = standardLevel1Study(essFilePath)
+        function obj = level1Study(varargin)
+            % obj = level1Study(essFilePath)
             % create a instance of the object. If essFilePath is provided (optimal) it also read the
             % file.
             
@@ -208,6 +208,23 @@ classdef standardLevel1Study
                     outString = strtrim(char(firstChild.getData));
                 end;
             end
+            
+            % first validate the XML file according to ESS STDL1 schema encoded in XML (an XSD file)
+            % this is useful since during read we are only looking for the
+            % first instance of each node but the XML might have mistakanly
+            % contain two more node, in which case the wrong information
+            % may be read
+                        
+            % get the class path 
+            thisClassFilenameAndPath = mfilename('fullpath');
+            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+
+            schemaFile = [essDocumentPathStr filesep 'asset' filesep 'ESS_STDL 1_schema.xsd'];
+            [isValid errorMessage] = validate_schema(essFilePath, schemaFile);
+            if ~isValid
+                fprintf('The input XML failed to be validated against ESS Schema provided in %s.\n',  schemaFile);
+                error(errorMessage);
+            end;
             
             xmlDocument = xmlread(essFilePath);
             potentialStudyNodeArray = xmlDocument.getElementsByTagName('study');
@@ -2141,7 +2158,7 @@ classdef standardLevel1Study
                             fileForFreePart = obj.sessionTaskInfo(i).dataRecording(j).filename;
                             [path name ext] = fileparts(fileForFreePart);
                             
-                            itMatches = standardLevel1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                            itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
                             
                             if itMatches
@@ -2234,7 +2251,7 @@ classdef standardLevel1Study
                             [path name ext] = fileparts(fileForFreePart);
                             % see if the file name is already in ESS
                             % format, hence no name change is necessary
-                            itMatches = standardLevel1Study.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                            itMatches = level1Study.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
                             else
                                 itMatches = [];
@@ -2354,7 +2371,7 @@ classdef standardLevel1Study
                 return;
             end;
             
-            [dummyName, part1, part2]= standardLevel1Study.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+            [dummyName, part1, part2]= level1Study.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, '', extension);
             
             itMatches = length(name)>=length(dummyName) && strcmp(name(1:length(part1)), part1) && strcmp(name((end - length(part2)+1):end), part2);
