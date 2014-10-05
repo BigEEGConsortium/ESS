@@ -26,18 +26,17 @@ function [EEG, referenceSignal, reReferencedChannels] = ...
 % Check the arguments
 if nargin < 1 || ~isstruct(EEG)
     error('removeReference:NotEnoughArguments', 'first argument must be a structure');
-elseif ~exist('reReferencedChannels', 'var') || isempty(reReferencedChannels)
-    reReferencedChannels = 1:size(EEG.data, 1); 
+elseif ~exist('reReferenceChannels', 'var') || isempty(reReferenceChannels)
+    reReferenceChannels = 1:size(EEG.data, 1); 
 end
 
-data = EEG.data(reReferencedChannels, :);
+data = EEG.data(reReferenceChannels, :);
 if ~exist('referenceSignal', 'var') || isempty(referenceSignal)
     referenceSignal = mean(data, 1);
 end
 
 % Remove the reference
 data = bsxfun(@minus, data, referenceSignal);
-EEG.data(reReferencedChannels, :) = data;
-EEG.etc.referenceSignal = referenceSignal;
-EEG.etc.referencereReferencedChannels = reReferencedChannels;
+EEG.data(reReferenceChannels, :) = data;
+
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
    <xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-         <xs:element name="study">
+         <xs:element name="studyLevel1">
                <xs:complexType>
                      <xs:all>
                            <xs:element name="essVersion" type="xs:string" minOccurs="0"></xs:element>
@@ -37,12 +37,12 @@
                                                                                        <xs:complexType>
                                                                                              <xs:choice maxOccurs="unbounded">
                                                                                                    <xs:element name="type" type="xs:string"></xs:element>
-                                                                                                   <xs:element name="samplingRate" type="xs:double"></xs:element>
+                                                                                                   <xs:element name="samplingRate" type="xs:string"></xs:element>
                                                                                                    <xs:element name="name" type="xs:string"></xs:element>
                                                                                                    <xs:element name="description"></xs:element>
-                                                                                                   <xs:element name="startChannel" type="xs:nonNegativeInteger"></xs:element>
-                                                                                                   <xs:element name="endChannel" type="xs:nonNegativeInteger"></xs:element>
-                                                                                                   <xs:element name="subjectInSessionNumber" type="xs:nonNegativeInteger"></xs:element>
+                                                                                                   <xs:element name="startChannel" type="xs:string"></xs:element>
+                                                                                                   <xs:element name="endChannel" type="xs:string"></xs:element>
+                                                                                                   <xs:element name="subjectInSessionNumber" type="xs:string"></xs:element>
                                                                                                    <xs:element name="referenceLocation" type="xs:string"></xs:element>
                                                                                                    <xs:element name="referenceLabel" type="xs:string"></xs:element>
                                                                                                    <xs:element name="channelLocationType" type="xs:string"></xs:element>
@@ -74,7 +74,7 @@
                                                                      <xs:complexType>
                                                                            <xs:all>
                                                                                  <xs:element name="labId" type="xs:string" minOccurs="0"></xs:element>
-                                                                                 <xs:element name="inSessionNumber" type="xs:nonNegativeInteger" minOccurs="0"></xs:element>
+                                                                                 <xs:element name="inSessionNumber" type="xs:string" minOccurs="0"></xs:element>
                                                                                  <xs:element name="group" type="xs:string" minOccurs="0"></xs:element>
                                                                                  <xs:element name="gender" type="xs:string" minOccurs="0"></xs:element>
                                                                                  <xs:element name="YOB" type="xs:string" minOccurs="0"></xs:element>
@@ -119,6 +119,7 @@
                                                                                        <xs:complexType>
                                                                                              <xs:choice maxOccurs="unbounded">
                                                                                                    <xs:element name="filename" type="xs:string"></xs:element>
+																								   <xs:element name="dataRecordingUuid" type="xs:string"></xs:element>
                                                                                                    <xs:element name="startDateTime" type="xs:string"></xs:element>
                                                                                                    <xs:element name="recordingParameterSetLabel" type="xs:string"></xs:element>
                                                                                                    <xs:element name="eventInstanceFile"></xs:element>

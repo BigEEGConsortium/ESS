@@ -1,57 +1,37 @@
-function [datafit, Amps, freqs, Fval, sig, f0Significant]= ...
-                           fitSignificantFrequencies(data, f0, noisyParameters)
+function [datafit, f0Significant]= ...
+                           fitSignificantFrequencies(data, f0, lineNoise)
 % Fits significant sine waves to specified peaks in continuous data
 %
 % Usage: 
-%   [datafit, Amps, freqs, Fval, sig, f0Significant] = ... 
-%                          fitSignificantFrequencies(data, noisyParameters)  
+%   [datafit, f0Significant] = fitSignificantFrequencies(data, f0, lineNoise)  
 %
-% Inputs:
-% Note that units of Fs, fpass have to be consistent.
-%       data        (data in [N,C] i.e. time x channels/trials or a single
-%       vector) - required.
-%       params      structure containing parameters - params has the
-%       following fields: tapers, Fs, fpass, pad
-%           tapers : precalculated tapers from dpss 
+% Parameters:
+%      data        Single channel -- required
+%      f0          Vector with the line frequencies to be removed 
+%      lineNoise   Structure with various parameters set
 %
-%	        Fs 	        (sampling frequency) -- optional. Defaults to 1.
-%               fpass       (frequency band to be used in the calculation in the form
-%                                   [fmin fmax])- optional.
-%                                   Default all frequencies between 0 and Fs/2
-%	        pad		    (padding factor for the FFT) - optional (can take values -1,0,1,2...).
-%                    -1 corresponds to no padding, 0 corresponds to padding
-%                    to the next highest power of 2 etc.
-%			      	 e.g. For N = 500, if PAD = -1, we do not pad; if PAD = 0, we pad the FFT
-%			      	 to 512 points, if pad=1, we pad to 1024 points etc.
-%			      	 Defaults to 0.
-%	    p		    (P-value to calculate error bars for) - optional.
-%                           Defaults to 0.05/N where N is data length.
-%       plt         (y/n for plot and no plot respectively) - plots the
-%       Fratio at all frequencies if y
-%       f0          frequencies at which you want to remove the
-%                   lines - if unspecified the program
-%                   will compute the significant lines
-%       fscanbw     bandwidth centered on ea. f0 to scan for significant
-%                   lines (TM)
+% The lineNoise structure has the following fields set:
+%       fPassBand       Frequency band used 
+%       fScanBandWidth  +/- bandwidth centered on each f0 to scan for significant
+%                       lines (TM)
+%       Fs 	            Sampling frequency 
+%       p               Significance level cutoff 
+%       pad             FFT padding factor 
+%       tapers          Precomputed tapers from dpss
+%       taperWindowSize Taper sliding window length 
 %
 %  Outputs:
 %       datafit          Linear superposition of fitted sine waves
-%       Amps             Amplitudes at significant frequencies
-%       freqs            Significant frequencies
-%       Fval             Fstatistic at all frequencies)
-%       sig              Significance level for F distribution p value of p)
-%       f0Significant    f0 values found to be significant.
+%       f0Significant    f0 values found to be significant
+%
 data = change_row_to_column(data);
-[N, C] = size(data);
+N = size(data, 1);
 
-[~, fscanbw] = getStructureParameters(noisyParameters, 'fscanbw');
-[~, Fs] = getStructureParameters(noisyParameters, 'Fs');
-%[~, lineNoiseFrequencyBand] = getStructureParameters(noisyParameters, 'lineNoiseFrequencyBand');
+[~, fscanbw] = getStructureParameters(lineNoise, 'fScanBandWidth');
+[~, Fs] = getStructureParameters(lineNoise, 'Fs');
 
-[Fval, A, f, sig] = testSignificantFrequencies(data, noisyParameters);
-datafit = zeros(N, C);
-Amps  = cell(1, C);
-freqs = cell(1, C);
+[Fval, A, f, sig] = testSignificantFrequencies(data, lineNoise);
+datafit = zeros(N, 1);
   
 frequencyMask = false(1, length(f));
 f0Significant = false(1, length(f0));
@@ -84,11 +64,6 @@ end
 % Estimate the contribution of any significant f0 lines
 fsig = f(frequencyMask);
 if ~isempty(fsig)
-    Amps{1} = A(frequencyMask);
-    datafit = exp(1i*2*pi*(0:(N - 1))'*fsig/Fs)* ...
-        A(frequencyMask) ...
-        +exp(-1i*2*pi*(0:(N - 1))'* ...
-        fsig/Fs)*conj(A(frequencyMask));
+    datafit = exp(1i*2*pi*(0:(N - 1))'*fsig/Fs)* A(frequencyMask) ...
+        + exp(-1i*2*pi*(0:(N - 1))'*fsig/Fs)*conj(A(frequencyMask));
 end
-
-

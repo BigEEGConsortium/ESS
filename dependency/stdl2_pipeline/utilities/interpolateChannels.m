@@ -20,7 +20,6 @@ function signal = interpolateChannels(signal, targetChannels, sourceChannels)
 %
 
 %% Check the parameters
-pop_editoptions('option_single', false, 'option_savetwofiles', false);
 if nargin < 1 || ~isstruct(signal) || ~isfield(signal, 'data') || ...
    ~isfield(signal, 'chanlocs')      
     error('interpolateChannels:NotEnoughArguments', ...

@@ -53,7 +53,7 @@ classdef level1Study
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'dataRecording', struct('filename', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' ', 'eventInstanceFile', ' '),...
+            'dataRecording', struct('filename', ' ', 'dataRecordingUuid', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' ', 'eventInstanceFile', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -111,7 +111,7 @@ classdef level1Study
             end;
             
             inputOptions = arg_define(1,varargin, ...
-                arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the studyLevel1Study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
+                arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
@@ -227,7 +227,7 @@ classdef level1Study
             end;
             
             xmlDocument = xmlread(essFilePath);
-            potentialStudyNodeArray = xmlDocument.getElementsByTagName('study');
+            potentialStudyNodeArray = xmlDocument.getElementsByTagName('studyLevel1');
             
             if potentialStudyNodeArray.getLength == 0
                 error('The XML file does not contain a study node.');
@@ -594,6 +594,13 @@ classdef level1Study
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = readStringFromNode(potentialFilenameNodeArray.item(0));
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).filename = '';
+                                    end;
+                                    
+                                    potentialDataRecordingUuidNodeArray = currentNode.getElementsByTagName('dataRecordingUuid');
+                                    if  potentialDataRecordingUuidNodeArray.getLength > 0
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).dataRecordingUuid = readStringFromNode(potentialDataRecordingUuidNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).dataRecordingUuid = '';
                                     end;
                                     
                                     
@@ -1063,7 +1070,7 @@ classdef level1Study
                 obj.essFilePath = essFilePath;
             end;
             
-            docNode = com.mathworks.xml.XMLUtils.createDocument('study');
+            docNode = com.mathworks.xml.XMLUtils.createDocument('studyLevel1');
             docRootNode = docNode.getDocumentElement;
             
             essVersionElement = docNode.createElement('essVersion');
@@ -1315,6 +1322,11 @@ classdef level1Study
                     dataRecordingFilenameElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).filename));
                     dataRecordingElement.appendChild(dataRecordingFilenameElement);
                     
+                    % create the dataRecordingUuid node under dataRecording node.
+                    dataRecordingDataRecordingUuidElement = docNode.createElement('dataRecordingUuid');
+                    dataRecordingDataRecordingUuidElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).dataRecordingUuid));
+                    dataRecordingElement.appendChild(dataRecordingDataRecordingUuidElement);
+                                        
                     % create the startDateTime node under dataRecording node.
                     dataRecordingStartDateElement = docNode.createElement('startDateTime');
                     dataRecordingStartDateElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).startDateTime));
@@ -1659,7 +1671,7 @@ classdef level1Study
                                 
                                 % Non-scalp channel labels are needed for
                                 % EEG
-                                if ~isAvailable(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel)
+                                if isempty(strtrim(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel))
                                     issue(end+1).description = sprintf('Non-scalp channel labels of EEG (modality %d) in recording parameter set %d is empty.', j, i);
                                 end;
                             end;
@@ -1780,6 +1792,14 @@ classdef level1Study
                                 issue(end+1).description = [sprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
                             end;
+                        end;
+                        
+                        
+                        % check dataRecordingUuid
+                        if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid)
+                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a UUID in dataRecordingUuid.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid = char(java.util.UUID.randomUUID);
+                            issue(end).howItWasFixed = 'UUID placed into the field.';
                         end;
                         
                         % check eventInstanceFile
@@ -1924,7 +1944,7 @@ classdef level1Study
                     issue(1).issueType = [];
                 end;
                 
-                fprintf('Fixed issues:');
+                fprintf('Fixed issues:\n');
                 numberOfFixedIssues = 0;
                 for i=1:length(issue)
                     if ~isempty(issue(i).howItWasFixed)

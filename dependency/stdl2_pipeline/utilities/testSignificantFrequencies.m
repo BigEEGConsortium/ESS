@@ -1,64 +1,49 @@
-function [Fval, A, f, sig ,sd] = testSignificantFrequencies(data, noisyParameters)
+function [Fval, A, f, sig ] = testSignificantFrequencies(data, lineNoise)
 % Computes the F-statistic for sine wave in locally-white noise (continuous data).
 %
-% [Fval, A, f, sig ,sd] = testSignificantFrequencies(data, g)
+% Usage:
+%     [Fval, A, f, sig ,sd] = testSignificantFrequencies(data,lineNoise)
 %
-%  Inputs:  
-%       data        (data in [N,C] i.e. time x channels/trials or a single
-%       vector) - required.
-%       params      structure containing parameters - params has the
-%       following fields: tapers, Fs, fpass, pad
-%           tapers : precalculated tapers from dpss or in the one of the following
-%                    forms: 
-%                    (1) A numeric vector [TW K] where TW is the
-%                        time-bandwidth product and K is the number of
-%                        tapers to be used (less than or equal to
-%                        2TW-1). 
-%                    (2) A numeric vector [W T p] where W is the
-%                        bandwidth, T is the duration of the data and p 
-%                        is an integer such that 2TW-p tapers are used. In
-%                        this form there is no default i.e. to specify
-%                        the bandwidth, you have to specify T and p as
-%                        well. Note that the units of W and T have to be
-%                        consistent: if W is in Hz, T must be in seconds
-%                        and vice versa. Note that these units must also
-%                        be consistent with the units of params.Fs: W can
-%                        be in Hz if and only if params.Fs is in Hz.
-%                        The default is to use form 1 with TW=3 and K=5
+% Parameters:
+%      data        Single channel -- required
+%      lineNoise   Structure with various parameters set
 %
-%	        Fs 	        (sampling frequency) -- optional. Defaults to 1.
-%           fpass       (frequency band to be used in the calculation in the form
-%                                   [fmin fmax])- optional. 
-%                                   Default all frequencies between 0 and Fs/2
-%	        pad		    (padding factor for the FFT) - optional (can take values -1,0,1,2...). 
-%                    -1 corresponds to no padding, 0 corresponds to padding
-%                    to the next highest power of 2 etc.
-%			      	 e.g. For N = 500, if PAD = -1, we do not pad; if PAD = 0, we pad the FFT
-%			      	 to 512 points, if pad=1, we pad to 1024 points etc.
-%			      	 Defaults to 0.
+% The lineNoise structure has the following fields set:
+%       fPassBand       Frequency band used 
+%       Fs 	            Sampling frequency 
+%       p               Significance level cutoff 
+%       pad             FFT padding factor 
+%       tapers          Precomputed tapers from dpss
+%       taperWindowSize Taper sliding window length 
 %
 %  Outputs: 
-%       Fval        (F-statistic in frequency x channels/trials form)
-%  	    A		    (Line amplitude for X in frequency x channels/trials form) 
-%	    f		    (frequencies of evaluation) 
-%       sig         (F distribution (1-p)% confidence level)
-%       sd          (standard deviation of the amplitude C)
+%       Fval        F-statistic in frequency x 1 form
+%  	    A		    Line amplitude for X in frequency x 1 
+%	    f		    Frequencies of evaluation 
+%       sig         F distribution (1-p)% confidence level
+%
 
 %% Process the input arguments
 if nargin < 1
     error('testSignificantFrequencies:NoData', ...
           'Must provide data as the first argument'); 
+elseif nargin < 2
+    error('testSignificantFrequencies:NoParameters', ...
+          'Must provide a lineNoise parameter structure as second argument'); 
 end
-[~, pad] = getStructureParameters(noisyParameters, 'pad');
-[~, Fs] = getStructureParameters(noisyParameters, 'Fs');
-[~, fpass] = getStructureParameters(noisyParameters, 'fPassBand');
+[~, pad] = getStructureParameters(lineNoise, 'pad');
+[~, Fs] = getStructureParameters(lineNoise, 'Fs');
+[~, fpass] = getStructureParameters(lineNoise, 'fPassBand');
 
 data = change_row_to_column(data);
-[N, C] = size(data);
-[~, p] = getStructureParameters(noisyParameters, 'p', 0.01);
-%[~, multipleComparisons] = getStructureParameters(noisyParameters, 'multipleComparisons', 0);
-%[~, lineNoiseFrequencyBand] = getStructureParameters(noisyParameters, 'lineNoiseFrequencyBand');
-tapers = checkTapers(noisyParameters.tapers, N, Fs); % Calculate the actual tapers
+C = size(data, 2);
+[~, p] = getStructureParameters(lineNoise, 'p', 0.01);
+[~, tapers] = getStructureParameters(lineNoise, 'tapers'); % Calculate the actual tapers
+if isempty(tapers)
+    error('testSignificantFrequencies:NoTapers', ...
+          'Must provide a tapers field in the lineNoise parameter structure');  
+end
+
 [N, K] = size(tapers);
 nfft = max(2^(nextpow2(N) + pad), N);% number of points in fft
 [f, findx] = getfgrid(Fs, nfft, fpass);% frequency grid to be returned
@@ -88,15 +73,6 @@ num = (K - 1).*(abs(A).^2).*squeeze(H0sq);%numerator for F-statistic
 den = squeeze(sum(abs(Jp - Jhat).^2, 2) + ...
     sum(abs(J(findx, Keven, :)).^2, 2));% denominator for F-statistic
 Fval = num./den; % F-statisitic
-if nargout > 3
-%    if multipleComparisons == 1  
-%        numberFrequencies = sum(lineNoiseFrequencyBand(1) < f && ...
-%                                f > lineNoiseFrequencyBand(2));
-%        p = p/numberFrequencies;
-%    end
-   sig = finv(1 - p, 2, 2*K - 2); % F-distribution based 1-p% point
-   variance = den./(K*squeeze(H0sq)); % variance of amplitude
-   sd = sqrt(variance);% standard deviation of amplitude
-end
+sig = finv(1 - p, 2, 2*K - 2); % F-distribution based 1-p% point
 A = A*Fs;
 

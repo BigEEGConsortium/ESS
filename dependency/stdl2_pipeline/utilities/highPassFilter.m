@@ -17,7 +17,6 @@ function [EEG, highPass] = highPassFilter(EEG, highPass)
 %
 
 %% Check the parameters
-pop_editoptions('option_single', false, 'option_savetwofiles', false);
 if nargin < 1 || ~isstruct(EEG)
     error('highPassFilter:NotEnoughArguments', 'first argument must be a structure');
 elseif nargin < 2

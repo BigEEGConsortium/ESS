@@ -1,16 +1,16 @@
-classdef level2Study % change to level2Study
+classdef level2Study
     % Be careful! any properties placed below will be written in the XML
     % file.
     properties         
         % version of STDL2 used. Mandatory.
-        stld2Version 
+        studyLevel2SchemaVersion = ' ';
         
         % study title, in case file was moved.
-        title 
+        title = ' ';
         
         % a unique identifier (uuid) with 32 random  alphanumeric characters and four hyphens).
         % It is used to uniquely identify each STDL2 document.
-        uuid    
+        uuid = ' ';   
         
         % the URI pointing to the root folder of associated data folder. If the XML file is located
         % in the default root folder, this should be ‘.’ (current directory). If for example the data files   
@@ -19,7 +19,20 @@ classdef level2Study % change to level2Study
         % should always produce a valid, downloadable URI.adable URI.
         rootURI = '.';
         
-        stld1 = struct('stld1Uuid', ' ',  'stld1File', ' '); 
+        % Filters have a similar definition here as in BCILAB. They receive as input the EEG data
+        % and output a transformation of the data that can be the input to other filters.
+        % Here we are assuming a number of filters to have been executed on the data,
+        % in the order specified in executionOrder (multiple numbers here mean multiple filter
+        % runs.
+        filters = struct('filter', struct('filterLabel', ' ', 'executionOrder', ' ', ...
+            'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ',...
+            'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParemeterSetLabel', ' ')); 
+        
+        % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
+        % (we do not combine datasets).
+        studyLevel2Files = struct('studyLevel2File', struct('studyLevel2FileName', ' ', ...
+            'dataRecordingUuid', ' ', 'noisyParametersFile', ' ', 'averageReferenceChannels', ' ', ...
+            'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'nonInterpolatableChannels',  ' '));
     end;
     
     % properties that we do not want to be written/read to/from the XML
@@ -29,14 +42,24 @@ classdef level2Study % change to level2Study
     properties (AbortSet = true)
         % Filename (including path) of the ESS Standard Level 2 XML file associated with the
         % object.
-        xmlFilePath
+        level2XmlFilePath
+        
+        % Filename (including path) of the ESS Standard Level 1 XML file
+        % based on which level 2 data may be computed. Could be kept empty
+        % if not available.
+        level1XmlFilePath
         
         % Level 1 study contains basic information about study and raw data files.
-        standardLevel1StudyObj   
+        % It is created based on level1XmlFilePath input parameter
+        level1StudyObj            
+        
+        % ESS-convention level 2 folder where all level 2 data are
+        % organized during level 1 -> 2 conversion using the pipeline.
+        level2Folder
     end;
     
     methods
-        function obj = level2Study(standardLevel1StudyObjOrFile, varargin)
+        function obj = level2Study(varargin)
             
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
@@ -48,16 +71,26 @@ classdef level2Study % change to level2Study
             end;
             
             
+            inputOptions = arg_define(1,varargin, ...
+                arg('level1XmlFilePath', '','','ESS Standard Level 1 XML Filename.', 'type', 'char'), ...
+                arg('level2XmlFilePath', '','','ESS Standard Level 2 XML Filename.', 'type', 'char'), ...             
+                arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr') ...
+                );
+            
             if nargin > 0
-                if ischar(standardLevel1StudyObjOrFile)
-                    obj.standardLevel1StudyObj = standardLevel1Study('file', standardLevel1StudyObjOrFile);
-                else
-                    obj.standardLevel1StudyObj = standardLevel1StudyObjOrFile;
-                end;
+                obj.level1StudyObj = level1Study(inputOptions.level1XmlFilePath);
+                obj.level1XmlFilePath = inputOptions.level1XmlFilePath;
             end;
         end;
         
-        function write(obj)
+        function obj = write(obj, level2XmlFilePath)
+            
+            % assign the input file path as the object path and write
+            % there.
+            if nargin > 1
+                obj.level2XmlFilePath = level2XmlFilePath;
+            end;
+            
             % use xml_io tools to write XML from a Matlab structure
             propertiesToExcludeFromXMLIO = findAttrValue(obj, 'AbortSet', true);
             
@@ -67,15 +100,18 @@ classdef level2Study % change to level2Study
             xmlAsStructure = rmfield(struct(obj), propertiesToExcludeFromXMLIO);
             warning('on', 'MATLAB:structOnObject');
             
+            % include level 1 xml in studyLevel1 field.
+            xmlAsStructure.studyLevel1 = xml_read (obj.level1XmlFilePath);
+            
             % prevent xml_ioi from adding extra 'Item' fields and write the XML 
             Pref.StructItem = false;
             Pref.CellItem = false;
-            xml_write(obj.xmlFilePath, xmlAsStructure, 'stld2', Pref);
+            xml_write(obj.level2XmlFilePath, xmlAsStructure, 'studyLevel2', Pref);
         end;
         
         function obj = read(obj)
             Pref.Str2Num = false;
-            [xmlAsStructure rootName] = xml_read(obj.xmlFilePath, Pref);
+            [xmlAsStructure rootName] = xml_read(obj.level2XmlFilePath, Pref);
             names = fieldnames(xmlAsStructure);
             
             for i=1:length(names)
@@ -86,8 +122,34 @@ classdef level2Study % change to level2Study
             
             % the assignment above is quite raw as it does not check for the
             % consistency of inner values with deeper structures
-            % TODO: Perform consistency check here.
+            % TODO: Perform consistency check here, or use XSD validation.
             
+        end;
+        
+        function obj = createLevel2Study(obj, level2Folder, varargin)
+            obj.level2Folder = level2Folder;
+            
+            % make top folders
+            mkdir(level2Folder);
+            mkdir([level2Folder filesep 'session']);
+            mkdir([level2Folder filesep 'additional_data']);
+            
+            % process each session before moving to the other
+            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
+                for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
+                    filename = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
+                    
+                    % read data
+                    
+                    % run the pipeline
+                    
+                    %lets assume we got EEG variable
+                    % write data
+                    mkdir([level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber]);
+                end;
+            end;
+            
+            obj.write('studyLevel2_description.xml');
         end;
     end;
 end
