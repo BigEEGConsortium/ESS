@@ -137,15 +137,64 @@ classdef level2Study
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
-                    filename = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
+                    fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
                     
                     % read data
                     
+                    % copy and rename the data recording files
+                    level1FileFolder = fileparts(obj.level1XmlFilePath);
+                    
+                    if isempty(obj.rootURI)
+                        rootFolder = level1FileFolder;
+                    elseif obj.rootURI(1) == '.'
+                        rootFolder = [level1FileFolder filesep obj.rootURI(2:end)];
+                    end;
+                    
+                    % search for the file both next to the xml file and in the standard ESS
+                    % convention location
+                    nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
+                    fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                    
+                    if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
+                        fileFinalPath = fullEssFilePath;
+                    elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
+                        fileFinalPath = nextToXMLFilePath;
+                    elseif ~isempty(fileNameFromObj) % when the file is specified but cannot be found on disk
+                        fileFinalPath = [];
+                        fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                        fprintf('You might want to run validate() routine.\n');
+                    else % the file name is empty
+                        fileFinalPath = [];
+                        fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                        fprintf('You might want to run validate() routine.\n');
+                    end;
+                    
                     % run the pipeline
                     
-                    %lets assume we got EEG variable
+                    % lets assume we got EEG variable
                     % write data
-                    mkdir([level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber]);
+                    sessionFolder = [level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
+                    if ~exist(sessionFolder, 'dir')
+                        mkdir(sessionFolder);
+                    end;
+                    
+                    % if recording file name matches ESS Level 1 convention
+                    % then just modify it a bit to conform to level2
+                    [path name ext] = fileparts(fileFinalPath);
+                    % see if the file name is already in ESS
+                    % format, hence no name change is necessary
+                    itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'eeg', obj.level1StudyObj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                        subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
+                                        
+                    if itMatches
+                        % change the eeg_ at the beginning to
+                        % eeg_studyLevel2_
+                        filenameInEss = [eeg_studyLevel2_ name(5:end) ext];
+                    else % convert to ess convention
+                        filenameInEss = obj.essConventionFileName('eeg', ['studyLevel2_' obj.studyTitle], obj.sessionTaskInfo(i).sessionNumber,...
+                            subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                    end;
+                    
                 end;
             end;
             

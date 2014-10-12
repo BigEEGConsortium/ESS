@@ -2227,7 +2227,7 @@ classdef level1Study
                         else % the file was empty
                             fileFinalPath = [];
                             if strcmpi(typeOfFile{k}, 'eeg')
-                                fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                                fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
                                 fprintf('You might want to run validate() routine.\n');
                             else % event
                                 fprintf('Event Instance file for for data recoding %d of sesion number %s is not specified.\n', j, obj.sessionTaskInfo(i).sessionNumber);
