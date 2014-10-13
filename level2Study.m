@@ -107,8 +107,15 @@ classdef level2Study
             xmlAsStructure = rmfield(struct(obj), propertiesToExcludeFromXMLIO);
             warning('on', 'MATLAB:structOnObject');
             
-            % include level 1 xml in studyLevel1 field.
-            xmlAsStructure.studyLevel1 = xml_read (obj.level1XmlFilePath);
+            % include level 1 xml in studyLevel1 field. Write in a tempora
+            temporaryLevel1XML = [tempname '.xml'];
+            obj.level1StudyObj.write(temporaryLevel1XML);
+            xmlAsStructure.studyLevel1 = xml_read(temporaryLevel1XML);
+            delete(temporaryLevel1XML);
+            if ~isempty(obj.level1XmlFilePath)
+                [pathstr,name,ext] = fileparts(obj.level1XmlFilePath);
+                xmlAsStructure.studyLevel1.rootURI = pathstr; % save absolute path in root dir. This is so it can later read the recording files relative to this path.
+            end;
             
             % prevent xml_ioi from adding extra 'Item' fields and write the XML
             Pref.StructItem = false;
@@ -133,6 +140,7 @@ classdef level2Study
                     xml_write(temporaryLevel1XmlFilePath, xmlAsStructure.studyLevel1, 'studyLevel1', Pref);
                     
                     obj.level1StudyObj = level1Study(temporaryLevel1XmlFilePath);
+                    
                 else
                     obj.(names{i}) = xmlAsStructure.(names{i});
                 end;
@@ -159,8 +167,8 @@ classdef level2Study
             
             alreadyProcessedDataRecordingUuid = {};
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                recordingUuid = strtrim(obj.studyLevel2Files.dataRecordingUuid);
-                if ~isempty(uuid)
+                recordingUuid = strtrim(obj.studyLevel2Files.studyLevel2File.dataRecordingUuid);
+                if ~isempty(recordingUuid)
                     alreadyProcessedDataRecordingUuid{end+1} = recordingUuid;
                 end;
             end;
@@ -179,12 +187,18 @@ classdef level2Study
                         fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
                         
                         % read data
-                        level1FileFolder = fileparts(obj.level1XmlFilePath);
-                        
-                        if isempty(obj.rootURI)
-                            rootFolder = level1FileFolder;
-                        elseif obj.rootURI(1) == '.'
-                            rootFolder = [level1FileFolder filesep obj.rootURI(2:end)];
+                        if ~isempty(obj.level1XmlFilePath)
+                            level1FileFolder = fileparts(obj.level1XmlFilePath);
+                            
+                            if isempty(obj.rootURI)
+                                rootFolder = level1FileFolder;
+                            elseif obj.rootURI(1) == '.' % if the path is relative, append the current absolute path
+                                rootFolder = [level1FileFolder filesep obj.rootURI(2:end)];
+                            else
+                                rootFolder = obj.level1StudyObj.rootURI;
+                            end;
+                        else
+                            rootFolder = obj.level1StudyObj.rootURI;
                         end;
                         
                         % search for the file both next to the xml file and in the standard ESS
