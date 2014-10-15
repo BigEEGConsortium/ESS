@@ -211,29 +211,53 @@ classdef level2Study
                             rootFolder = obj.level1StudyObj.rootURI;
                         end;
                         
-                        % search for the file both next to the xml file and in the standard ESS
-                        % convention location
-                        nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
-                        fullEssFilePath = [rootFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                        fileFinalPath = findFile(fileNameFromObj);
                         
-                        if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
-                            fileFinalPath = fullEssFilePath;
-                        elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
-                            fileFinalPath = nextToXMLFilePath;
-                        elseif ~isempty(fileNameFromObj) % when the file is specified but cannot be found on disk
-                            fileFinalPath = [];
-                            fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
-                            fprintf('You might want to run validate() routine.\n');
-                        else % the file name is empty
-                            fileFinalPath = [];
-                            fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
-                            fprintf('You might want to run validate() routine.\n');
+                        % read raw EEG data
+                        EEG = exp_eval(io_loadset(fileFinalPath));                                                
+                        
+                        % read digitized channel locations (if exists)
+                        if ~ismember(lower(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations), '', 'na')
+                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations);
+                            EEG.chanlocs = readlocs(fileFinalPathForChannelLocation);
+                        else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
+                            EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
                         end;
                         
                         % run the pipeline
-                        EEG = exp_eval(io_loadset(fileFinalPath));
+                        % find EEG channels subsets      
+                        dataRecordingParameterSet = [];
+                       for kk = 1:length(obj.level1StudyObj.recordingParameterSet)
+                           if strcmpi(obj.level1StudyObj.recordingParameterSet(kk).recordingParameterSetLabel, obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
+                               dataRecordingParameterSet = obj.level1StudyObj.recordingParameterSet(kk);
+                               break;
+                           end;
+                       end;
                         
-                        % lets assume we got EEG variable
+                       if isempty(dataRecordingParameterSet)
+                           % ToDo: Throw a better error message
+                           error('RecordingParameterSet label is not valid');
+                       end;
+                       
+                       % find EEG channels
+                       allEEGChannels = [];
+                       allScalpChannels = [];
+                       for m = 1:length(dataRecordingParameterSet.modality)
+                           if strcmpi(dataRecordingParameterSet.modality(m).type, 'EEG')
+                               newChannels = str2double(dataRecordingParameterSet.modality(m).startChannel):str2double(dataRecordingParameterSet.modality(m).endChannel);
+                               newChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).channelLabel, ','));
+                               nonScalpChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).nonScalpChannelLabel, ','));
+                               nonScalpChannel = ismember(lower(newChannelLabels), lower(nonScalpChannelLabels));
+                               allEEGChannels = [allEEGChannels newChannels];
+                               allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
+                           end;
+                       end;
+                       
+                       referenceChannels  = allScalpChannels; 
+                       channelsToBeReferenced = allEEGChannels;
+                       lineFrequencies = [60 120 240 180];
+                       standardLevel2Pipeline;
+                       
                         % write data
                         sessionFolder = [level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
                         if ~exist(sessionFolder, 'dir')
@@ -268,6 +292,28 @@ classdef level2Study
                     end;
                 end;
             end;
+            
+            function fileFinalPathOut = findFile(fileNameFromObjIn)
+                % search for the file both next to the xml file and in the standard ESS
+                % convention location
+                nextToXMLFilePath = [rootFolder filesep fileNameFromObjIn];
+                fullEssFilePath = [rootFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObjIn];
+                
+                if ~isempty(fileNameFromObjIn) && exist(fullEssFilePath, 'file')
+                    fileFinalPathOut = fullEssFilePath;
+                elseif ~isempty(fileNameFromObjIn) && exist(nextToXMLFilePath, 'file')
+                    fileFinalPathOut = nextToXMLFilePath;
+                elseif ~isempty(fileNameFromObjIn) % when the file is specified but cannot be found on disk
+                    fileFinalPathOut = [];
+                    fprintf('File %s specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', fileNameFromObjIn, j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                    fprintf('You might want to run validate() routine.\n');
+                else % the file name is empty
+                    fileFinalPathOut = [];
+                    fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                    fprintf('You might want to run validate() routine.\n');
+                end;
+            end
+            
         end;
     end;
 end
