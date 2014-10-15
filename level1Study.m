@@ -2051,9 +2051,8 @@ classdef level1Study
             for i=1:length(allSearchFolders)
                 if isempty(EEG)
                     try
-                        % ToDo: use io_loadset here to load any file type and not just
-                        % .set
-                        EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
+                        EEG = io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]);
+                        %EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
                     catch
                     end;
                 end;

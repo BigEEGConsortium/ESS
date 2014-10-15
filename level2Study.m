@@ -84,8 +84,18 @@ classdef level2Study
             end;
             
             if ~isempty(inputOptions.level1XmlFilePath)
-                obj.level1StudyObj = level1Study(inputOptions.level1XmlFilePath);
-                obj.level1XmlFilePath = inputOptions.level1XmlFilePath;
+                level1Obj = level1Study(inputOptions.level1XmlFilePath);
+                
+                % make sure the uuids of of the level 2 and the provided
+                % level 1 match.
+                if ~isempty(strtrim(level1Obj.studyUuid)) && ...
+                        ~isempty(obj.level1StudyObj) && ...
+                    ~strcmp(strstim(level1Obj.studyUuid), strstim(obj.level1StudyObj))
+                    error('The level 1 uuid in the provided level 1 XML file is different from the level 1 uuid in the provided level 2 xml file. Are you sure you are using the right file?'); 
+                else
+                    obj.level1StudyObj = level1Obj;
+                    obj.level1XmlFilePath = inputOptions.level1XmlFilePath;
+                end;
             end;
             
         end;
@@ -221,7 +231,7 @@ classdef level2Study
                         end;
                         
                         % run the pipeline
-                        EEG = eeg_emptyset;
+                        EEG = exp_eval(io_loadset(fileFinalPath));
                         
                         % lets assume we got EEG variable
                         % write data

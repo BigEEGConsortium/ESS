@@ -43,6 +43,8 @@ function m = hlp_serialize(v)
 %                                adapted from serialize.m
 %                                (C) 2010 Tim Hutt
 
+% hlp_serialize_version<1.00>
+
 % Copyright (C) Christian Kothe, SCCN, 2010, christian@sccn.ucsd.edu
 %
 % This program is free software; you can redistribute it and/or modify it under the terms of the GNU
@@ -119,7 +121,9 @@ end
 
 % Numeric Matrix: can be real/complex, sparse/full, scalar
 function m = serialize_numeric(v)
-    if issparse(v)
+    if isa(v,'gpuArray')
+        m = serialize_numeric(gather(v));
+    elseif issparse(v)
         % Data Type & Dimensions
         m = [uint8(130); typecast(uint64(size(v,1)), 'uint8').'; typecast(uint64(size(v,2)), 'uint8').']; % vectorize
         % Index vectors
@@ -265,7 +269,7 @@ function m = serialize_handle(v)
     % get the representation
     rep = functions(v);
     switch rep.type
-        case 'simple'
+        case {'simple','classsimple'}
             % simple function: Tag & name
             m = [uint8(151); serialize_string(rep.function)];
         case 'anonymous'
@@ -388,7 +392,7 @@ function b = class2tag(cls)
           b = uint8(200);
 
 		otherwise
-			error('Unknown class');
+			error(['Unknown class: ' cls]);
     end
 end
 

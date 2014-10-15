@@ -135,7 +135,6 @@ function varargout = hlp_microcache(dom, f, varargin)
 %   lambda_equality: desired equality relation for lambda expressions
 persistent mc;
 
-
 % [varargout{1:nargout}] = f(varargin{:}); return; % UNCOMMENT TO BYPASS
 
 % is this a regular call?
@@ -160,7 +159,7 @@ if nargin > 1
             args = varargin;
             leq = mc.(dom).config.lambda_equality;
             if ischar(leq)
-                for k = find(cellfun('isclass',argin,'function_handle'))
+                for k = find(cellfun('isclass',varargin,'function_handle'))
                     ck = char(args{k});
                     if ck(1) == '@'
                         if strcmp(leq,'string')
@@ -178,7 +177,7 @@ if nargin > 1
                     end
                 end
             end
-        catch
+        catch %#ok<CTCH>
             % the lambda lookup failed, so we assume that it has not yet been assigned; assign it now.
             mc.(dom).config.lambda_equality = false;
         end
@@ -186,14 +185,14 @@ if nargin > 1
         
         % get the size id (sid) of the key (MATLAB keeps track of that for every object)
         keyinfo = whos('key');
-        keysid = sprintf('s%.0f',keyinfo.bytes);
+        keysid = sprintf('s%u',keyinfo.bytes);
         
         try
             % retrieve the pool of size-equivalent objects
             sizepool = mc.(dom).(keysid);
             % search for the key in the pool (checking the most-frequently used keys first)
             for k=1:length(sizepool.inps)
-                if isequalwithequalnans(key,sizepool.inps{k}) % (isequalwithequalnans() is a fast builtin)
+                if isequalwithequalnans(key,sizepool.inps{k}) %#ok<FPARK> % (isequalwithequalnans() is a fast builtin)
                     % found the key, deliver outputs
                     varargout = sizepool.outs{k};
                     % update the db record...
@@ -213,7 +212,7 @@ if nargin > 1
                     return;
                 end
             end
-        catch
+        catch %#ok<CTCH>
             % domain+keysid not yet in the cache: create appropriate structures (this is rare)
             sizepool = struct('inps',{{}}, 'outs',{{}}, 'frqs',{[]}, 'luse',{[]}, 'lcnt',{0});
         end
@@ -292,3 +291,4 @@ else
         mc = [];
     end
 end
+

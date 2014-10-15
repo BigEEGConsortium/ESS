@@ -151,7 +151,7 @@ try
     switch lower(ext)
         case '.set'
             % EEGLAB data set
-            args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange','timerange'});
+            args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange','timerange', 'arg_direct'});
             res = pop_loadset('filepath',[base filesep], 'filename', [name ext], args{:});
             if ~isfield(res,'tracking') || ~isfield(res.tracking,'online_expression')
                 % it comes fresh from EEGLAB
