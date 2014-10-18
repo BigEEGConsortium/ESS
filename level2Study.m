@@ -217,7 +217,7 @@ classdef level2Study
                         EEG = exp_eval(io_loadset(fileFinalPath));                                                
                         
                         % read digitized channel locations (if exists)
-                        if ~ismember(lower(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations), '', 'na')
+                        if ~ismember(lower(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations), {'', 'na'})
                             fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations);
                             EEG.chanlocs = readlocs(fileFinalPathForChannelLocation);
                         else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
@@ -252,10 +252,15 @@ classdef level2Study
                                allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
                            end;
                        end;
-                       
-                       referenceChannels  = allScalpChannels; 
-                       channelsToBeReferenced = allEEGChannels;
-                       lineFrequencies = [60 120 240 180];
+                                          
+                       % set 
+                       params = struct();
+                       params.lineFrequencies = [60, 120,  180, 212, 240];
+                       params.referenceChannels = allScalpChannels;
+                       params.rereferencedChannels = allEEGChannels;
+                       params.highPassChannels = params.rereferencedChannels;
+                       params.lineNoiseChannels = params.rereferencedChannels;
+                       thisName = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', recording ' num2str(j)];
                        standardLevel2Pipeline;
                        
                         % write data
@@ -267,6 +272,7 @@ classdef level2Study
                         % if recording file name matches ESS Level 1 convention
                         % then just modify it a bit to conform to level2
                         [path name ext] = fileparts(fileFinalPath);
+                        
                         % see if the file name is already in ESS
                         % format, hence no name change is necessary
                         subjectInSessionNumber = obj.level1StudyObj.sessionTaskInfo(i).subject(j).inSessionNumber;

@@ -186,7 +186,7 @@ try
                 catch
                     disp('ERPSS .cnt importer failed; falling back to FileIO Yokogawa importer.');
                     % .. or Yokogawa (and possibly other formats...)
-                    args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange'});
+                    args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange', 'arg_direct'});
                     res = pop_fileio(filename,args{:});
                 end
             end
@@ -197,7 +197,7 @@ try
         case '.cnt'
             % Neuroscan CNT
             try
-                args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange','timerange'});
+                args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange','timerange', 'arg_direct'});
                 if ~isempty(opts.samplerange)
                     args = [args {'sample1',opts.samplerange(1),'ldnsamples',opts.samplerange(2)-opts.samplerange(1)+1}]; end
                 if ~isempty(opts.timerange)
@@ -228,7 +228,7 @@ try
                 res = pop_loadeep_avg(filename);
             catch
                 % .. or Megis / BESA; via FileIO
-                args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange'});
+                args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange', 'arg_direct'});
                 res = pop_fileio(filename,args{:});
             end
         case '.eeg'
@@ -243,7 +243,7 @@ try
                 opts.channels = [];
             catch
                 % ... or ANT / BrainProducts file; via FileIO
-                args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange'});
+                args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange', 'arg_direct'});
                 res = pop_fileio(filename,args{:});
             end
         case {'.bdf','.edf'}
@@ -251,20 +251,20 @@ try
             try
                 if isempty(opts.timerange)
                     opts = rmfield(opts,'timerange'); end
-                args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange'}, 'rewrite',{'timerange','range'});
+                args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange', 'arg_direct'}, 'rewrite',{'timerange','range'});
                 res = pop_readbdf(filename,args{:});
                 opts.timerange = [];
             catch
                 % backup variant
                 disp('EEGLAB importer failed; falling back to Biosig.');
-                args = hlp_struct2varargin(opts,'suppress',{'samplerange'}, 'rewrite',{'timerange','blockrange'});
+                args = hlp_struct2varargin(opts,'suppress',{'samplerange', 'arg_direct'}, 'rewrite',{'timerange','blockrange'});
                 res = pop_biosig(filename,args{:});
                 opts.timerange = [];
                 opts.channels = [];
             end
         case '.gdf'
             % General Data Format (.gdf)
-            args = hlp_struct2varargin(opts,'suppress',{'samplerange'}, 'rewrite',{'timerange','blockrange'});
+            args = hlp_struct2varargin(opts,'suppress',{'samplerange', 'arg_direct'}, 'rewrite',{'timerange','blockrange'});
             res = pop_biosig(filename,args{:});
             opts.timerange = [];
             opts.channels = [];
@@ -320,12 +320,12 @@ catch specific_error
     try
         warning off FieldTrip:unknown_filetype
         % try File-IO
-        args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange'});
+        args = hlp_struct2varargin(opts,'suppress',{'channels','timerange','samplerange', 'arg_direct'});
         res = pop_fileio(filename,args{:});
     catch fileio_error
         try
             % try BioSig
-            args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange','timerange'});
+            args = hlp_struct2varargin(opts,'suppress',{'channels','samplerange','timerange', 'arg_direct'});
             res = pop_biosig(filename,args{:});
         catch biosig_error
             disp('All possibly applicable importers for this file format failed.');
