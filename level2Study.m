@@ -217,8 +217,8 @@ classdef level2Study
                         EEG = exp_eval(io_loadset(fileFinalPath));                                                
                         
                         % read digitized channel locations (if exists)
-                        if ~ismember(lower(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations), {'', 'na'})
-                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(1).subject.channelLocations);
+                        if ~ismember(lower(strtrim(obj.level1StudyObj.sessionTaskInfo(i).subject.channelLocations)), {'', 'na'})
+                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject.channelLocations);
                             EEG.chanlocs = readlocs(fileFinalPathForChannelLocation);
                         else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
                             EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
@@ -315,7 +315,7 @@ classdef level2Study
                     fprintf('You might want to run validate() routine.\n');
                 else % the file name is empty
                     fileFinalPathOut = [];
-                    fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                    fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
                     fprintf('You might want to run validate() routine.\n');
                 end;
             end
