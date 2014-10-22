@@ -1698,11 +1698,23 @@ classdef level1Study
                             % start channel
                             if ~isAvailable(obj.recordingParameterSet(i).modality(j).startChannel)
                                 issue(end+1).description = sprintf('Start channel of modality %d of recording parameter set %d is empty.', j, i);
+                            else
+                                startChannel = str2double(obj.recordingParameterSet(i).modality(j).startChannel);
                             end;
                             
                             % end channel
                             if ~isAvailable(obj.recordingParameterSet(i).modality(j).endChannel)
                                 issue(end+1).description = sprintf('End channel of modality %d of recording parameter set %d is empty.', j, i);
+                            else
+                                endChannel = str2double(obj.recordingParameterSet(i).modality(j).endChannel);
+                            end;
+                            
+                            % number of channel labels provided must be either zero or match
+                            % the number specified by startChannel and
+                            % endChannel
+                            channelLabel = strsplit(obj.recordingParameterSet(i).modality(j).channelLabel,',');
+                            if length(channelLabel) ~= (endChannel - startChannel + 1)
+                                issue(end+1).description = sprintf('Number of channel labels of modality %d of recording parameter set %d does not match number of channel expected from startChannel and endChannel values.', j, i);
                             end;
                             
                             % we need a description when data type is not any of
@@ -2345,7 +2357,7 @@ classdef level1Study
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             
-            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations'})
+            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report'})
                 error('eegOrEvent (first) input variable has to be either ''eeg'', ''event'' or ''channel_locations.');
             end;
             

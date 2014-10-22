@@ -31,7 +31,7 @@ classdef level2Study
         % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
         % (we do not combine datasets).
         studyLevel2Files = struct('studyLevel2File', struct('studyLevel2FileName', ' ', ...
-            'dataRecordingUuid', ' ', 'noisyParametersFile', ' ', 'averageReferenceChannels', ' ', ...
+            'dataRecordingUuid', ' ', 'noisyParametersFile', ' ', 'reportFileName', ' ', 'averageReferenceChannels', ' ', ...
             'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'nonInterpolatableChannels',  ' '));
     end;
     
@@ -90,8 +90,8 @@ classdef level2Study
                 % level 1 match.
                 if ~isempty(strtrim(level1Obj.studyUuid)) && ...
                         ~isempty(obj.level1StudyObj) && ...
-                    ~strcmp(strstim(level1Obj.studyUuid), strstim(obj.level1StudyObj))
-                    error('The level 1 uuid in the provided level 1 XML file is different from the level 1 uuid in the provided level 2 xml file. Are you sure you are using the right file?'); 
+                        ~strcmp(strstim(level1Obj.studyUuid), strstim(obj.level1StudyObj))
+                    error('The level 1 uuid in the provided level 1 XML file is different from the level 1 uuid in the provided level 2 xml file. Are you sure you are using the right file?');
                 else
                     obj.level1StudyObj = level1Obj;
                     obj.level1XmlFilePath = inputOptions.level1XmlFilePath;
@@ -189,7 +189,7 @@ classdef level2Study
             mkdir([level2Folder filesep 'additional_data']);
             
             % process each session before moving to the other
-            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
+            for i=5%1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
                     % do not processed data recordings that have already
                     % been processed.
@@ -214,56 +214,139 @@ classdef level2Study
                         fileFinalPath = findFile(fileNameFromObj);
                         
                         % read raw EEG data
-                        EEG = exp_eval(io_loadset(fileFinalPath));                                                
+                        EEG = exp_eval(io_loadset(fileFinalPath));
                         
+                        
+                        % find EEG channels subsets
+                        dataRecordingParameterSet = [];
+                        for kk = 1:length(obj.level1StudyObj.recordingParameterSet)
+                            if strcmpi(obj.level1StudyObj.recordingParameterSet(kk).recordingParameterSetLabel, obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
+                                dataRecordingParameterSet = obj.level1StudyObj.recordingParameterSet(kk);
+                                break;
+                            end;
+                        end;
+                        
+                        if isempty(dataRecordingParameterSet)
+                            % ToDo: Throw a better error message
+                            error('RecordingParameterSet label is not valid');
+                        end;
+                        
+                        % find EEG channels
+                        allEEGChannels = [];
+                        allScalpChannels = [];
+                        allEEGChannelLabels = {};
+                        allScalpChannelLabels = {};
+                        allChannelLabels = {}; % the label for each channel, whether it be EEG, MocaP..
+                        allChannelTypes = {}; % the type of each channel
+                        for m = 1:length(dataRecordingParameterSet.modality)
+                            
+                            startChannel = str2double(dataRecordingParameterSet.modality(m).startChannel);
+                            endChannel   = str2double(dataRecordingParameterSet.modality(m).endChannel);
+                            newChannels = startChannel:endChannel;
+                            newChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).channelLabel, ','));
+                            
+                            allChannelTypes(newChannels) = {dataRecordingParameterSet.modality(m).type};
+                            if length(newChannelLabels) == length(newChannels)
+                                allChannelLabels(newChannels) = newChannelLabels;
+                            else
+                                error('Number of channel lables does not match star and end channel values');
+                            end;
+                            
+                            if strcmpi(dataRecordingParameterSet.modality(m).type, 'EEG')
+                                nonScalpChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).nonScalpChannelLabel, ','));
+                                nonScalpChannel = ismember(lower(newChannelLabels), lower(nonScalpChannelLabels));
+                                allEEGChannels = [allEEGChannels newChannels];
+                                allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
+                                
+                                allEEGChannelLabels = cat(1, allEEGChannelLabels, newChannelLabels);
+                                newChannelLabels = cat(1, newChannelLabels, nonScalpChannelLabels);
+                            end;
+                        end;
+                        
+                        % assign channel type in EEG.chanlocs
+                        for chanCounter = 1:length(allChannelTypes)
+                            EEG.chanlocs(chanCounter).type = allChannelTypes{chanCounter};
+                            
+                            % place labels from XML into EEG.chanlocs when
+                            % empty.
+                            if isempty(EEG.chanlocs(chanCounter).labels)
+                                EEG.chanlocs(chanCounter).labels = allChannelLabels{chanCounter};
+                            elseif strcmpi(allChannelTypes{chanCounter}, 'EEG') && ~strcmpi(EEG.chanlocs(chanCounter).labels, allChannelLabels{chanCounter});
+                                % ToDo: make a better error message.
+                                error(sprintf('Channel labels from level 1 XML file and EEG recording are inconsistent for %s file.', fileNameFromObj));
+                            end;
+                        end;
+                        
+                        %ToDo: make it work for multiple subjects and their
+                        %channel locations.
                         % read digitized channel locations (if exists)
-                        if ~ismember(lower(strtrim(obj.level1StudyObj.sessionTaskInfo(i).subject.channelLocations)), {'', 'na'})
-                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject.channelLocations);
-                            EEG.chanlocs = readlocs(fileFinalPathForChannelLocation);
+                        if ~ismember(lower(strtrim(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations)), {'', 'na'})
+                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations);
+                            chanlocsFromFile = readlocs(fileFinalPathForChannelLocation);
+                            
+                            % check if there are enough channels in EEG.data
+                            % (at least the size of EEG channels expected).
+                            if length(allEEGChannelLabels) > size(EEG.data, 1)
+                                error(sprintf('There are less channels in %s file than EEG channels specified by recordingParameterSet %d',  fileNameFromObj, dataRecordingParameterSet));
+                            end;
+                            
+                            % sometimes channel location file does not
+                            % contain locations for all channels, esp.
+                            % channels like EXG, Mastoid, EMG.
+                            if length(chanlocsFromFile) ~= size(EEG.data, 1)
+                                labelsFromFile = {chanlocsFromFile.labels};
+                                
+                                % the the option with more labels, either
+                                % from the EEG.chanlocs or from the XML
+                                % file. 
+                                % ToDo: rconsider this if.
+                                if length(labelsFromFile) >= length(allEEGChannelLabels)
+                                    channelLabelsToUse = labelsFromFile;
+                                else
+                                    channelLabelsToUse = allEEGChannelLabels;
+                                end;
+                                
+                                for ccounter = 1:length(allEEGChannels)
+                                    newLocation = chanlocsFromFile(strcmpi(labelsFromFile, channelLabelsToUse{allEEGChannels(ccounter)}));
+                                    if isempty(newLocation) && ismember(lower(channelLabelsToUse{allEEGChannels(ccounter)}), lower(allChannelLabels(allScalpChannels)))
+                                        error(sprintf('Label %s on the scalp does not have a location associated with it in %s file.', channelLabelsToUse{allEEGChannels(ccounter)}, fileNameFromObj));
+                                    else
+                                        fieldNames = fieldnames(newLocation);
+                                        for fieldCounter = 1:length(fieldNames)
+                                            EEG.chanlocs(allEEGChannels(ccounter)).(fieldNames{fieldCounter}) = newLocation.(fieldNames{fieldCounter});
+                                        end;
+                                    end;
+                                end;
+                                
+                            end;
                         else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
                             EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
                         end;
                         
                         % run the pipeline
-                        % find EEG channels subsets      
-                        dataRecordingParameterSet = [];
-                       for kk = 1:length(obj.level1StudyObj.recordingParameterSet)
-                           if strcmpi(obj.level1StudyObj.recordingParameterSet(kk).recordingParameterSetLabel, obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
-                               dataRecordingParameterSet = obj.level1StudyObj.recordingParameterSet(kk);
-                               break;
-                           end;
-                       end;
                         
-                       if isempty(dataRecordingParameterSet)
-                           % ToDo: Throw a better error message
-                           error('RecordingParameterSet label is not valid');
-                       end;
-                       
-                       % find EEG channels
-                       allEEGChannels = [];
-                       allScalpChannels = [];
-                       for m = 1:length(dataRecordingParameterSet.modality)
-                           if strcmpi(dataRecordingParameterSet.modality(m).type, 'EEG')
-                               newChannels = str2double(dataRecordingParameterSet.modality(m).startChannel):str2double(dataRecordingParameterSet.modality(m).endChannel);
-                               newChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).channelLabel, ','));
-                               nonScalpChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).nonScalpChannelLabel, ','));
-                               nonScalpChannel = ismember(lower(newChannelLabels), lower(nonScalpChannelLabels));
-                               allEEGChannels = [allEEGChannels newChannels];
-                               allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
-                           end;
-                       end;
-                                          
-                       % set 
-                       params = struct();
-                       params.lineFrequencies = [60, 120,  180, 212, 240];
-                       params.referenceChannels = allScalpChannels;
-                       params.rereferencedChannels = allEEGChannels;
-                       params.highPassChannels = params.rereferencedChannels;
-                       params.lineNoiseChannels = params.rereferencedChannels;
-                       thisName = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', recording ' num2str(j)];
-                       standardLevel2Pipeline;
-                       
-                        % write data
+                        % set the parameters
+                        params = struct();
+                        params.lineFrequencies = [60, 120,  180, 212, 240];
+                        params.referenceChannels = allScalpChannels;
+                        params.rereferencedChannels = allEEGChannels;
+                        params.highPassChannels = params.rereferencedChannels;
+                        params.lineNoiseChannels = params.rereferencedChannels;
+                        params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
+                        
+                        % execute the pipeline
+                        %[EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
+                        EEG = pop_loadset('eeg_studyLevel2_NCTU_Lane-Keeping_Task_session_5_subject_1_task_motionless_s01_060926_1n_recording_1.set', 'C:\Users\Nima\Documents\MATLAB\tools\playground\level2\session\5');
+                        computationTimes.highPass = 0;
+                        computationTimes.resampling = 0;
+                        computationTimes.lineNoise = 0;
+                        computationTimes.reference = 0;
+                        
+                        fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
+                            computationTimes.highPass, computationTimes.resampling, ...
+                            computationTimes.lineNoise, computationTimes.reference);
+                        
+                        % write processed EEG data
                         sessionFolder = [level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
                         if ~exist(sessionFolder, 'dir')
                             mkdir(sessionFolder);
@@ -292,6 +375,12 @@ classdef level2Study
                         
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).studyLevel2FileName = filenameInEss;
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
+                        
+                        % create the PDF report, save it and specify in XML
+                        reportFilename = obj.level1StudyObj.essConventionFileName('report', obj.level1StudyObj.studyTitle, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
+                            subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, name, 'pdf');
+                        publishLevel2Report(EEG, [sessionFolder filesep reportFilename])
+                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFilename;
                         
                         studyLevel2FileCounter = studyLevel2FileCounter + 1;
                         obj.write([level2Folder filesep 'studyLevel2_description.xml']);
