@@ -335,13 +335,7 @@ classdef level2Study
                         params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                         
                         % execute the pipeline
-                        %[EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
-                        EEG = pop_loadset('eeg_studyLevel2_NCTU_Lane-Keeping_Task_session_5_subject_1_task_motionless_s01_060926_1n_recording_1.set', 'C:\Users\Nima\Documents\MATLAB\tools\playground\level2\session\5');
-                        computationTimes.highPass = 0;
-                        computationTimes.resampling = 0;
-                        computationTimes.lineNoise = 0;
-                        computationTimes.reference = 0;
-                        
+                        [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
                         fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
                             computationTimes.highPass, computationTimes.resampling, ...
                             computationTimes.lineNoise, computationTimes.reference);
@@ -377,9 +371,10 @@ classdef level2Study
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                         
                         % create the PDF report, save it and specify in XML
-                        reportFilename = obj.level1StudyObj.essConventionFileName('report', obj.level1StudyObj.studyTitle, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                            subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, name, 'pdf');
-                        publishLevel2Report(EEG, [sessionFolder filesep reportFilename])
+                        reportName = ['report_' filenameInEss(1:end-4) '.pdf'];
+                        assignin('base', 'EEG', EEG);
+                        publishLevel2Report(EEG, sessionFolder, reportName);
+                        
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFilename;
                         
                         studyLevel2FileCounter = studyLevel2FileCounter + 1;

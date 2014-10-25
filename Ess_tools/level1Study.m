@@ -1655,7 +1655,7 @@ classdef level1Study
                                 if ~isAvailable(obj.recordingParameterSet(i).modality(j).channelLocationType)
                                     issue(end+1).description = sprintf('Channel location type of EEG (modality %d) in recording parameter set %d is empty.', j, i);
                                 else
-                                    if ~ismember(lower(obj.recordingParameterSet(i).modality(j).channelLocationType), {'10-20', '10-10', '10-5', 'EGI', 'Custom'})
+                                    if ~ismember(lower(obj.recordingParameterSet(i).modality(j).channelLocationType), lower({'10-20', '10-10', '10-5', 'EGI', 'Custom'}))
                                         issue(end+1).description = sprintf('Invalid channel location type (%s) is specified for EEG (modality %d) in recording parameter set %d.\r Valid type are 10-20, 10-10, 10-5, EGI and Custom.', obj.recordingParameterSet(i).modality(j).channelLocationType, j, i);
                                     end;
                                                                      
@@ -1679,7 +1679,7 @@ classdef level1Study
                                     
                                     
                                     if strcmpi('custom', obj.recordingParameterSet(i).modality(j).channelLocationType)
-                                        listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation(end+1) = obj.recordingParameterSet(i).recordingParameterSetLabel;
+                                        listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation(end+1) = {obj.recordingParameterSet(i).recordingParameterSetLabel};
                                     end;
                                 end;
                                                                 
@@ -1917,7 +1917,7 @@ classdef level1Study
                         issue(end+1).description = sprintf('Event code for record %d is missing.', i);
                     end;
                     
-                    % confirmity with tasks
+                    % conformity with tasks
                     if numberOfTasks > 1 && ~isAvailable(obj.eventCodesInfo(i).taskLabel)
                         issue(end+1).description = sprintf('The study has more than one task but there is no task label defined for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
                     end;
