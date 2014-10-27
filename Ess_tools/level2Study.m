@@ -371,11 +371,11 @@ classdef level2Study
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                         
                         % create the PDF report, save it and specify in XML
-                        reportName = ['report_' filenameInEss(1:end-4) '.pdf'];
+                        reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
                         assignin('base', 'EEG', EEG);
-                        publishLevel2Report(EEG, sessionFolder, reportName);
+                        publishLevel2Report(EEG, sessionFolder, reportFileName);
                         
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFilename;
+                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
                         
                         studyLevel2FileCounter = studyLevel2FileCounter + 1;
                         obj.write([level2Folder filesep 'studyLevel2_description.xml']);
