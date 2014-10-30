@@ -62,6 +62,8 @@ classdef level1Study
         % information different tasks in each session of the study.
         tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
         
+        eventSpecificiationMethod = ' '; % should be either 'codes' or 'tags'.
+        
         % Information about event codes (i.e. triggers, event numbers).
         eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
             'label', ' ', 'description', ' ', 'tag', ' '));
@@ -91,7 +93,7 @@ classdef level1Study
         
         % Filename (including path) of the ESS XML file associated with the
         % object.
-        essFilePath  
+        essFilePath
     end;
     
     methods
@@ -214,11 +216,11 @@ classdef level1Study
             % first instance of each node but the XML might have mistakanly
             % contain two more node, in which case the wrong information
             % may be read
-                        
-            % get the class path 
+            
+            % get the class path
             thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
-
+            
             schemaFile = [essDocumentPathStr filesep 'asset' filesep 'ESS_STDL 1_schema.xsd'];
             [isValid errorMessage] = validate_schema(essFilePath, schemaFile);
             if ~isValid
@@ -747,7 +749,7 @@ classdef level1Study
                                 else
                                     obj.sessionTaskInfo(sessionCounter+1).subject(sessionSubjectCounter+1).channelLocations= '';
                                 end;
-                                                                
+                                
                                 potentialMedicationNodeArray = currentNode.getElementsByTagName('medication');
                                 if potentialMedicationNodeArray.getLength > 0
                                     potentialCaffeineNodeArray = currentNode.getElementsByTagName('caffeine');
@@ -778,6 +780,15 @@ classdef level1Study
                 end;
                 
             end; %ends sessions node
+            
+            % eventSpecificiationMethod
+            potentialEventSpecificiationMethodNodeArray = studyNode.getElementsByTagName('eventSpecificiationMethod');
+            if nodeExistsAndHasAChild(potentialEventSpecificiationMethodNodeArray)
+                obj.eventSpecificiationMethod = strtrim(char(potentialEventSpecificiationMethodNodeArray.item(0).getFirstChild.getData));
+            else
+                obj.eventSpecificiationMethod = '';
+            end;
+            
             
             currentNode = studyNode;
             %start event codes
@@ -1098,6 +1109,10 @@ classdef level1Study
             rootURIElement.appendChild(docNode.createTextNode(obj.rootURI));
             docRootNode.appendChild(rootURIElement);
             
+            eventSpecificiationMethodElement = docNode.createElement('eventSpecificiationMethod');
+            eventSpecificiationMethodElement.appendChild(docNode.createTextNode(obj.eventSpecificiationMethod));
+            docRootNode.appendChild(eventSpecificiationMethodElement);
+            
             projectElement = docNode.createElement('project');
             projectRootNode=docRootNode.appendChild(projectElement);
             
@@ -1290,7 +1305,7 @@ classdef level1Study
                     
                     subjectChannelLocationsElement = docNode.createElement('channelLocations');
                     subjectChannelLocationsElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocations));
-                    subjectRootNode.appendChild(subjectChannelLocationsElement);                    
+                    subjectRootNode.appendChild(subjectChannelLocationsElement);
                 end;
                 
                 % ToDo: take care of channel the same way as eegSampling
@@ -1326,7 +1341,7 @@ classdef level1Study
                     dataRecordingDataRecordingUuidElement = docNode.createElement('dataRecordingUuid');
                     dataRecordingDataRecordingUuidElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).dataRecordingUuid));
                     dataRecordingElement.appendChild(dataRecordingDataRecordingUuidElement);
-                                        
+                    
                     % create the startDateTime node under dataRecording node.
                     dataRecordingStartDateElement = docNode.createElement('startDateTime');
                     dataRecordingStartDateElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).startDateTime));
@@ -1658,7 +1673,7 @@ classdef level1Study
                                     if ~ismember(lower(obj.recordingParameterSet(i).modality(j).channelLocationType), lower({'10-20', '10-10', '10-5', 'EGI', 'Custom'}))
                                         issue(end+1).description = sprintf('Invalid channel location type (%s) is specified for EEG (modality %d) in recording parameter set %d.\r Valid type are 10-20, 10-10, 10-5, EGI and Custom.', obj.recordingParameterSet(i).modality(j).channelLocationType, j, i);
                                     end;
-                                                                     
+                                    
                                     % make sure all the scalp labels match 10-20
                                     % labels if 10-20 montage is specified.
                                     listof10_20_labels = {'LPA', 'RPA', 'Nz', 'Fp1', 'Fpz', 'Fp2', 'AF9', 'AF7', 'AF5', 'AF3', 'AF1', 'AFz', 'AF2', 'AF4', 'AF6', 'AF8', 'AF10', 'F9', 'F7', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'F8', 'F10', 'FT9', 'FT7', 'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'FT8', 'FT10', 'T9', 'T7', 'C5', 'C3', 'C1', 'Cz', 'C2', 'C4', 'C6', 'T8', 'T10', 'TP9', 'TP7', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'TP8', 'TP10', 'P9', 'P7', 'P5', 'P3', 'P1', 'Pz', 'P2', 'P4', 'P6', 'P8', 'P10', 'PO9', 'PO7', 'PO5', 'PO3', 'PO1', 'POz', 'PO2', 'PO4', 'PO6', 'PO8', 'PO10', 'O1', 'Oz', 'O2', 'I1', 'Iz', 'I2', 'AFp9h', 'AFp7h', 'AFp5h', 'AFp3h', 'AFp1h', 'AFp2h', 'AFp4h', 'AFp6h', 'AFp8h', 'AFp10h', 'AFF9h', 'AFF7h', 'AFF5h', 'AFF3h', 'AFF1h', 'AFF2h', 'AFF4h', 'AFF6h', 'AFF8h', 'AFF10h', 'FFT9h', 'FFT7h', 'FFC5h', 'FFC3h', 'FFC1h', 'FFC2h', 'FFC4h', 'FFC6h', 'FFT8h', 'FFT10h', 'FTT9h', 'FTT7h', 'FCC5h', 'FCC3h', 'FCC1h', 'FCC2h', 'FCC4h', 'FCC6h', 'FTT8h', 'FTT10h', 'TTP9h', 'TTP7h', 'CCP5h', 'CCP3h', 'CCP1h', 'CCP2h', 'CCP4h', 'CCP6h', 'TTP8h', 'TTP10h', 'TPP9h', 'TPP7h', 'CPP5h', 'CPP3h', 'CPP1h', 'CPP2h', 'CPP4h', 'CPP6h', 'TPP8h', 'TPP10h', 'PPO9h', 'PPO7h', 'PPO5h', 'PPO3h', 'PPO1h', 'PPO2h', 'PPO4h', 'PPO6h', 'PPO8h', 'PPO10h', 'POO9h', 'POO7h', 'POO5h', 'POO3h', 'POO1h', 'POO2h', 'POO4h', 'POO6h', 'POO8h', 'POO10h', 'OI1h', 'OI2h', 'Fp1h', 'Fp2h', 'AF9h', 'AF7h', 'AF5h', 'AF3h', 'AF1h', 'AF2h', 'AF4h', 'AF6h', 'AF8h', 'AF10h', 'F9h', 'F7h', 'F5h', 'F3h', 'F1h', 'F2h', 'F4h', 'F6h', 'F8h', 'F10h', 'FT9h', 'FT7h', 'FC5h', 'FC3h', 'FC1h', 'FC2h', 'FC4h', 'FC6h', 'FT8h', 'FT10h', 'T9h', 'T7h', 'C5h', 'C3h', 'C1h', 'C2h', 'C4h', 'C6h', 'T8h', 'T10h', 'TP9h', 'TP7h', 'CP5h', 'CP3h', 'CP1h', 'CP2h', 'CP4h', 'CP6h', 'TP8h', 'TP10h', 'P9h', 'P7h', 'P5h', 'P3h', 'P1h', 'P2h', 'P4h', 'P6h', 'P8h', 'P10h', 'PO9h', 'PO7h', 'PO5h', 'PO3h', 'PO1h', 'PO2h', 'PO4h', 'PO6h', 'PO8h', 'PO10h', 'O1h', 'O2h', 'I1h', 'I2h', 'AFp9', 'AFp7', 'AFp5', 'AFp3', 'AFp1', 'AFpz', 'AFp2', 'AFp4', 'AFp6', 'AFp8', 'AFp10', 'AFF9', 'AFF7', 'AFF5', 'AFF3', 'AFF1', 'AFFz', 'AFF2', 'AFF4', 'AFF6', 'AFF8', 'AFF10', 'FFT9', 'FFT7', 'FFC5', 'FFC3', 'FFC1', 'FFCz', 'FFC2', 'FFC4', 'FFC6', 'FFT8', 'FFT10', 'FTT9', 'FTT7', 'FCC5', 'FCC3', 'FCC1', 'FCCz', 'FCC2', 'FCC4', 'FCC6', 'FTT8', 'FTT10', 'TTP9', 'TTP7', 'CCP5', 'CCP3', 'CCP1', 'CCPz', 'CCP2', 'CCP4', 'CCP6', 'TTP8', 'TTP10', 'TPP9', 'TPP7', 'CPP5', 'CPP3', 'CPP1', 'CPPz', 'CPP2', 'CPP4', 'CPP6', 'TPP8', 'TPP10', 'PPO9', 'PPO7', 'PPO5', 'PPO3', 'PPO1', 'PPOz', 'PPO2', 'PPO4', 'PPO6', 'PPO8', 'PPO10', 'POO9', 'POO7', 'POO5', 'POO3', 'POO1', 'POOz', 'POO2', 'POO4', 'POO6', 'POO8', 'POO10', 'OI1', 'OIz', 'OI2', 'T3', 'T5', 'T4', 'T6', 'M1', 'M2', 'A1', 'A2'};
@@ -1673,7 +1688,7 @@ classdef level1Study
                                         unknownLabel = setdiff(scalpLabel, lower(listof10_20_labels));
                                         
                                         if ~isempty(unknownLabel)
-                                        issue(end+1).description = sprintf('Invalid channel labels (%s) is specified for EEG with 10-20 montage (modality %d) in recording parameter set %d.', strjoin_adjoiner_first(',', unknownLabel), j, i);
+                                            issue(end+1).description = sprintf('Invalid channel labels (%s) is specified for EEG with 10-20 montage (modality %d) in recording parameter set %d.', strjoin_adjoiner_first(',', unknownLabel), j, i);
                                         end;
                                     end;
                                     
@@ -1682,7 +1697,7 @@ classdef level1Study
                                         listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation(end+1) = {obj.recordingParameterSet(i).recordingParameterSetLabel};
                                     end;
                                 end;
-                                                                
+                                
                                 % Channel labels are needed for EEG
                                 if ~isAvailable(obj.recordingParameterSet(i).modality(j).channelLabel)
                                     issue(end+1).description = sprintf('Channel labels of EEG (modality %d) in recording parameter set %d is empty.', j, i);
@@ -1749,7 +1764,7 @@ classdef level1Study
                     sessionNumbers = [sessionNumbers sessionNumber];
                 end;
                 
-                % if channel location type is specified as Custom (versus e.g. 10-20) 
+                % if channel location type is specified as Custom (versus e.g. 10-20)
                 % for a recording, each subject has to have a channel
                 % location file.
                 eegChannelLocationFileIsNeeded = false;
@@ -1775,12 +1790,12 @@ classdef level1Study
                         
                         % check the existence of referred channel locations
                         % and make sure they are specified if channel
-                        % location type is specified as Custom (versus e.g. 10-20).                                                                        
+                        % location type is specified as Custom (versus e.g. 10-20).
                         if eegChannelLocationFileIsNeeded && (isempty(obj.sessionTaskInfo(i).subject(j).channelLocations)...
-                                 || strcmpi('NA', obj.sessionTaskInfo(i).subject(j).channelLocations))
-                             issue(end+1).description =  sprintf('Subject %d of sesion %s does not have a channelLocations while \r its channelLocationType is defined as ''custom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                                || strcmpi('NA', obj.sessionTaskInfo(i).subject(j).channelLocations))
+                            issue(end+1).description =  sprintf('Subject %d of sesion %s does not have a channelLocations while \r its channelLocationType is defined as ''custom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         end;
-                       
+                        
                         % check if the channel location file actually
                         % exists.
                         if isAvailable(obj.sessionTaskInfo(i).subject(j).channelLocations)
@@ -1791,7 +1806,7 @@ classdef level1Study
                             for z = 1:length(allSearchFolders)
                                 searchFullPath{z} = [allSearchFolders{z} filesep obj.sessionTaskInfo(i).subject(j).channelLocations];
                                 if exist(searchFullPath{z}, 'file')
-                                   fileFound = true;
+                                    fileFound = true;
                                 end;
                             end;
                             
@@ -1802,10 +1817,10 @@ classdef level1Study
                             
                         end;
                         
-                    end;                 
+                    end;
                 end;
                 
-                % validate th existence of valid data recordings for the session
+                % validate the existence of valid data recordings for the session
                 if isempty(obj.sessionTaskInfo(i).dataRecording)
                     issue(end+1).description = sprintf('Sesion %s does not have any data recording.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                 else
@@ -1847,7 +1862,7 @@ classdef level1Study
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
                                 issue(end+1).description = [sprintf('Event Instance file specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
-                            end;                           
+                            end;
                         end;
                         
                         % check startDateTime to be in ISO 8601 format
@@ -1909,60 +1924,69 @@ classdef level1Study
             missingSessionNumber = setdiff(1:max(sessionNumbers), unique(sessionNumbers));
             if ~isempty(missingSessionNumber)
                 issue(end+1).description = sprintf('Some session numbers are missing. These numbers have to be from 1 up to the number of sesssions.\n Here are the missing numbers: %s.', num2str(missingSessionNumber));
-            end;            
+            end;
             
-            if isempty(obj.eventCodesInfo)
-                issue(end+1).description = sprintf('No event code information is provided.');
-            else
-                for i=1:length(obj.eventCodesInfo)
-                    if ~isAvailable(obj.eventCodesInfo(i).code)
-                        issue(end+1).description = sprintf('Event code for record %d is missing.', i);
-                    end;
-                    
-                    % conformity with tasks
-                    if numberOfTasks > 1 && ~isAvailable(obj.eventCodesInfo(i).taskLabel)
-                        issue(end+1).description = sprintf('The study has more than one task but there is no task label defined for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
-                    end;
-                    
-                    if isAvailable(obj.eventCodesInfo(i).taskLabel) && ~ismember(lower(obj.eventCodesInfo(i).taskLabel), lower(taskLabels))
-                        issue(end+1).description = sprintf('Task label %s defined for event code %s in record %d does not have any corresponding task definition.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code, i);
-                    end;
-                    
-                    if isempty(obj.eventCodesInfo(i).condition)
-                        issue(end+1).description = sprintf('Condition information is missing for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
-                    else
-                        for j=1:length(obj.eventCodesInfo(i).condition)
-                            if ~(isAvailable(obj.eventCodesInfo(i).condition(j).label) || isAvailable(obj.eventCodesInfo(i).condition(j).description) || isAvailable(obj.eventCodesInfo(i).condition(j).tag))
-                                issue(end+1).description = sprintf('Condition information is missing for condition %d of event code %s in record %d.', obj.eventCodesInfo(i).code, j, i);
-                            end;
-                        end;
-                    end;
-                    
-                end;
+            if ~isAvailable(obj.eventSpecificiationMethod) || ~ismember(strtrim(lower(obj.eventSpecificiationMethod)), {'codes', 'tags'})
+                issue(end+1).description = sprintf('eventSpecificiationMethod node is empty or invalid. It has to be either ''Codes'' or ''Tags''.');
+            end;
+            
+            % only check the validity of event codes when they are the
+            % primary source of event information.
+            if strcmpi(strtrim(obj.eventSpecificiationMethod), 'codes')
                 
-                if ~isAvailable(obj.summaryInfo.allSubjectsHealthyAndNormal)
-                    issue(end+1).description = sprintf('You need to specify whether all subjects are healthy and normal in the Summary Information');
+                if isempty(obj.eventCodesInfo)
+                    issue(end+1).description = sprintf('No event code information is provided.');
                 else
-                    if ~ismember(lower(obj.summaryInfo.allSubjectsHealthyAndNormal), {'yes', 'no'})
-                        issue(end+1).description = sprintf('The value of allSubjectsHealthyAndNormal has to be either ''Yes'' or ''No''.');
-                        if fixIssues && ismember(lower(obj.summaryInfo.allSubjectsHealthyAndNormal), {'y', 'n', 'true', 'false', 't', 'f'})
-                            originalValue = obj.summaryInfo.allSubjectsHealthyAndNormal;
-                            switch lower(obj.summaryInfo.allSubjectsHealthyAndNormal)
-                                case {'y', 'true', 't'}
-                                    obj.summaryInfo.allSubjectsHealthyAndNormal = 'Yes';
-                                case {'n', 'false', 'f'}
-                                    obj.summaryInfo.allSubjectsHealthyAndNormal = 'No';
+                    for i=1:length(obj.eventCodesInfo)
+                        if ~isAvailable(obj.eventCodesInfo(i).code)
+                            issue(end+1).description = sprintf('Event code for record %d is missing.', i);
+                        end;
+                        
+                        % conformity with tasks
+                        if numberOfTasks > 1 && ~isAvailable(obj.eventCodesInfo(i).taskLabel)
+                            issue(end+1).description = sprintf('The study has more than one task but there is no task label defined for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
+                        end;
+                        
+                        if isAvailable(obj.eventCodesInfo(i).taskLabel) && ~ismember(lower(obj.eventCodesInfo(i).taskLabel), lower(taskLabels))
+                            issue(end+1).description = sprintf('Task label %s defined for event code %s in record %d does not have any corresponding task definition.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code, i);
+                        end;
+                        
+                        if isempty(obj.eventCodesInfo(i).condition)
+                            issue(end+1).description = sprintf('Condition information is missing for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
+                        else
+                            for j=1:length(obj.eventCodesInfo(i).condition)
+                                if ~(isAvailable(obj.eventCodesInfo(i).condition(j).label) || isAvailable(obj.eventCodesInfo(i).condition(j).description) || isAvailable(obj.eventCodesInfo(i).condition(j).tag))
+                                    issue(end+1).description = sprintf('Condition information is missing for condition %d of event code %s in record %d.', obj.eventCodesInfo(i).code, j, i);
+                                end;
                             end;
-                            
-                            issue(end).howItWasFixed = [originalValue ' interpreted as ' obj.summaryInfo.allSubjectsHealthyAndNormal ' and placed in the field.'];
+                        end;
+                        
+                    end;
+                    
+                    if ~isAvailable(obj.summaryInfo.allSubjectsHealthyAndNormal)
+                        issue(end+1).description = sprintf('You need to specify whether all subjects are healthy and normal in the Summary Information');
+                    else
+                        if ~ismember(lower(obj.summaryInfo.allSubjectsHealthyAndNormal), {'yes', 'no'})
+                            issue(end+1).description = sprintf('The value of allSubjectsHealthyAndNormal has to be either ''Yes'' or ''No''.');
+                            if fixIssues && ismember(lower(obj.summaryInfo.allSubjectsHealthyAndNormal), {'y', 'n', 'true', 'false', 't', 'f'})
+                                originalValue = obj.summaryInfo.allSubjectsHealthyAndNormal;
+                                switch lower(obj.summaryInfo.allSubjectsHealthyAndNormal)
+                                    case {'y', 'true', 't'}
+                                        obj.summaryInfo.allSubjectsHealthyAndNormal = 'Yes';
+                                    case {'n', 'false', 'f'}
+                                        obj.summaryInfo.allSubjectsHealthyAndNormal = 'No';
+                                end;
+                                
+                                issue(end).howItWasFixed = [originalValue ' interpreted as ' obj.summaryInfo.allSubjectsHealthyAndNormal ' and placed in the field.'];
+                            end;
                         end;
                     end;
+                    
+                    if ~isAvailable(obj.summaryInfo.totalSize) || ~isProperNumber(obj.summaryInfo.totalSize, false, 0, {'Mb' 'GB' 'Gbytes' 'giga bytes' 'gbs' 'bytes' 'KB' 'kilo bytes' 'kilo byte' 'byte' 'kbs'})
+                        issue(end+1).description = sprintf('Total Size value specified in Summary Information is missing or not valid.');
+                    end;
+                    
                 end;
-                
-                if ~isAvailable(obj.summaryInfo.totalSize) || ~isProperNumber(obj.summaryInfo.totalSize, false, 0, {'Mb' 'GB' 'Gbytes' 'giga bytes' 'gbs' 'bytes' 'KB' 'kilo bytes' 'kilo byte' 'byte' 'kbs'})
-                    issue(end+1).description = sprintf('Total Size value specified in Summary Information is missing or not valid.');
-                end;
-                
             end;
             
             if isempty(issue)
@@ -2299,12 +2323,12 @@ classdef level1Study
                                 fileForFreePart = fileFinalPath;
                             end;
                             
-                            if ~isempty(fileForFreePart) 
-                            [path name ext] = fileparts(fileForFreePart);
-                            % see if the file name is already in ESS
-                            % format, hence no name change is necessary
-                            itMatches = level1Study.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
+                            if ~isempty(fileForFreePart)
+                                [path name ext] = fileparts(fileForFreePart);
+                                % see if the file name is already in ESS
+                                % format, hence no name change is necessary
+                                itMatches = level1Study.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
                             else
                                 itMatches = [];
                                 name = [];
@@ -2321,19 +2345,19 @@ classdef level1Study
                             if exist(fileFinalPath, 'file')
                                 copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
                                 obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
-                            else                               
+                            else
                                 switch typeOfFile{k}
                                     case 'eeg'
                                         fprintf('Copy failed: file %s does not exist.\n', fileFinalPath);
                                     case 'event'
                                         obj = writeEventInstanceFile(obj, i, j, [essFolder filesep essConventionfolder], filenameInEss);
-                                end;                                                                
+                                end;
                             end;
                         end;
                     end;
                 end;
             end;
-                       
+            
             % copy static files (assets)
             thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);

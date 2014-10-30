@@ -9,6 +9,7 @@
                            <xs:element name="description" type="xs:string" minOccurs="0"></xs:element>
                            <xs:element name="uuid" type="xs:string" minOccurs="0"></xs:element>
                            <xs:element name="rootURI" type="xs:string" minOccurs="0"></xs:element>
+						   <xs:element name="eventSpecificiationMethod" type="xs:string" minOccurs="0"></xs:element>
                            <xs:element name="project" minOccurs="0">
                                  <xs:complexType>
                                        <xs:choice maxOccurs="unbounded">
