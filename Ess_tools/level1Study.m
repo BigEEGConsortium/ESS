@@ -98,7 +98,7 @@ classdef level1Study
         
         function obj = level1Study(varargin)
             % obj = level1Study(essFilePath)
-            % create a instance of the object. If essFilePath is provided (optimal) it also read the
+            % create a instance of the object. If essFilePath is provided (optional) it also read the
             % file.
             
             % if dependent files are not in the path, add all file/folders under
@@ -1698,6 +1698,7 @@ classdef level1Study
                             % start channel
                             if ~isAvailable(obj.recordingParameterSet(i).modality(j).startChannel)
                                 issue(end+1).description = sprintf('Start channel of modality %d of recording parameter set %d is empty.', j, i);
+                                startChannel = [];
                             else
                                 startChannel = str2double(obj.recordingParameterSet(i).modality(j).startChannel);
                             end;
@@ -1705,6 +1706,7 @@ classdef level1Study
                             % end channel
                             if ~isAvailable(obj.recordingParameterSet(i).modality(j).endChannel)
                                 issue(end+1).description = sprintf('End channel of modality %d of recording parameter set %d is empty.', j, i);
+                                endChannel = [];
                             else
                                 endChannel = str2double(obj.recordingParameterSet(i).modality(j).endChannel);
                             end;
@@ -1713,7 +1715,7 @@ classdef level1Study
                             % the number specified by startChannel and
                             % endChannel
                             channelLabel = strsplit(obj.recordingParameterSet(i).modality(j).channelLabel,',');
-                            if length(channelLabel) ~= (endChannel - startChannel + 1)
+                            if ~(isempty(startChannel) || isempty(endChannel)) && length(channelLabel) ~= (endChannel - startChannel + 1)
                                 issue(end+1).description = sprintf('Number of channel labels of modality %d of recording parameter set %d does not match number of channel expected from startChannel and endChannel values.', j, i);
                             end;
                             
@@ -2352,6 +2354,9 @@ classdef level1Study
             
         end;
         
+        function applyFunctionToLevel2Data(obj, functionHandle)
+            %for i=1:
+        end;
     end;
     methods (Static)
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
