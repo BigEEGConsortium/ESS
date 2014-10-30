@@ -164,8 +164,14 @@ classdef level2Study
             
         end;
         
-        function obj = createLevel2Study(obj, level2Folder, varargin)
-            obj.level2Folder = level2Folder;
+        function obj = createLevel2Study(obj, varargin)
+            
+            inputOptions = arg_define(1,varargin, ...
+                arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
+                arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
+                );
+            
+            obj.level2Folder = inputOptions.level2Folder;
             
             % start from index 1 if the first studyLevel2File is pactically empty,
             % otherwise start after the last studyLevel2File
@@ -184,12 +190,12 @@ classdef level2Study
             end;
             
             % make top folders
-            mkdir(level2Folder);
-            mkdir([level2Folder filesep 'session']);
-            mkdir([level2Folder filesep 'additional_data']);
+            mkdir(inputOptions.level2Folder);
+            mkdir([inputOptions.level2Folder filesep 'session']);
+            mkdir([inputOptions.level2Folder filesep 'additional_data']);
             
             % process each session before moving to the other
-            for i=5%1:length(obj.level1StudyObj.sessionTaskInfo)
+            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
                     % do not processed data recordings that have already
                     % been processed.
@@ -214,8 +220,7 @@ classdef level2Study
                         fileFinalPath = findFile(fileNameFromObj);
                         
                         % read raw EEG data
-                        EEG = exp_eval(io_loadset(fileFinalPath));
-                        
+                        EEG = exp_eval(io_loadset(fileFinalPath));                        
                         
                         % find EEG channels subsets
                         dataRecordingParameterSet = [];
@@ -334,14 +339,17 @@ classdef level2Study
                         params.lineNoiseChannels = params.rereferencedChannels;
                         params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                         
-                        % execute the pipeline
+                        execute the pipeline
                         [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
+                        
                         fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
                             computationTimes.highPass, computationTimes.resampling, ...
                             computationTimes.lineNoise, computationTimes.reference);
                         
+                        % pop_loadset('eeg_studyLevel2_NCTU_Lane-Keeping_Task_session_5_subject_1_task_motionless_s01_060926_1n_recording_1.set', 'C:\Users\Nima\Documents\MATLAB\tools\playground\level2\session\5');
+                        
                         % write processed EEG data
-                        sessionFolder = [level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
+                        sessionFolder = [inputOptions.level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
                         if ~exist(sessionFolder, 'dir')
                             mkdir(sessionFolder);
                         end;
@@ -378,7 +386,7 @@ classdef level2Study
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
                         
                         studyLevel2FileCounter = studyLevel2FileCounter + 1;
-                        obj.write([level2Folder filesep 'studyLevel2_description.xml']);
+                        obj.write([inputOptions.level2Folder filesep 'studyLevel2_description.xml']);
                     end;
                 end;
             end;
@@ -395,7 +403,7 @@ classdef level2Study
                     fileFinalPathOut = nextToXMLFilePath;
                 elseif ~isempty(fileNameFromObjIn) % when the file is specified but cannot be found on disk
                     fileFinalPathOut = [];
-                    fprintf('File %s specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', fileNameFromObjIn, j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                    fprintf('File %s specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', fileNameFromObjIn, j, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
                     fprintf('You might want to run validate() routine.\n');
                 else % the file name is empty
                     fileFinalPathOut = [];
