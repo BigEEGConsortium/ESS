@@ -127,6 +127,12 @@ font-size= 7pt
 								<td>All subjects are considered healthy and normal: <xsl:value-of select="allSubjectsHealthyAndNormal"/>
 								</td>
 							</xsl:for-each>
+						</tr>						
+						<tr>
+							<xsl:for-each select="/studyLevel1">
+								<td>Primary source of event information: <xsl:value-of select="eventSpecificiationMethod"/>
+								</td>
+							</xsl:for-each>
 						</tr>
 						<tr>
 							<td>Number of Channels (all modalities, min to max): 
