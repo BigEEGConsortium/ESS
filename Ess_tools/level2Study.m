@@ -339,7 +339,7 @@ classdef level2Study
                         params.lineNoiseChannels = params.rereferencedChannels;
                         params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                         
-                        execute the pipeline
+                        % execute the pipeline
                         [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
                         
                         fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...

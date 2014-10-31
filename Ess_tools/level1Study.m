@@ -101,7 +101,8 @@ classdef level1Study
         function obj = level1Study(varargin)
             % obj = level1Study(essFilePath)
             % create a instance of the object. If essFilePath is provided (optional) it also read the
-            % file.
+            % XML file. If the file does not exists, it will be created on
+            % obj.write();
             
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
