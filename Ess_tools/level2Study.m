@@ -13,9 +13,9 @@ classdef level2Study
         uuid = ' ';
         
         % the URI pointing to the root folder of associated data folder. If the XML file is located
-        % in the default root folder, this should be ‘.’ (current directory). If for example the data files
+        % in the default root folder, this should be ?.? (current directory). If for example the data files
         % and the root folder are placed on a remote FTP location, <rootURI> should be set to
-        % ‘ftp://domain.com/study’. The concatenation or <rootURI> and <filename> for each file
+        % ?ftp://domain.com/study?. The concatenation or <rootURI> and <filename> for each file
         % should always produce a valid, downloadable URI.adable URI.
         rootURI = '.';
         
@@ -183,7 +183,7 @@ classdef level2Study
             
             alreadyProcessedDataRecordingUuid = {};
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                recordingUuid = strtrim(obj.studyLevel2Files.studyLevel2File.dataRecordingUuid);
+                recordingUuid = strtrim(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid);
                 if ~isempty(recordingUuid)
                     alreadyProcessedDataRecordingUuid{end+1} = recordingUuid;
                 end;
@@ -195,7 +195,7 @@ classdef level2Study
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
             
             % process each session before moving to the other
-            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
+            for i=70%1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
                     % do not processed data recordings that have already
                     % been processed.

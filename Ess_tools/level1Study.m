@@ -1651,6 +1651,8 @@ classdef level1Study
                     if isempty(obj.recordingParameterSet(i).modality)
                         issue(end+1).description = sprintf('There are no modalities defined for recording parameter set %d (labeled ''%s'')', i, obj.recordingParameterSet(i).recordingParameterSetLabel);
                     else
+                        startChannelForModalityNumber = {};
+                        endChannelForModalityNumber = {};
                         for j=1:length(obj.recordingParameterSet(i).modality)
                             if ~isAvailable(obj.recordingParameterSet(i).modality(j).type)
                                 issue(end+1).description = sprintf('The type of modality %d of recording parameter set %d is empty.', j, i);
@@ -1727,6 +1729,9 @@ classdef level1Study
                                 endChannel = str2double(obj.recordingParameterSet(i).modality(j).endChannel);
                             end;
                             
+                            startChannelForModalityNumber{j} = startChannel;
+                            endChannelForModalityNumber{j} = endChannel;
+                            
                             % number of channel labels provided must be either zero or match
                             % the number specified by startChannel and
                             % endChannel
@@ -1743,6 +1748,34 @@ classdef level1Study
                                 issue(end+1).description = sprintf('Description is missing for type %s in modality %d of recording parameter set %d. \n     A description is required for any type other than EEG, Mocap and Gaze.', obj.recordingParameterSet(i).modality(j).type, j, i);
                             end;
                             
+                        end;
+                        
+                        % make sure each channel is associated with exactly
+                        % one modality
+                        
+                        % make sure each channel at least has one
+                        % modality
+                        channelsForWhichAModalityIsDefined = [];
+                        for j=1:length(startChannelForModalityNumber)
+                            channelsForWhichAModalityIsDefined = cat(2, channelsForWhichAModalityIsDefined, startChannelForModalityNumber{j}:endChannelForModalityNumber{j});
+                        end;
+                        channelsWithNoModality = setdiff(1:max(channelsForWhichAModalityIsDefined), channelsForWhichAModalityIsDefined);
+                        if ~isempty(channelsWithNoModality)                            
+                            issue(end+1).description = sprintf('No modality is defined for channels (%s) in recording parameter set %d.', num2str(channelsWithNoModality), i);
+                        end;
+                                               
+                        % write code to detect overlapping channel
+                        % modalities
+                        for j=1:length(startChannelForModalityNumber)
+                            for k=(j+1):length(startChannelForModalityNumber)
+                                channelsForModalityA = startChannelForModalityNumber{j}:endChannelForModalityNumber{j};
+                                channelsForModalityB = startChannelForModalityNumber{k}:endChannelForModalityNumber{k};
+                                overlapChannels = intersect(channelsForModalityA, channelsForModalityB);
+                                
+                                if ~isempty(overlapChannels)
+                                    issue(end+1).description = sprintf('Modalities %d and %d of parameter set %d both claim channels %s. Each channel can only be associated with one modality.', j, k, i, num2str(overlapChannels));
+                                end;
+                            end;
                         end;
                     end;
                 end;
