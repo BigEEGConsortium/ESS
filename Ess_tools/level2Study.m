@@ -165,7 +165,12 @@ classdef level2Study
         end;
         
         function obj = createLevel2Study(obj, varargin)
-            
+        % creates an ESS standardized data level 2 folder from level 1 XML 
+        % and its data recordings using standard level 2 EEG processing pipeline.
+        % You can continue where the processing was stopped by running the 
+        % exact same command since it skips processing of already
+        % calculated sessions.
+        
             inputOptions = arg_define(1,varargin, ...
                 arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
                 arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
@@ -183,7 +188,7 @@ classdef level2Study
             
             alreadyProcessedDataRecordingUuid = {};
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                recordingUuid = strtrim(obj.studyLevel2Files.studyLevel2File.dataRecordingUuid);
+                recordingUuid = strtrim(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid);
                 if ~isempty(recordingUuid)
                     alreadyProcessedDataRecordingUuid{end+1} = recordingUuid;
                 end;
