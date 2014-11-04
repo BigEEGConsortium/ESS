@@ -1763,7 +1763,8 @@ classdef level1Study
                         if ~isempty(channelsWithNoModality)                            
                             issue(end+1).description = sprintf('No modality is defined for channels (%s) in recording parameter set %d.', num2str(channelsWithNoModality), i);
                         end;
-                                               
+                        
+                        
                         % write code to detect overlapping channel
                         % modalities
                         for j=1:length(startChannelForModalityNumber)
@@ -1773,7 +1774,7 @@ classdef level1Study
                                 overlapChannels = intersect(channelsForModalityA, channelsForModalityB);
                                 
                                 if ~isempty(overlapChannels)
-                                    issue(end+1).description = sprintf('Modalities %d and %d of parameter set %d both claim channels %s. Each channel can only be associated with one modality.', j, k, i, num2str(overlapChannels));
+                                    issue(end+1).description = sprintf('Modalities %d and %d both claim channels %s. Each channel can only be associated with one modality.overlap No modality is defined for channels (%s) in recording parameter set %d.', num2str(channelsWithNoModality), i);
                                 end;
                             end;
                         end;
