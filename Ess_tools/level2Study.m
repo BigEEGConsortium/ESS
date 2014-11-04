@@ -187,10 +187,12 @@ classdef level2Study
             end;
             
             alreadyProcessedDataRecordingUuid = {};
+            alreadyProcessedDataRecordingFileName = {};
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 recordingUuid = strtrim(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid);
                 if ~isempty(recordingUuid)
                     alreadyProcessedDataRecordingUuid{end+1} = recordingUuid;
+                    alreadyProcessedDataRecordingFileName{end+1} = strtrim(obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName);
                 end;
             end;
             
@@ -200,11 +202,21 @@ classdef level2Study
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
             
             % process each session before moving to the other
-            for i=70%1:length(obj.level1StudyObj.sessionTaskInfo)
+            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
                     % do not processed data recordings that have already
                     % been processed.
-                    if ~ismember(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid, alreadyProcessedDataRecordingUuid)
+                    [fileIsListedAsProcessed id]= ismember(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid, alreadyProcessedDataRecordingUuid);
+                    
+                    % make sure not only the file is listed as processed,
+                    % but also it exists on disk (otherwise recompute).
+                    if fileIsListedAsProcessed
+                        level2FileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
+                        processedFileIsOnDisk = ~isempty(findFile(level2FileNameOfProcessed, inputOptions.level2Folder));
+                    end;
+                    if fileIsListedAsProcessed && processedFileIsOnDisk
+                        fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
+                    else % file has not yet been processed
                         fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
                         
                         % read data
@@ -222,7 +234,7 @@ classdef level2Study
                             rootFolder = obj.level1StudyObj.rootURI;
                         end;
                         
-                        fileFinalPath = findFile(fileNameFromObj);
+                        fileFinalPath = findFile(fileNameFromObj, rootFolder);
                         
                         % read raw EEG data
                         EEG = exp_eval(io_loadset(fileFinalPath));                        
@@ -291,7 +303,7 @@ classdef level2Study
                         %channel locations.
                         % read digitized channel locations (if exists)
                         if ~ismember(lower(strtrim(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations)), {'', 'na'})
-                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations);
+                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations, rootFolder);
                             chanlocsFromFile = readlocs(fileFinalPathForChannelLocation);
                             
                             % check if there are enough channels in EEG.data
@@ -390,13 +402,72 @@ classdef level2Study
                         
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
                         
+                        %% write the filters
+                        
+                        % only add filters for a recordingParemeterSetLabel
+                        % if it does not have fileters for the pipeline
+                        % already defined for it.
+                        listOfEecordingParemeterSetLabelWithFilters = {};
+                        for f = 1:length(obj.filters.filter)
+                            listOfEecordingParemeterSetLabelWithFilters{f} = obj.filters.filter(f).recordingParemeterSetLabel;
+                        end;
+                        
+                        if ~ismember(dataRecordingParameterSet.recordingParemeterSetLabel, listOfEecordingParemeterSetLabelWithFilters)
+                            eeglabVersionString = ['EEGLAB ' eeg_getversion];
+                            matlabVersionSTring = ['MATLAB '  version];
+                            
+                            filterLabel = {'High-Pass Filter', 'Resampling', 'Line Noise Removal'};
+                            filterFieldName = {'highPass' 'resampling' 'lineNoise' 'reference'};
+                            filterFunctionName = {'highPassFilter' 'resampleEEG' 'cleanLineNoise' };
+                            
+                            for f=1:length(filterLabel)
+                                newFilter = struct;
+                                newFilter.filterLabel = filterLabel{f};
+                                newFilter.executionOrder = num2str(f);
+                                newFilter.softwareEnvironment = matlabVersionSTring;
+                                newFilter.softwarePackage = eeglabVersionString;
+                                newFilter.functionName = filterFunctionName{f};
+                                newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParemeterSetLabel;
+                                fields = fieldnames(EEG.etc.noisyParameters.(filterFieldName{f}));
+                                for p=1:length(fields)
+                                    newFilter.parameters.parameter(p).name = fields{p};
+                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.(filterFieldName{f}).(fields{p}));
+                                end;
+                                
+                                obj.filters.filter(end+1) = newFilter;
+                            end;
+                            
+                            % Reference (too complicated to pu above)
+                            newFilter = struct;
+                            newFilter.filterLabel = 'Robust Reference Removal';
+                            newFilter.executionOrder = '4';
+                            newFilter.softwareEnvironment = matlabVersionSTring;
+                            newFilter.softwarePackage = eeglabVersionString;
+                            newFilter.functionName = 'robustReference';
+                            newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParemeterSetLabel;
+                            fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
+                                'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
+                                'ransacCorrelationThreshold', 'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
+                            for p=1:length(fields)
+                                newFilter.parameters.parameter(p).name = fields{p};
+                                newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
+                            end;
+                            
+                            newFilter.parameters.parameter(end+1).name = 'referenceChannels';
+                            newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.referenceChannels);
+                            
+                            newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
+                            newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
+                            obj.filters.filter(end+1) = newFilter;
+                        end;
+                        
                         studyLevel2FileCounter = studyLevel2FileCounter + 1;
                         obj.write([inputOptions.level2Folder filesep 'studyLevel2_description.xml']);
                     end;
                 end;
             end;
             
-            function fileFinalPathOut = findFile(fileNameFromObjIn)
+            function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder)
                 % search for the file both next to the xml file and in the standard ESS
                 % convention location
                 nextToXMLFilePath = [rootFolder filesep fileNameFromObjIn];
