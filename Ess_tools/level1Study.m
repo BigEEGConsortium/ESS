@@ -2412,9 +2412,6 @@ classdef level1Study
             
         end;
         
-        function applyFunctionToLevel2Data(obj, functionHandle)
-            %for i=1:
-        end;
     end;
     methods (Static)
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...

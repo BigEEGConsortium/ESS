@@ -11,6 +11,11 @@
 % Copyright 2008-2009 Levente Hunyadi
 function string = strjoin(adjoiner, strings)
 
+if isempty(strings)
+    string = '';
+    return;
+end;
+
 validateattributes(adjoiner, {'char'}, {'vector'});
 validateattributes(strings, {'cell'}, {'vector'});
 assert(iscellstr(strings), ...

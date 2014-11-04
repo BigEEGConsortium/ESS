@@ -401,6 +401,9 @@ classdef level2Study
                         publishLevel2Report(EEG, sessionFolder, reportFileName);
                         
                         obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
+                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).averageReferenceChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allScalpChannels, 'UniformOutput', false));
+                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
+                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
                         
                         %% write the filters
                         
@@ -446,7 +449,7 @@ classdef level2Study
                             newFilter.functionName = 'robustReference';
                             fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
                                 'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
-                                'ransacCorrelationThreshold', 'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
+                                'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
                             for p=1:length(fields)
                                 newFilter.parameters.parameter(p).name = fields{p};
                                 newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
@@ -489,6 +492,23 @@ classdef level2Study
                 end;
             end
             
+        end;
+        
+        function applyFunctionToLevel2Data(obj, functionHandle, outputFolder, parameters)
+            
+            % find associated level 1 information for each level 2 (EEG) data file
+            uuidList = {};
+            sessionId = [];
+            dataRecordingInLevel1Id = [];
+            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
+                for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
+                    uuidList{end+1} = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).
+                end;
+            end;
+            
+            for i=1:length(obj.studyLevel2Files.studyLevel2File)
+                 obj.studyLevel2Files.studyLevel2File.studyLevel2FileName
+             end;
         end;
     end;
 end
