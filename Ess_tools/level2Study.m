@@ -409,10 +409,10 @@ classdef level2Study
                         % already defined for it.
                         listOfEecordingParemeterSetLabelWithFilters = {};
                         for f = 1:length(obj.filters.filter)
-                            listOfEecordingParemeterSetLabelWithFilters{f} = obj.filters.filter(f).recordingParemeterSetLabel;
+                            listOfEecordingParemeterSetLabelWithFilters{f} = obj.filters.filter(f).recordingParameterSetLabel;
                         end;
                         
-                        if ~ismember(dataRecordingParameterSet.recordingParemeterSetLabel, listOfEecordingParemeterSetLabelWithFilters)
+                        if ~ismember(dataRecordingParameterSet.recordingParameterSetLabel, listOfEecordingParemeterSetLabelWithFilters)
                             eeglabVersionString = ['EEGLAB ' eeg_getversion];
                             matlabVersionSTring = ['MATLAB '  version];
                             
@@ -427,12 +427,12 @@ classdef level2Study
                                 newFilter.softwareEnvironment = matlabVersionSTring;
                                 newFilter.softwarePackage = eeglabVersionString;
                                 newFilter.functionName = filterFunctionName{f};
-                                newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParemeterSetLabel;
                                 fields = fieldnames(EEG.etc.noisyParameters.(filterFieldName{f}));
                                 for p=1:length(fields)
                                     newFilter.parameters.parameter(p).name = fields{p};
                                     newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.(filterFieldName{f}).(fields{p}));
                                 end;
+                                newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                 
                                 obj.filters.filter(end+1) = newFilter;
                             end;
@@ -444,7 +444,6 @@ classdef level2Study
                             newFilter.softwareEnvironment = matlabVersionSTring;
                             newFilter.softwarePackage = eeglabVersionString;
                             newFilter.functionName = 'robustReference';
-                            newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParemeterSetLabel;
                             fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
                                 'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
                                 'ransacCorrelationThreshold', 'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
@@ -458,6 +457,8 @@ classdef level2Study
                             
                             newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
                             newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
+                            newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                            
                             obj.filters.filter(end+1) = newFilter;
                         end;
                         
