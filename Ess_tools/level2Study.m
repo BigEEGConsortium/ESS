@@ -26,7 +26,7 @@ classdef level2Study
         % runs.
         filters = struct('filter', struct('filterLabel', ' ', 'executionOrder', ' ', ...
             'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ',...
-            'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParemeterSetLabel', ' '));
+            'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
         % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
         % (we do not combine datasets).
@@ -202,7 +202,7 @@ classdef level2Study
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
             
             % process each session before moving to the other
-            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
+            for i=73%1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
                     % do not processed data recordings that have already
                     % been processed.
@@ -409,7 +409,7 @@ classdef level2Study
                         
                         %% write the filters
                         
-                        % only add filters for a recordingParemeterSetLabel
+                        % only add filters for a recordingParameterSetLabel
                         % if it does not have fileters for the pipeline
                         % already defined for it.
                         listOfEecordingParemeterSetLabelWithFilters = {};
@@ -437,7 +437,7 @@ classdef level2Study
                                     newFilter.parameters.parameter(p).name = fields{p};
                                     newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.(filterFieldName{f}).(fields{p}));
                                 end;
-                                newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                                newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                 
                                 obj.filters.filter(end+1) = newFilter;
                             end;
@@ -462,7 +462,7 @@ classdef level2Study
                             
                             newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
                             newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
-                            newFilter.recordingParemeterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                            newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                             
                             obj.filters.filter(end+1) = newFilter;
                         end;
