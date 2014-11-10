@@ -223,7 +223,7 @@ classdef level1Study
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
             
             schemaFile = [essDocumentPathStr filesep 'asset' filesep 'ESS_STDL 1_schema.xsd'];
-            [isValid errorMessage] = validate_schema(essFilePath, schemaFile);
+            [isValid, errorMessage] = validate_schema(essFilePath, schemaFile);
             if ~isValid
                 fprintf('The input XML failed to be validated against ESS Schema provided in %s.\n',  schemaFile);
                 error(errorMessage);
@@ -341,8 +341,7 @@ classdef level1Study
                     
                     for taskCounter = 0:(potentialTaskNodeArray.getLength-1)
                         currentNode = potentialTaskNodeArray.item(taskCounter); % select a session and make it the current node.
-                        singleTaskNode = currentNode;
-                        
+                       
                         potentialTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialTaskLabelNodeArray.getLength > 0
                             obj.tasksInfo(taskCounter+1).taskLabel = readStringFromNode(potentialTaskLabelNodeArray.item(0));
@@ -560,7 +559,7 @@ classdef level1Study
                             obj.sessionTaskInfo(sessionCounter+1).channels= '';
                         end;
                         
-                        if str2num(obj.essVersion) <= 1 % for ESS 1.0
+                        if str2double(obj.essVersion) <= 1 % for ESS 1.0
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
                                 % for now we asume all had the same
@@ -571,7 +570,7 @@ classdef level1Study
                             end;
                         end;
                         
-                        if str2num(obj.essVersion) <= 1 % for ESS 1.0
+                        if str2double(obj.essVersion) <= 1 % for ESS 1.0
                             potentialEegRecordingsNodeArray = currentNode.getElementsByTagName('eegRecordings'); % inside <eegRecordings> find <eegRecording>
                             if potentialEegRecordingsNodeArray.getLength > 0
                                 currentNode = potentialEegRecordingsNodeArray.item(0);
@@ -822,7 +821,6 @@ classdef level1Study
                         if potentialCodeConditionNodeArray.getLength > 0
                             for codeConditionCounter = 0:(potentialCodeConditionNodeArray.getLength-1)
                                 currentNode = potentialCodeConditionNodeArray.item(codeConditionCounter); % select a session and make it the current node.
-                                singleCodeNode = currentNode;
                                 
                                 potentialConditionLabelArray = currentNode.getElementsByTagName('label');
                                 if potentialConditionLabelArray.getLength > 0
@@ -915,7 +913,6 @@ classdef level1Study
                     
                     for publicationCounter = 0:(potentialPublicationNodeArray.getLength-1)
                         currentNode = potentialPublicationNodeArray.item(publicationCounter); % select a session and make it the current node.
-                        singlePublicationNode = currentNode;
                         
                         potentialPublicationCitationNodeArray = currentNode.getElementsByTagName('citation');
                         if potentialPublicationCitationNodeArray.getLength > 0
@@ -957,7 +954,7 @@ classdef level1Study
                     
                     for experimenterCounter = 0:(potentialExperimenterNodeArray.getLength-1)
                         currentNode = potentialExperimenterNodeArray.item(experimenterCounter); % select a session and make it the current node.
-                        singleExperimenterNode = currentNode;
+
                         %name is not showing up
                         potentialExperimenterNameNodeArray = currentNode.getElementsByTagName('name');
                         if potentialExperimenterNameNodeArray.getLength > 0
@@ -1554,7 +1551,7 @@ classdef level1Study
                 end;
                 
                 % sort based on lenth so match firt by the longest
-                [dummy ord] = sort(allowedUnitsLenght, 'descend');
+                [dummy, ord] = sort(allowedUnitsLenght, 'descend'); %#ok<ASGLU>
                 allowedUnits  = allowedUnits(ord);
                 
                 for iii=1:length(allowedUnits)
@@ -1833,7 +1830,7 @@ classdef level1Study
                         % check if the channel location file actually
                         % exists.
                         if isAvailable(obj.sessionTaskInfo(i).subject(j).channelLocations)
-                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber);
+                            allSearchFolders = getSessionFileSearchFolders(obj, sessionNumber);
                             
                             fileFound = false;
                             searchFullPath = {};
@@ -1865,7 +1862,7 @@ classdef level1Study
                             issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a filename.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         else % file has to be found according to ESS convention
                             
-                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber);
+                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
                             
                             nextToXMLFilePath = [nextToXMLFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
                             fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
@@ -1888,7 +1885,7 @@ classdef level1Study
                         if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile)
                             issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         else % file has to be found according to ESS convention
-                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber);
+                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
                             
                             nextToXMLFilePath = [nextToXMLFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
                             fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
@@ -1908,7 +1905,7 @@ classdef level1Study
                             try
                                 dateNumber = datenum(dateTime);
                                 dateTimeIso8601 = datestr(dateNumber);
-                            catch e
+                            catch e %#ok<NASGU>
                             end;
                             
                             if ~isempty(dateTimeIso8601)
@@ -2088,7 +2085,7 @@ classdef level1Study
                     serialDateNumber(j) = serialDateNumberForRecording;
                 end;
                 
-                [dummy ord] = sort(serialDateNumber, 'ascend');
+                [dummy, ord] = sort(serialDateNumber, 'ascend'); %#ok<ASGLU>
                 obj.sessionTaskInfo(i).dataRecording = obj.sessionTaskInfo(i).dataRecording(ord);
             end;
         end;
@@ -2096,7 +2093,7 @@ classdef level1Study
         function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
             
-            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber);
+            [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
             if nargin < 4 % use the ESS convention folder location if none is provided.
                 filePath = fullEssFolder;
@@ -2183,7 +2180,7 @@ classdef level1Study
             
             fclose(fid);
             
-            [pathstr,name,ext]  = fileparts(fullFilePath);
+            [pathstr,name,ext]  = fileparts(fullFilePath); %#ok<ASGLU>
             obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile = [name ext];
         end;
         
@@ -2248,7 +2245,6 @@ classdef level1Study
                         nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
                         fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
                         
-                        fileFinalPath = [];
                         if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
                             fileFinalPath = fullEssFilePath;
                         elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
@@ -2260,13 +2256,13 @@ classdef level1Study
                         
                         if ~isempty(fileFinalPath)
                             
-                            essConventionfolder = [filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber];
-                            [dummy1 dummy2 extension] = fileparts(fileFinalPath);
+                            essConventionfolder = ['session' filesep obj.sessionTaskInfo(i).sessionNumber];
+                            [dummy1, dummy2, extension] = fileparts(fileFinalPath); %#ok<ASGLU>
                             subjectInSessionNumber = obj.sessionTaskInfo(i).subject(j).inSessionNumber;
                             
                             % include original filename
                             fileForFreePart = obj.sessionTaskInfo(i).dataRecording(j).filename;
-                            [path name ext] = fileparts(fileForFreePart);
+                            [path, name, ext] = fileparts(fileForFreePart);
                             
                             itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
@@ -2329,11 +2325,11 @@ classdef level1Study
                         % event instance file is specified and needs to be
                         % created from a data recording file.
                         if ~isempty(fileFinalPath) || (isempty(fileNameFromObj) && strcmpi(typeOfFile{k}, 'event'))
-                            essConventionfolder = [filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber];
+                            essConventionfolder = ['session' filesep obj.sessionTaskInfo(i).sessionNumber];
                             
                             switch typeOfFile{k}
                                 case 'eeg'
-                                    [dummy1 dummy2 extension] = fileparts(fileFinalPath);
+                                    [dummy1, dummy2, extension] = fileparts(fileFinalPath); %#ok<ASGLU>
                                 case 'event'
                                     extension = '.tsv';
                             end;
@@ -2358,7 +2354,7 @@ classdef level1Study
                             end;
                             
                             if ~isempty(fileForFreePart)
-                                [path name ext] = fileparts(fileForFreePart);
+                                [path, name, ext] = fileparts(fileForFreePart);
                                 % see if the file name is already in ESS
                                 % format, hence no name change is necessary
                                 itMatches = level1Study.fileNameMatchesEssConvention([name ext], typeOfFile{k}, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
@@ -2405,7 +2401,9 @@ classdef level1Study
             end;
             
             % update total study size
-            [dummy, obj.summaryInfo.totalSize]= dirsize(path);
+            [dummy, obj.summaryInfo.totalSize]= dirsize(path); %#ok<ASGLU>
+            
+            obj.rootURI = '.'; % the ess convention folder is the root
             
             % write the XML file
             obj.write([essFolder filesep 'study_description.xml']);
