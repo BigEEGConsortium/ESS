@@ -2120,7 +2120,7 @@ classdef level1Study
             for i=1:length(allSearchFolders)
                 if isempty(EEG)
                     try
-                        EEG = io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]);
+                        EEG = exp_eval(io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]));
                         %EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
                     catch
                     end;

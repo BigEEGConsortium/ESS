@@ -202,7 +202,7 @@ classdef level2Study
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
             
             % process each session before moving to the other
-            for i=73%1:length(obj.level1StudyObj.sessionTaskInfo)
+            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
                     % do not processed data recordings that have already
                     % been processed.
