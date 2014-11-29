@@ -32,7 +32,7 @@ classdef level2Study
         % (we do not combine datasets).
         studyLevel2Files = struct('studyLevel2File', struct('studyLevel2FileName', ' ', ...
             'dataRecordingUuid', ' ', 'noisyParametersFile', ' ', 'reportFileName', ' ', 'averageReferenceChannels', ' ', ...
-            'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'nonInterpolatableChannels',  ' '));
+            'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'dataQuality', ' '));
     end;
     
     % properties that we do not want to be written/read to/from the XML
@@ -78,6 +78,14 @@ classdef level2Study
                 );
             
             obj.level2XmlFilePath = inputOptions.level2XmlFilePath;
+            
+            % if the folder 'container' is instead of filename provided, use the default
+            % 'study_description.xml' file.
+            if exist(inputOptions.level1XmlFilePath, 'dir')...
+                    && exist([inputOptions.level1XmlFilePath filesep 'study_description.xml'], 'file')
+                inputOptions.level1XmlFilePath = [inputOptions.level1XmlFilePath filesep 'study_description.xml'];
+                             
+            end;
             
             if ~isempty(obj.level2XmlFilePath)
                 obj = obj.read;
@@ -171,10 +179,11 @@ classdef level2Study
         % exact same command since it skips processing of already
         % calculated sessions.
         
-            inputOptions = arg_define(1,varargin, ...
-                arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
-                arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
-                );
+        inputOptions = arg_define(1,varargin, ...
+            arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
+            arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
+            ,arg({'sessionSubset', 'sessionSubset'}, [],[],'Subset of sessions numbers to create Level 2 study for (empty = all).', 'type', 'denserealsingle') ...
+            );
             
             obj.level2Folder = inputOptions.level2Folder;
             
@@ -204,271 +213,289 @@ classdef level2Study
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
-                    % do not processed data recordings that have already
-                    % been processed.
-                    [fileIsListedAsProcessed, id]= ismember(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid, alreadyProcessedDataRecordingUuid);
-                    
-                    % make sure not only the file is listed as processed,
-                    % but also it exists on disk (otherwise recompute).
-                    if fileIsListedAsProcessed
-                        level2FileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
-                        processedFileIsOnDisk = ~isempty(findFile(level2FileNameOfProcessed, inputOptions.level2Folder));
-                    end;
-                    if fileIsListedAsProcessed && processedFileIsOnDisk
-                        fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
-                    else % file has not yet been processed
-                        fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
+                    if isempty(inputOptions.sessionSubset) && ismember(str2double(obj.level1StudyObj.sessionTaskInfo(i).sessionNumber), inputOptions.sessionSubset)
+                        % do not processed data recordings that have already
+                        % been processed.
+                        [fileIsListedAsProcessed, id]= ismember(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid, alreadyProcessedDataRecordingUuid);
                         
-                        % read data
-                        if ~isempty(obj.level1XmlFilePath)
-                            level1FileFolder = fileparts(obj.level1XmlFilePath);
+                        % make sure not only the file is listed as processed,
+                        % but also it exists on disk (otherwise recompute).
+                        if fileIsListedAsProcessed
+                            level2FileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
+                            processedFileIsOnDisk = ~isempty(findFile(level2FileNameOfProcessed, inputOptions.level2Folder));
+                        end;
+                        if fileIsListedAsProcessed && processedFileIsOnDisk
+                            fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
+                        else % file has not yet been processed
+                            fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
                             
-                            if isempty(obj.rootURI)
-                                rootFolder = level1FileFolder;
-                            elseif obj.rootURI(1) == '.' % if the path is relative, append the current absolute path
-                                rootFolder = [level1FileFolder filesep obj.rootURI(2:end)];
+                            % read data
+                            if ~isempty(obj.level1XmlFilePath)
+                                level1FileFolder = fileparts(obj.level1XmlFilePath);
+                                
+                                if isempty(obj.rootURI)
+                                    rootFolder = level1FileFolder;
+                                elseif obj.rootURI(1) == '.' % if the path is relative, append the current absolute path
+                                    rootFolder = [level1FileFolder filesep obj.rootURI(2:end)];
+                                else
+                                    rootFolder = obj.level1StudyObj.rootURI;
+                                end;
                             else
                                 rootFolder = obj.level1StudyObj.rootURI;
                             end;
-                        else
-                            rootFolder = obj.level1StudyObj.rootURI;
-                        end;
-                        
-                        fileFinalPath = findFile(fileNameFromObj, rootFolder);
-                        
-                        % read raw EEG data
-                        EEG = exp_eval(io_loadset(fileFinalPath));                        
-                        
-                        % find EEG channels subsets
-                        dataRecordingParameterSet = [];
-                        for kk = 1:length(obj.level1StudyObj.recordingParameterSet)
-                            if strcmpi(obj.level1StudyObj.recordingParameterSet(kk).recordingParameterSetLabel, obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
-                                dataRecordingParameterSet = obj.level1StudyObj.recordingParameterSet(kk);
-                                break;
-                            end;
-                        end;
-                        
-                        if isempty(dataRecordingParameterSet)
-                            % ToDo: Throw a better error message
-                            error('RecordingParameterSet label is not valid');
-                        end;
-                        
-                        % find EEG channels
-                        allEEGChannels = [];
-                        allScalpChannels = [];
-                        allEEGChannelLabels = {};
-                        allChannelLabels = {}; % the label for each channel, whether it be EEG, MocaP..
-                        allChannelTypes = {}; % the type of each channel
-                        for m = 1:length(dataRecordingParameterSet.modality)
                             
-                            startChannel = str2double(dataRecordingParameterSet.modality(m).startChannel);
-                            endChannel   = str2double(dataRecordingParameterSet.modality(m).endChannel);
-                            newChannels = startChannel:endChannel;
-                            newChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).channelLabel, ','));
+                            fileFinalPath = findFile(fileNameFromObj, rootFolder);
                             
-                            allChannelTypes(newChannels) = {dataRecordingParameterSet.modality(m).type};
-                            if length(newChannelLabels) == length(newChannels)
-                                allChannelLabels(newChannels) = newChannelLabels;
+                            % read raw EEG data
+                            % since io_loadset() assigns arbitrary labels when
+                            % EEG.chanlocs is empty, we use pop_loadset for
+                            % .set  files
+                            [pathstr, nameOfFile,extensionOfFile] = fileparts(fileFinalPath);
+                            if strcmpi(extensionOfFile, '.set')
+                                EEG = pop_loadset([nameOfFile extensionOfFile], pathstr);
                             else
-                                error('Number of channel lables does not match star and end channel values');
+                                EEG = exp_eval(io_loadset(fileFinalPath));
                             end;
                             
-                            if strcmpi(dataRecordingParameterSet.modality(m).type, 'EEG')
-                                nonScalpChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).nonScalpChannelLabel, ','));
-                                nonScalpChannel = ismember(lower(newChannelLabels), lower(nonScalpChannelLabels));
-                                allEEGChannels = [allEEGChannels newChannels];
-                                allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
+                            % add HED tags based on events
+                            if strcmpi(obj.level1StudyObj.eventSpecificiationMethod, 'Codes')
+                                EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber);
+                            end;
+                            
+                            % find EEG channels subsets
+                            dataRecordingParameterSet = [];
+                            for kk = 1:length(obj.level1StudyObj.recordingParameterSet)
+                                if strcmpi(obj.level1StudyObj.recordingParameterSet(kk).recordingParameterSetLabel, obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
+                                    dataRecordingParameterSet = obj.level1StudyObj.recordingParameterSet(kk);
+                                    break;
+                                end;
+                            end;
+                            
+                            if isempty(dataRecordingParameterSet)
+                                % ToDo: Throw a better error message
+                                error('RecordingParameterSet label is not valid');
+                            end;
+                            
+                            % find EEG channels
+                            allEEGChannels = [];
+                            allScalpChannels = [];
+                            allEEGChannelLabels = {};
+                            allChannelLabels = {}; % the label for each channel, whether it be EEG, MocaP..
+                            allChannelTypes = {}; % the type of each channel
+                            for m = 1:length(dataRecordingParameterSet.modality)
                                 
-                                allEEGChannelLabels = cat(1, allEEGChannelLabels, newChannelLabels);
-                                newChannelLabels = cat(1, newChannelLabels, nonScalpChannelLabels); %#ok<NASGU>
-                            end;
-                        end;
-                        
-                        % assign channel type in EEG.chanlocs
-                        for chanCounter = 1:length(allChannelTypes)
-                            EEG.chanlocs(chanCounter).type = allChannelTypes{chanCounter};
-                            
-                            % place labels from XML into EEG.chanlocs when
-                            % empty.
-                            if isempty(EEG.chanlocs(chanCounter).labels)
-                                EEG.chanlocs(chanCounter).labels = allChannelLabels{chanCounter};
-                            elseif strcmpi(allChannelTypes{chanCounter}, 'EEG') && ~strcmpi(EEG.chanlocs(chanCounter).labels, allChannelLabels{chanCounter});
-                                % ToDo: make a better error message.
-                                error('Channel labels from level 1 XML file and EEG recording are inconsistent for %s file.', fileNameFromObj);
-                            end;
-                        end;
-                        
-                        %ToDo: make it work for multiple subjects and their
-                        %channel locations.
-                        % read digitized channel locations (if exists)
-                        if ~ismember(lower(strtrim(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations)), {'', 'na'})
-                            fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations, rootFolder);
-                            chanlocsFromFile = readlocs(fileFinalPathForChannelLocation);
-                            
-                            % check if there are enough channels in EEG.data
-                            % (at least the size of EEG channels expected).
-                            if length(allEEGChannelLabels) > size(EEG.data, 1)
-                                error('There are less channels in %s file than EEG channels specified by recordingParameterSet %d',  fileNameFromObj, dataRecordingParameterSet);
-                            end;
-                            
-                            % sometimes channel location file does not
-                            % contain locations for all channels, esp.
-                            % channels like EXG, Mastoid, EMG.
-                            if length(chanlocsFromFile) ~= size(EEG.data, 1)
-                                labelsFromFile = {chanlocsFromFile.labels};
+                                startChannel = str2double(dataRecordingParameterSet.modality(m).startChannel);
+                                endChannel   = str2double(dataRecordingParameterSet.modality(m).endChannel);
+                                newChannels = startChannel:endChannel;
+                                newChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).channelLabel, ','));
                                 
-                                % the the option with more labels, either
-                                % from the EEG.chanlocs or from the XML
-                                % file. 
-                                % ToDo: rconsider this if.
-                                if length(labelsFromFile) >= length(allEEGChannelLabels)
-                                    channelLabelsToUse = labelsFromFile;
+                                allChannelTypes(newChannels) = {dataRecordingParameterSet.modality(m).type};
+                                if length(newChannelLabels) == length(newChannels)
+                                    allChannelLabels(newChannels) = newChannelLabels;
                                 else
-                                    channelLabelsToUse = allEEGChannelLabels;
+                                    error('Number of channel labels does not match start and end channel values');
                                 end;
                                 
-                                for ccounter = 1:length(allEEGChannels)
-                                    newLocation = chanlocsFromFile(strcmpi(labelsFromFile, channelLabelsToUse{allEEGChannels(ccounter)}));
-                                    if isempty(newLocation) && ismember(lower(channelLabelsToUse{allEEGChannels(ccounter)}), lower(allChannelLabels(allScalpChannels)))
-                                        error('Label %s on the scalp does not have a location associated with it in %s file.', channelLabelsToUse{allEEGChannels(ccounter)}, fileNameFromObj);
+                                if strcmpi(dataRecordingParameterSet.modality(m).type, 'EEG')
+                                    nonScalpChannelLabels = strtrim(strsplit(dataRecordingParameterSet.modality(m).nonScalpChannelLabel, ','));
+                                    nonScalpChannel = ismember(lower(newChannelLabels), lower(nonScalpChannelLabels));
+                                    allEEGChannels = [allEEGChannels newChannels];
+                                    allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
+                                    
+                                    allEEGChannelLabels = cat(1, allEEGChannelLabels, newChannelLabels);
+                                    newChannelLabels = cat(1, newChannelLabels, nonScalpChannelLabels); %#ok<NASGU>
+                                end;
+                            end;
+                            
+                            % assign channel type in EEG.chanlocs
+                            for chanCounter = 1:length(allChannelTypes)
+                                EEG.chanlocs(chanCounter).type = allChannelTypes{chanCounter};
+                                
+                                % place labels from XML into EEG.chanlocs when
+                                % empty or non-existent.
+                                if ~isfield(EEG.chanlocs, 'labels') || isempty(EEG.chanlocs(chanCounter).labels)
+                                    EEG.chanlocs(chanCounter).labels = allChannelLabels{chanCounter};
+                                elseif strcmpi(allChannelTypes{chanCounter}, 'EEG') && ~strcmpi(EEG.chanlocs(chanCounter).labels, allChannelLabels{chanCounter});
+                                    % ToDo: make a better error message.
+                                    keyboard;
+                                    error('Channel labels from level 1 XML file and EEG recording are inconsistent for %s file.', fileNameFromObj);
+                                end;
+                            end;
+                            
+                            %ToDo: make it work for multiple subjects and their
+                            %channel locations.
+                            % read digitized channel locations (if exists)
+                            if ~ismember(lower(strtrim(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations)), {'', 'na'})
+                                fileFinalPathForChannelLocation = findFile(obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations, rootFolder);
+                                chanlocsFromFile = readlocs(fileFinalPathForChannelLocation);
+                                
+                                % check if there are enough channels in EEG.data
+                                % (at least the size of EEG channels expected).
+                                if length(allEEGChannelLabels) > size(EEG.data, 1)
+                                    error('There are less channels in %s file than EEG channels specified by recordingParameterSet %d',  fileNameFromObj, dataRecordingParameterSet);
+                                end;
+                                
+                                % sometimes channel location file does not
+                                % contain locations for all channels, esp.
+                                % channels like EXG, Mastoid, EMG.
+                                if length(chanlocsFromFile) ~= size(EEG.data, 1)
+                                    labelsFromFile = {chanlocsFromFile.labels};
+                                    
+                                    % the the option with more labels, either
+                                    % from the EEG.chanlocs or from the XML
+                                    % file.
+                                    % ToDo: rconsider this if.
+                                    if length(labelsFromFile) >= length(allEEGChannelLabels)
+                                        channelLabelsToUse = labelsFromFile;
                                     else
-                                        fieldNames = fieldnames(newLocation);
-                                        for fieldCounter = 1:length(fieldNames)
-                                            EEG.chanlocs(allEEGChannels(ccounter)).(fieldNames{fieldCounter}) = newLocation.(fieldNames{fieldCounter});
+                                        channelLabelsToUse = allEEGChannelLabels;
+                                    end;
+                                    
+                                    for ccounter = 1:length(allEEGChannels)
+                                        newLocation = chanlocsFromFile(strcmpi(labelsFromFile, channelLabelsToUse{allEEGChannels(ccounter)}));
+                                        if isempty(newLocation) && ismember(lower(channelLabelsToUse{allEEGChannels(ccounter)}), lower(allChannelLabels(allScalpChannels)))
+                                            error('Label %s on the scalp does not have a location associated with it in %s file.', channelLabelsToUse{allEEGChannels(ccounter)}, fileNameFromObj);
+                                        else
+                                            fieldNames = fieldnames(newLocation);
+                                            for fieldCounter = 1:length(fieldNames)
+                                                EEG.chanlocs(allEEGChannels(ccounter)).(fieldNames{fieldCounter}) = newLocation.(fieldNames{fieldCounter});
+                                            end;
                                         end;
                                     end;
+                                    
+                                end;
+                            else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
+                                EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
+                            end;
+                            
+                            % run the pipeline
+                            
+                            % set the parameters
+                            params = struct();
+                            params.lineFrequencies = [60, 120,  180, 212, 240];
+                            params.referenceChannels = allScalpChannels;
+                            params.rereferencedChannels = allEEGChannels;
+                            params.highPassChannels = params.rereferencedChannels;
+                            params.lineNoiseChannels = params.rereferencedChannels;
+                            params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
+                            
+                            % execute the pipeline
+                            [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
+                            
+                            fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
+                                computationTimes.highPass, computationTimes.resampling, ...
+                                computationTimes.lineNoise, computationTimes.reference);
+                            
+                            % pop_loadset('eeg_studyLevel2_NCTU_Lane-Keeping_Task_session_5_subject_1_task_motionless_s01_060926_1n_recording_1.set', 'C:\Users\Nima\Documents\MATLAB\tools\playground\level2\session\5');
+                            
+                            % write processed EEG data
+                            sessionFolder = [inputOptions.level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
+                            if ~exist(sessionFolder, 'dir')
+                                mkdir(sessionFolder);
+                            end;
+                            
+                            % if recording file name matches ESS Level 1 convention
+                            % then just modify it a bit to conform to level2
+                            [path, name, ext] = fileparts(fileFinalPath); %#ok<ASGLU>
+                            
+                            % see if the file name is already in ESS
+                            % format, hence no name change is necessary
+                            subjectInSessionNumber = obj.level1StudyObj.sessionTaskInfo(i).subject(j).inSessionNumber;
+                            itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'eeg', obj.level1StudyObj.studyTitle, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
+                                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j);
+                            
+                            if itMatches
+                                % change the eeg_ at the beginning to
+                                % eeg_studyLevel2_
+                                filenameInEss = ['eeg_studyLevel2_' name(5:end) ext];
+                            else % convert to ess convention
+                                filenameInEss = obj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
+                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                            end;
+                            
+                            pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
+                            
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).studyLevel2FileName = filenameInEss;
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
+                            
+                            % create the PDF report, save it and specify in XML
+                            reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
+                            relativeSessionFolder = ['.' filesep 'session' ...
+                                filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
+                            publishLevel2Report(EEG, ...
+                                inputOptions.level2Folder, 'summaryReport.html', ...
+                                relativeSessionFolder, reportFileName);
+                            
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).averageReferenceChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allScalpChannels, 'UniformOutput', false));
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
+                            % assume data quality hass been 'Good' (can be set to
+                            % 'Suspect or 'Unusable' later)
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
+                            %% write the filters
+                            
+                            % only add filters for a recordingParameterSetLabel
+                            % if it does not have fileters for the pipeline
+                            % already defined for it.
+                            listOfEecordingParemeterSetLabelWithFilters = {};
+                            for f = 1:length(obj.filters.filter)
+                                listOfEecordingParemeterSetLabelWithFilters{f} = obj.filters.filter(f).recordingParameterSetLabel;
+                            end;
+                            
+                            if ~ismember(dataRecordingParameterSet.recordingParameterSetLabel, listOfEecordingParemeterSetLabelWithFilters)
+                                eeglabVersionString = ['EEGLAB ' eeg_getversion];
+                                matlabVersionSTring = ['MATLAB '  version];
+                                
+                                filterLabel = {'High-Pass Filter', 'Resampling', 'Line Noise Removal'};
+                                filterFieldName = {'highPass' 'resampling' 'lineNoise' 'reference'};
+                                filterFunctionName = {'highPassFilter' 'resampleEEG' 'cleanLineNoise' };
+                                
+                                for f=1:length(filterLabel)
+                                    newFilter = struct;
+                                    newFilter.filterLabel = filterLabel{f};
+                                    newFilter.executionOrder = num2str(f);
+                                    newFilter.softwareEnvironment = matlabVersionSTring;
+                                    newFilter.softwarePackage = eeglabVersionString;
+                                    newFilter.functionName = filterFunctionName{f};
+                                    fields = fieldnames(EEG.etc.noisyParameters.(filterFieldName{f}));
+                                    for p=1:length(fields)
+                                        newFilter.parameters.parameter(p).name = fields{p};
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.(filterFieldName{f}).(fields{p}));
+                                    end;
+                                    newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                                    
+                                    obj.filters.filter(end+1) = newFilter;
                                 end;
                                 
-                            end;
-                        else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
-                            EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
-                        end;
-                        
-                        % run the pipeline
-                        
-                        % set the parameters
-                        params = struct();
-                        params.lineFrequencies = [60, 120,  180, 212, 240];
-                        params.referenceChannels = allScalpChannels;
-                        params.rereferencedChannels = allEEGChannels;
-                        params.highPassChannels = params.rereferencedChannels;
-                        params.lineNoiseChannels = params.rereferencedChannels;
-                        params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
-                        
-                        % execute the pipeline
-                        [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
-                        
-                        fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
-                            computationTimes.highPass, computationTimes.resampling, ...
-                            computationTimes.lineNoise, computationTimes.reference);
-                        
-                        % pop_loadset('eeg_studyLevel2_NCTU_Lane-Keeping_Task_session_5_subject_1_task_motionless_s01_060926_1n_recording_1.set', 'C:\Users\Nima\Documents\MATLAB\tools\playground\level2\session\5');
-                        
-                        % write processed EEG data
-                        sessionFolder = [inputOptions.level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
-                        if ~exist(sessionFolder, 'dir')
-                            mkdir(sessionFolder);
-                        end;
-                        
-                        % if recording file name matches ESS Level 1 convention
-                        % then just modify it a bit to conform to level2
-                        [path, name, ext] = fileparts(fileFinalPath); %#ok<ASGLU>
-                        
-                        % see if the file name is already in ESS
-                        % format, hence no name change is necessary
-                        subjectInSessionNumber = obj.level1StudyObj.sessionTaskInfo(i).subject(j).inSessionNumber;
-                        itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'eeg', obj.level1StudyObj.studyTitle, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                            subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j);
-                        
-                        if itMatches
-                            % change the eeg_ at the beginning to
-                            % eeg_studyLevel2_
-                            filenameInEss = ['eeg_studyLevel2_' name(5:end) ext];
-                        else % convert to ess convention
-                            filenameInEss = obj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, name, extension);
-                        end;
-                        
-                        pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
-                        
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).studyLevel2FileName = filenameInEss;
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
-                        
-                        % create the PDF report, save it and specify in XML
-                        reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
-                        relativeSessionFolder = ['.' filesep 'session' ...
-                            filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
-                        publishLevel2Report(EEG, ...
-                            inputOptions.level2Folder, 'summaryReport.html', ...
-                            relativeSessionFolder, reportFileName);
-                        
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).averageReferenceChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allScalpChannels, 'UniformOutput', false));
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
-                        obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
-                        
-                        %% write the filters
-                        
-                        % only add filters for a recordingParameterSetLabel
-                        % if it does not have fileters for the pipeline
-                        % already defined for it.
-                        listOfEecordingParemeterSetLabelWithFilters = {};
-                        for f = 1:length(obj.filters.filter)
-                            listOfEecordingParemeterSetLabelWithFilters{f} = obj.filters.filter(f).recordingParameterSetLabel;
-                        end;
-                        
-                        if ~ismember(dataRecordingParameterSet.recordingParameterSetLabel, listOfEecordingParemeterSetLabelWithFilters)
-                            eeglabVersionString = ['EEGLAB ' eeg_getversion];
-                            matlabVersionSTring = ['MATLAB '  version];
-                            
-                            filterLabel = {'High-Pass Filter', 'Resampling', 'Line Noise Removal'};
-                            filterFieldName = {'highPass' 'resampling' 'lineNoise' 'reference'};
-                            filterFunctionName = {'highPassFilter' 'resampleEEG' 'cleanLineNoise' };
-                            
-                            for f=1:length(filterLabel)
+                                % Reference (too complicated to pu above)
                                 newFilter = struct;
-                                newFilter.filterLabel = filterLabel{f};
-                                newFilter.executionOrder = num2str(f);
+                                newFilter.filterLabel = 'Robust Reference Removal';
+                                newFilter.executionOrder = '4';
                                 newFilter.softwareEnvironment = matlabVersionSTring;
                                 newFilter.softwarePackage = eeglabVersionString;
-                                newFilter.functionName = filterFunctionName{f};
-                                fields = fieldnames(EEG.etc.noisyParameters.(filterFieldName{f}));
+                                newFilter.functionName = 'robustReference';
+                                fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
+                                    'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
+                                    'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
                                 for p=1:length(fields)
                                     newFilter.parameters.parameter(p).name = fields{p};
-                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.(filterFieldName{f}).(fields{p}));
+                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
                                 end;
+                                
+                                newFilter.parameters.parameter(end+1).name = 'referenceChannels';
+                                newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.referenceChannels);
+                                
+                                newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
+                                newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
                                 newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                 
                                 obj.filters.filter(end+1) = newFilter;
                             end;
                             
-                            % Reference (too complicated to pu above)
-                            newFilter = struct;
-                            newFilter.filterLabel = 'Robust Reference Removal';
-                            newFilter.executionOrder = '4';
-                            newFilter.softwareEnvironment = matlabVersionSTring;
-                            newFilter.softwarePackage = eeglabVersionString;
-                            newFilter.functionName = 'robustReference';
-                            fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
-                                'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
-                                'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
-                            for p=1:length(fields)
-                                newFilter.parameters.parameter(p).name = fields{p};
-                                newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
-                            end;
-                            
-                            newFilter.parameters.parameter(end+1).name = 'referenceChannels';
-                            newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.referenceChannels);
-                            
-                            newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
-                            newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
-                            newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
-                            
-                            obj.filters.filter(end+1) = newFilter;
+                            studyLevel2FileCounter = studyLevel2FileCounter + 1;
+                            obj.write([inputOptions.level2Folder filesep 'studyLevel2_description.xml']);
                         end;
-                        
-                        studyLevel2FileCounter = studyLevel2FileCounter + 1;
-                        obj.write([inputOptions.level2Folder filesep 'studyLevel2_description.xml']);
                     end;
                 end;
             end;
@@ -515,6 +542,53 @@ classdef level2Study
                  id =strcmp(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, uuidList);
                  level2DataSessionNumber = sessionId(id);
              end;
+        end;
+        
+        function EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber)
+            % add usertags based on (eventcode,hed string) associations for
+            % the task.
+            
+            studyEventCode = {obj.level1StudyObj.eventCodesInfo.code};
+            studyEventCodeTaskLabel = {obj.level1StudyObj.eventCodesInfo.taskLabel};
+            
+            studyEventCodeHedString = {};
+            for i = 1:length(obj.level1StudyObj.eventCodesInfo)
+                studyEventCodeHedString{i} = obj.level1StudyObj.eventCodesInfo(i).condition.tag;
+                
+                % add tags for label and description if they do not already exist
+                hedTags = strtrim(strsplit(studyEventCodeHedString{i}, ','));
+                labelTagExists = strfind(lower(hedTags), 'event/label/');
+                descriptionTagExists = strfind(lower(hedTags), 'event/description/');
+                
+                if all(cellfun(@isempty, labelTagExists))
+                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Label/' obj.level1StudyObj.eventCodesInfo(i).condition.label];
+                end;
+                
+                if all(cellfun(@isempty, descriptionTagExists))
+                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Description/' obj.level1StudyObj.eventCodesInfo(i).condition.description];
+                end;
+            end;
+            
+            currentTask = obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel;
+            currentTaskMask = strcmp(currentTask, studyEventCodeTaskLabel);
+            
+            for i=1:length(EEG.event)
+                type = EEG.event(i).type;
+                if isnumeric(type)
+                    type = num2str(type);
+                end;
+                eventType{i} = type;
+                eventLatency(i) = EEG.event(i).latency / EEG.srate;
+                
+                id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
+                if any(id)
+                    eventHedString = studyEventCodeHedString{id};
+                else
+                    eventHedString = '';
+                end;
+                
+                EEG.event(i).usertags = split_HEDstring_to_tags(eventHedString);
+            end;
         end;
     end;
 end

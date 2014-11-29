@@ -127,6 +127,14 @@ classdef level1Study
             if ~isempty(inputOptions.essFilePath)
                 obj.essFilePath = inputOptions.essFilePath;
                 
+                % if the folder 'container' is instead of filename provided, use the default
+                % 'study_description.xml' file.
+                if exist(obj.essFilePath, 'dir')...
+                        && exist([obj.essFilePath filesep 'study_description.xml'], 'file')
+                    obj.essFilePath = [obj.essFilePath filesep 'study_description.xml'];
+                end;
+                
+                
                 if exist(obj.essFilePath, 'file') && ~inputOptions.createNewFile % read the ESS information from the file
                     obj = obj.read(obj.essFilePath);
                     if nargin > 1
@@ -2090,7 +2098,8 @@ classdef level1Study
             end;
         end;
         
-        function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
+               
+        function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
             
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
@@ -2110,11 +2119,11 @@ classdef level1Study
                 subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
                 
                 
-                fileName = obj.essConventionFileName('event', obj.studyTitle, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
+                outputFileName = obj.essConventionFileName('event', obj.studyTitle, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
                     subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber);
             end;
             
-            fullFilePath = [filePath filesep fileName];
+            fullFilePath = [filePath filesep outputFileName];
             
             EEG = [];
             for i=1:length(allSearchFolders)
