@@ -53,7 +53,7 @@ classdef level1Study
         % Information about (session, task) tuples. Diifferent tasks in
         % a session are each assigned a separate structure in sessionTaskInfo.
         sessionTaskInfo = struct('sessionNumber', ' ', 'taskLabel', ' ', 'purpose', ' ', 'labId', ' ',...
-            'dataRecording', struct('filename', ' ', 'dataRecordingUuid', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' ', 'eventInstanceFile', ' '),...
+            'dataRecording', struct('filename', ' ', 'dataRecordingUuid', ' ', 'startDateTime', ' ', 'recordingParameterSetLabel', ' ', 'eventInstanceFile', ' ', 'originalFileNameAndPath', ' '),...
             'note', ' ', 'linkName', ' ', 'link', ' ', 'subject', struct('labId', ' ',...
             'inSessionNumber', ' ', 'group', ' ', 'gender', ' ', 'YOB', ' ', 'age', ' ', 'hand', ' ', 'vision', ' ', ...
             'hearing', ' ', 'height', ' ', 'weight', ' ', 'channelLocations', ' ', ...
@@ -63,6 +63,8 @@ classdef level1Study
         tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
         
         eventSpecificiationMethod = ' '; % should be either 'codes' or 'tags'.
+        
+        isInEssContainer = 'No'; % should be either 'Yes' or 'No'.
         
         % Information about event codes (i.e. triggers, event numbers).
         eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
@@ -635,6 +637,13 @@ classdef level1Study
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).eventInstanceFile = '';
                                     end;
                                     
+                                    potentialOriginalFileNameAndPathNodeArray = currentNode.getElementsByTagName('originalFileNameAndPath');
+                                    if  potentialOriginalFileNameAndPathNodeArray.getLength > 0
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).originalFileNameAndPath = readStringFromNode(potentialOriginalFileNameAndPathNodeArray.item(0));
+                                    else
+                                        obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).originalFileNameAndPath = '';
+                                    end;
+                                    
                                 end;
                             end;
                         end;
@@ -797,6 +806,13 @@ classdef level1Study
                 obj.eventSpecificiationMethod = '';
             end;
             
+            % isInEssContainer
+            potentialIsInEssContainerNodeArray = studyNode.getElementsByTagName('isInEssContainer');
+            if nodeExistsAndHasAChild(potentialIsInEssContainerNodeArray)
+                obj.isInEssContainer = strtrim(char(potentialIsInEssContainerNodeArray.item(0).getFirstChild.getData));
+            else
+                obj.isInEssContainer = '';
+            end;
             
             currentNode = studyNode;
             %start event codes
@@ -1118,6 +1134,11 @@ classdef level1Study
             eventSpecificiationMethodElement = docNode.createElement('eventSpecificiationMethod');
             eventSpecificiationMethodElement.appendChild(docNode.createTextNode(obj.eventSpecificiationMethod));
             docRootNode.appendChild(eventSpecificiationMethodElement);
+            
+            % isInEssContainer
+            isInEssContainerElement = docNode.createElement('isInEssContainer');
+            isInEssContainerElement.appendChild(docNode.createTextNode(obj.isInEssContainer));
+            docRootNode.appendChild(isInEssContainerElement);
             
             projectElement = docNode.createElement('project');
             projectRootNode=docRootNode.appendChild(projectElement);
@@ -1889,9 +1910,12 @@ classdef level1Study
                             issue(end).howItWasFixed = 'UUID placed into the field.';
                         end;
                         
-                        % check eventInstanceFile
+                        % check eventInstanceFile (only if in ESS
+                        % Container)                        
                         if ~isAvailable(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile)
-                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            if strcmpi(strtrim(obj.isInEssContainer), 'yes')
+                                issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            end;
                         else % file has to be found according to ESS convention
                             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
                             
@@ -1967,6 +1991,10 @@ classdef level1Study
             
             if ~isAvailable(obj.eventSpecificiationMethod) || ~ismember(strtrim(lower(obj.eventSpecificiationMethod)), {'codes', 'tags'})
                 issue(end+1).description = sprintf('eventSpecificiationMethod node is empty or invalid. It has to be either ''Codes'' or ''Tags''.');
+            end;
+            
+            if ~isAvailable(obj.isInEssContainer) || ~ismember(strtrim(lower(obj.isInEssContainer)), {'yes', 'no'})
+                issue(end+1).description = sprintf('isInEssContainer node is empty or invalid. It has to be either ''Yes'' or ''No''.');
             end;
             
             % only check the validity of event codes when they are the
@@ -2219,7 +2247,7 @@ classdef level1Study
             allSearchFolders = {nextToXMLFolder fullEssFolder};
         end;
         
-        function obj = createEssConventionFolder(obj, essFolder)
+        function obj = createEssContainerFolder(obj, essFolder)
             mkdir(essFolder);
             mkdir([essFolder filesep 'session']);
             mkdir([essFolder filesep 'publications']);
@@ -2384,6 +2412,7 @@ classdef level1Study
                             if exist(fileFinalPath, 'file')
                                 copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
                                 obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
+                                obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath = fileFinalPath;
                             else
                                 switch typeOfFile{k}
                                     case 'eeg'
@@ -2413,6 +2442,8 @@ classdef level1Study
             [dummy, obj.summaryInfo.totalSize]= dirsize(path); %#ok<ASGLU>
             
             obj.rootURI = '.'; % the ess convention folder is the root
+            
+            obj.isInEssContainer = 'Yes';
             
             % write the XML file
             obj.write([essFolder filesep 'study_description.xml']);
