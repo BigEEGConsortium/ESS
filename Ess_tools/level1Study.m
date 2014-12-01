@@ -1386,6 +1386,13 @@ classdef level1Study
                     dataRecordingEventInstanceFilelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).eventInstanceFile));
                     dataRecordingElement.appendChild(dataRecordingEventInstanceFilelElement);
                     
+                    
+                    % create the originalFileNameAndPath node under dataRecording node.
+                    dataRecordingOriginalFileNameAndPathElement = docNode.createElement('originalFileNameAndPath');
+                    dataRecordingOriginalFileNameAndPathElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).originalFileNameAndPath));
+                    dataRecordingElement.appendChild(dataRecordingOriginalFileNameAndPathElement);
+               
+                    
                     dataRecordingsRootNode.appendChild(dataRecordingElement);
                 end;
             end;
@@ -2248,6 +2255,17 @@ classdef level1Study
         end;
         
         function obj = createEssContainerFolder(obj, essFolder)
+            
+            [obj, issue]= obj.validate; % fix solvable issues, like missing UUIDs;.
+            
+            % stop and generate an error here if there are outstanding
+            % issues.
+            for i =1:length(issue)
+                if isempty(issue(i).howItWasFixed)
+                    error('There are still oustanding issues. You must fix them before placing the study in an ESS container');
+                end;
+            end;
+            
             mkdir(essFolder);
             mkdir([essFolder filesep 'session']);
             mkdir([essFolder filesep 'publications']);
@@ -2412,7 +2430,15 @@ classdef level1Study
                             if exist(fileFinalPath, 'file')
                                 copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
                                 obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
-                                obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath = fileFinalPath;
+                                if strcmp(typeOfFile{k}, 'eeg')
+                                    if length(fileFinalPath) > length(rootFolder) && strcmp(fileFinalPath(1:length(rootFolder)), rootFolder)
+                                        originalFileNameForXML = fileFinalPath((length(rootFolder)+1):end);
+                                    else
+                                        originalFileNameForXML = fileFinalPath;
+                                    end;
+                                     
+                                    obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath = originalFileNameForXML;
+                                end;
                             else
                                 switch typeOfFile{k}
                                     case 'eeg'
