@@ -182,7 +182,7 @@ classdef level2Study
         inputOptions = arg_define(1,varargin, ...
             arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
             arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
-            ,arg({'sessionSubset', 'sessionSubset'}, [],[],'Subset of sessions numbers to create Level 2 study for (empty = all).', 'type', 'denserealsingle') ...
+            ,arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle') ...
             );
             
             obj.level2Folder = inputOptions.level2Folder;
@@ -213,7 +213,7 @@ classdef level2Study
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
-                    if isempty(inputOptions.sessionSubset) && ismember(str2double(obj.level1StudyObj.sessionTaskInfo(i).sessionNumber), inputOptions.sessionSubset)
+                    if isempty(inputOptions.sessionSubset) || ismember(str2double(obj.level1StudyObj.sessionTaskInfo(i).sessionNumber), inputOptions.sessionSubset)
                         % do not processed data recordings that have already
                         % been processed.
                         [fileIsListedAsProcessed, id]= ismember(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid, alreadyProcessedDataRecordingUuid);
