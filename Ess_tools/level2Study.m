@@ -386,7 +386,9 @@ classdef level2Study
                                 computationTimes.highPass, computationTimes.resampling, ...
                                 computationTimes.lineNoise, computationTimes.reference);
                             
-                            % pop_loadset('eeg_studyLevel2_NCTU_Lane-Keeping_Task_session_5_subject_1_task_motionless_s01_060926_1n_recording_1.set', 'C:\Users\Nima\Documents\MATLAB\tools\playground\level2\session\5');
+                            % placee the recording uuid in EEG.etc so we
+                            % keep the association.
+                            EEG.etc.dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                             
                             % write processed EEG data
                             sessionFolder = [inputOptions.level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
@@ -588,6 +590,16 @@ classdef level2Study
                 end;
                 
                 EEG.event(i).usertags = split_HEDstring_to_tags(eventHedString);
+                EEG.urevent(i).usertags = EEG.event(i).usertags;
+                
+                % make sure event types are strings.
+                if isnumeric(EEG.event(i).type)
+                    EEG.event(i).type = num2str(EEG.event(i).type);
+                end;                
+                if isnumeric(EEG.urevent(i).type)
+                    EEG.urevent(i).type = num2str(EEG.urevent(i).type);
+                end;
+                    
             end;
         end;
     end;
