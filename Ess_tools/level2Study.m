@@ -259,7 +259,7 @@ classdef level2Study
                             
                             % add HED tags based on events
                             if strcmpi(obj.level1StudyObj.eventSpecificiationMethod, 'Codes')
-                                EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber);
+                                EEG = addUsertagsToEEG(obj, EEG, i);
                             end;
                             
                             % find EEG channels subsets
