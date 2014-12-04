@@ -2,6 +2,11 @@ function hedCellArray = split_HEDstring_to_tags(hedString)
 % this function handles commas in patenthesis. Commas inside paranthesis
 % do not distinguish HED tags.
 
+if isempty(hedString)
+    hedCellArray = {};
+    return;
+end;
+
 % add an extra comma to the end to facilitate segmenting the last tag.
 if hedString(end) ~= ','
     hedString = [hedString ','];
