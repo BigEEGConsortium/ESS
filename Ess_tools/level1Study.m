@@ -562,13 +562,6 @@ classdef level1Study
                         end;
                         
                         
-                        potentialChannelNodeArray = currentNode.getElementsByTagName('channels');
-                        if potentialChannelNodeArray.getLength > 0
-                            obj.sessionTaskInfo(sessionCounter+1).channels = readStringFromNode(potentialChannelNodeArray.item(0));
-                        else
-                            obj.sessionTaskInfo(sessionCounter+1).channels= '';
-                        end;
-                        
                         if str2double(obj.essVersion) <= 1 % for ESS 1.0
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
@@ -1832,11 +1825,13 @@ classdef level1Study
                 end;
                 
                 % if channel location type is specified as Custom (versus e.g. 10-20)
-                % for a recording, each subject has to have a channel
-                % location file.
+                % for a recording, and it is not a ,set file (which might have the locations inside it)
+                % each subject has to have a channel location file.
                 eegChannelLocationFileIsNeeded = false;
                 for rcordingCounter=1:length(obj.sessionTaskInfo(i).dataRecording)
-                    if ismember(obj.sessionTaskInfo(i).dataRecording(rcordingCounter).recordingParameterSetLabel, listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation)
+                    [dummy1, dummy2, ext] = fileparts(obj.sessionTaskInfo(i).dataRecording(rcordingCounter).filename)
+                    if ismember(obj.sessionTaskInfo(i).dataRecording(rcordingCounter).recordingParameterSetLabel, listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation) & ...
+                            ~strcmpi(ext, '.set')
                         eegChannelLocationFileIsNeeded = true;
                     end;
                 end;
@@ -2481,7 +2476,7 @@ classdef level1Study
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             
-            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report'})
+            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report' 'average_reference'})
                 error('eegOrEvent (first) input variable has to be either ''eeg'', ''event'' or ''channel_locations.');
             end;
             

@@ -386,7 +386,7 @@ classdef level2Study
                                 computationTimes.highPass, computationTimes.resampling, ...
                                 computationTimes.lineNoise, computationTimes.reference);
                             
-                            % placee the recording uuid in EEG.etc so we
+                            % place the recording uuid in EEG.etc so we
                             % keep the association.
                             EEG.etc.dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                             
@@ -431,10 +431,20 @@ classdef level2Study
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).averageReferenceChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allScalpChannels, 'UniformOutput', false));
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
+
+                            if isfield(EEG.etc.noisyParameters, 'reference')
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
+                                % assume data quality hass been 'Good' (can be set to
+                                % 'Suspect or 'Unusable' later)
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
+                            else
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = [];
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Unusable';
+                            end
+
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
-                            % assume data quality hass been 'Good' (can be set to
-                            % 'Suspect or 'Unusable' later)
-                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
+                            
+                           
                             %% write the filters
                             
                             % only add filters for a recordingParameterSetLabel
@@ -470,29 +480,31 @@ classdef level2Study
                                     obj.filters.filter(end+1) = newFilter;
                                 end;
                                 
-                                % Reference (too complicated to pu above)
-                                newFilter = struct;
-                                newFilter.filterLabel = 'Robust Reference Removal';
-                                newFilter.executionOrder = '4';
-                                newFilter.softwareEnvironment = matlabVersionSTring;
-                                newFilter.softwarePackage = eeglabVersionString;
-                                newFilter.functionName = 'robustReference';
-                                fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
-                                    'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
-                                    'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
-                                for p=1:length(fields)
-                                    newFilter.parameters.parameter(p).name = fields{p};
-                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
+                                % Reference (too complicated to put above)
+                                if (isfield(EEG.etc.noisyParameters, 'reference'))
+                                    newFilter = struct;
+                                    newFilter.filterLabel = 'Robust Reference Removal';
+                                    newFilter.executionOrder = '4';
+                                    newFilter.softwareEnvironment = matlabVersionSTring;
+                                    newFilter.softwarePackage = eeglabVersionString;
+                                    newFilter.functionName = 'robustReference';
+                                    fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
+                                        'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
+                                        'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
+                                    for p=1:length(fields)
+                                        newFilter.parameters.parameter(p).name = fields{p};
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
+                                    end;
+                                    
+                                    newFilter.parameters.parameter(end+1).name = 'referenceChannels';
+                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.referenceChannels);
+                                    
+                                    newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
+                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
+                                    newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                                    
+                                    obj.filters.filter(end+1) = newFilter;
                                 end;
-                                
-                                newFilter.parameters.parameter(end+1).name = 'referenceChannels';
-                                newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.referenceChannels);
-                                
-                                newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
-                                newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
-                                newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
-                                
-                                obj.filters.filter(end+1) = newFilter;
                             end;
                             
                             studyLevel2FileCounter = studyLevel2FileCounter + 1;
