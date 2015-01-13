@@ -2362,7 +2362,7 @@ classdef level1Study
                                         fprintf('File %s copied successfully to %s.\n', fileFinalPath, destinationFile);
                                     end;
                                 else
-                                    fprintf('Skipped copying file %s to %s as it already exists.\n', fileFinalPath, destinationFile);
+                                    fprintf('skipped copying file %s nationFile);
                                 end;
                                 
                                 obj.sessionTaskInfo(i).subject(j).channelLocations = filenameInEss;
