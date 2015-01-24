@@ -2362,7 +2362,7 @@ classdef level1Study
                                         fprintf('File %s copied successfully to %s.\n', fileFinalPath, destinationFile);
                                     end;
                                 else
-                                    fprintf('Skipped copying file %s to %s as it already exists.\n', fileFinalPath, destinationFile);
+                                    fprintf('skipped copying file %s nationFile);
                                 end;
                                 
                                 obj.sessionTaskInfo(i).subject(j).channelLocations = filenameInEss;
@@ -2515,7 +2515,7 @@ classdef level1Study
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             
-            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report' 'noise_detection'})
+            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report' 'average_reference'})
                 error('eegOrEvent (first) input variable has to be either ''eeg'', ''event'' or ''channel_locations.');
             end;
             
