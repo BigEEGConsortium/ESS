@@ -2476,7 +2476,7 @@ classdef level1Study
         function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             
-            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report' 'average_reference'})
+            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report' 'noise_detection'})
                 error('eegOrEvent (first) input variable has to be either ''eeg'', ''event'' or ''channel_locations.');
             end;
             
