@@ -1,37 +1,40 @@
 <!DOCTYPE html>
 <html>
+
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="EEG Study Schema (ESS) and related tools : Removing the pain from EEG data sharing">
 
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <title>EEG Study Schema (ESS) and related tools by bigdelys</title>
+    <title>EEG Study Schema (ESS) and related tools</title>
   </head>
 
   <body>
 
-    <header>
-      <div class="container">
-        <h1>EEG Study Schema (ESS) and related tools</h1>
-        <h2>Removing the pain from EEG data sharing</h2>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/bigdelys/ESS">View on GitHub</a>
 
-        <section id="downloads">
-          <a href="https://github.com/bigdelys/ESS/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/bigdelys/ESS/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/bigdelys/ESS" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
-        </section>
-      </div>
-    </header>
+          <h1 id="project_title">EEG Study Schema (ESS) and related tools</h1>
+          <h2 id="project_tagline">Removing the pain from EEG data sharing</h2>
 
-    <div class="container">
-      <section id="main_content">
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/bigdelys/ESS/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/bigdelys/ESS/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
         <p>EEG Study Schema (ESS) makes it easier for researcher in the field of EEG/BCI to package, share and automatize the analysis workflow of their study data.</p>
 
 <h2>
-<a name="using-other-peoples-eeg-data-could-be-painful" class="anchor" href="#using-other-peoples-eeg-data-could-be-painful"><span class="octicon octicon-link"></span></a>Using other people’s EEG data could be painful</h2>
+<a id="using-other-peoples-eeg-data-could-be-painful" class="anchor" href="#using-other-peoples-eeg-data-could-be-painful" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using other people’s EEG data could be painful</h2>
 
 <p>Often one has to do detective work to find out:</p>
 
@@ -39,8 +42,10 @@
 <li>What happened in the experiment?</li>
 <li>Which files are for which subjects/sessions?</li>
 <li>What do these event codes mean?</li>
-</ol><h2>
-<a name="to-remove-eeg-data-sharing-pain-we-have-created-a-set-of-standards-hed-and-ess-and-tools" class="anchor" href="#to-remove-eeg-data-sharing-pain-we-have-created-a-set-of-standards-hed-and-ess-and-tools"><span class="octicon octicon-link"></span></a>To remove ‘EEG data sharing pain' we have created a set of standards (HED and ESS) and tools</h2>
+</ol>
+
+<h2>
+<a id="to-remove-eeg-data-sharing-pain-we-have-created-a-set-of-standards-hed-and-ess-and-tools" class="anchor" href="#to-remove-eeg-data-sharing-pain-we-have-created-a-set-of-standards-hed-and-ess-and-tools" aria-hidden="true"><span class="octicon octicon-link"></span></a>To remove ‘EEG data sharing pain' we have created a set of standards (HED and ESS) and tools</h2>
 
 <p>ESS is designed from a user-centered viewpoint that emphasizes simplicity and ease of use. It is created to contain all the information a researcher unfamiliar with a particular EEG (or MEG) Study needs to further analyze the data. It is</p>
 
@@ -51,20 +56,22 @@
 </li>
 <li>Both human- and machine-readable</li>
 <li>The XML file may be readily formatted into a readable description of the EEG study </li>
-</ul><p>ESS also has a convention that specifies how to name and arrange raw session EEG recording files into folders.</p>
+</ul>
+
+<p>ESS also has a convention that specifies how to name and arrange raw session EEG recording files into folders.</p>
 
 <h2>
-<a name="ess-20-is-ready" class="anchor" href="#ess-20-is-ready"><span class="octicon octicon-link"></span></a>ESS 2.0 is ready</h2>
+<a id="ess-20-is-ready" class="anchor" href="#ess-20-is-ready" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS 2.0 is ready</h2>
 
 <p>You can see <a href="https://docs.google.com/document/d/1JFnyVpY60jhP3FDL2fMqSmoisN5EreQBxD5YnrAo0pU/edit?usp=sharing">ESS 2.0 specification here</a>. It is now capable of dealing with multiple modalities (e.g. Motion Capture, Eye-Tracking,...), and studies where EEG recording parameters (e.g. sampling rate) vary across sessions.</p>
 
 <h2>
-<a name="ess-tools" class="anchor" href="#ess-tools"><span class="octicon octicon-link"></span></a>ESS tools</h2>
+<a id="ess-tools" class="anchor" href="#ess-tools" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS tools</h2>
 
 <p>Free open-source MATLAB-based tools are available in <a href="https://github.com/bigdelys/ESS">ESS Github repository</a> to read and write ESS XML files. You can use these tools to automate the process of loading data from study sessions and applying (e.g. EEGLAB) analysis scripts on your data.</p>
 
 <h2>
-<a name="download-ess-formatted-eeg-studies" class="anchor" href="#download-ess-formatted-eeg-studies"><span class="octicon octicon-link"></span></a>Download ESS-formatted EEG studies</h2>
+<a id="download-ess-formatted-eeg-studies" class="anchor" href="#download-ess-formatted-eeg-studies" aria-hidden="true"><span class="octicon octicon-link"></span></a>Download ESS-formatted EEG studies</h2>
 
 <p><a href="http://headIT.org">HeadIT.org</a> contains a diverse set of well-documented EEG studies in ESS format. Here is a list of some available paradigms:</p>
 
@@ -76,15 +83,27 @@
 <li><a href="http://headit-beta.ucsd.edu/studies/e5e644be-a236-11e2-b5e7-0050563f2612">Modified Sternberg Working Memory Task</a></li>
 <li><a href="http://headit-beta.ucsd.edu/studies/3316f70e-35ff-11e3-a2a9-0050563f2612">Imagined Emotion</a></li>
 <li><a href="http://headit-beta.ucsd.edu/studies/2747adbc-385a-11e3-b29d-0050563f2612">visual spatial selective attentional oddball</a></li>
-</ul><h2>
-<a name="people" class="anchor" href="#people"><span class="octicon octicon-link"></span></a>People</h2>
+</ul>
+
+<h2>
+<a id="people" class="anchor" href="#people" aria-hidden="true"><span class="octicon octicon-link"></span></a>People</h2>
 
 <p>ESS 2.0 specifications were drafted by Nima Bigdely-Shamlo, PhD (Syntrogi, Inc.), Prof. Kay Robbins (University of Texas at San Antonio) and Tony Johnson (DCS Corp.). ESS 1.0 specifications were drafted by Nima Bigdely-Shamlo, PhD,  Jessica Hsi (UCSD) and Prof. Scott Makeig (Swartz Center for Computational Neueorsciece, UCSD).</p>
 
 <p>Please email your questions about ESS to Nima Bigdely-Shamlo: nima.bigdely [put at sign here] syntrogi.com.</p>
 
-<hr><p>ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.</p>
+<hr>
+
+<p>ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.</p>
       </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">EEG Study Schema (ESS) and related tools maintained by <a href="https://github.com/bigdelys">bigdelys</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
     </div>
 
               <script type="text/javascript">
@@ -97,6 +116,7 @@
             pageTracker._trackPageview();
             } catch(err) {}
           </script>
+
 
   </body>
 </html>
