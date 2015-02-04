@@ -381,18 +381,24 @@ classdef level2Study
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-                            EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            % EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
                             
                             % execute the pipeline
                             [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
-                            
+                                                        
                             % use noiseDetection instead of noisyParameters
                             if isfield(EEG.etc, 'noisyParameters')
                                 EEG.etc.noiseDetection = EEG.etc.noisyParameters;                                
                             end;
                             
-                             fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
-                                 computationTimes.highPass, computationTimes.resampling, ...
+                            if isfield(computationTimes, 'highPass')
+                                highpassOrDetrendTime = computationTimes.highPass;
+                            else
+                                highpassOrDetrendTime = computationTimes.detrend;
+                            end;
+                            
+                             fprintf('Computation times (seconds): %g high pass/detrend, %g resampling, %g line noise, %g reference \n', ...
+                                 highpassOrDetrendTime, computationTimes.resampling, ...
                                  computationTimes.lineNoise, computationTimes.reference);
                             
                             % place the recording uuid in EEG.etc so we
@@ -485,6 +491,13 @@ classdef level2Study
                                 filterLabel = {'High-Pass Filter', 'Resampling', 'Line Noise Removal'};
                                 filterFieldName = {'highPass' 'resampling' 'lineNoise' 'reference'};
                                 filterFunctionName = {'highPassFilter' 'resampleEEG' 'cleanLineNoise' };
+                                
+                                % if detrending was used instea of high-pass
+                                if isfield(EEG.etc.noiseDetection, 'detrend')
+                                    filterLabel{1} = 'Detrend Filter';
+                                    filterFieldName{1} = 'detrend';
+                                    filterFunctionName{1} = 'removeTrend';
+                                end;
                                 
                                 for f=1:length(filterLabel)
                                     newFilter = struct;
