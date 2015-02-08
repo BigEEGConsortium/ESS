@@ -2521,15 +2521,54 @@ classdef level1Study
         
     end;
     methods (Static)
-        function [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+        function [name, part1, part2]= essConventionFileName(fileTypeIdentifier, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
+            % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+            %    subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             
-            if ~ismember(lower(eegOrEvent), {'eeg', 'event' 'channel_locations' 'report' 'average_reference'})
+            if ~ismember(lower(fileTypeIdentifier), {'eeg', 'event' 'channel_locations' 'report' 'noise_detection'})
                 error('eegOrEvent (first) input variable has to be either ''eeg'', ''event'' or ''channel_locations.');
             end;
             
-            % replace spaces in study title with underlines
+            % create a hash string to prevent (make very unlikely) name
+            % clashes in case of string truncation
+            needHashString = false;
+            hashString = DataHash([studyTitle taskLabel freePart], struct('Method', 'SHA-512', 'Format',  'base64'));
+            hashString(hashString == '/') = [];
+            hashString(hashString == '+') = [];
+            hashString = hashString(1:3);          
+            
+            % make sure study title, freePart and task label are less than a certain length
+            maxleLength = 22;
+            if length(studyTitle) > maxleLength
+                studyTitle = studyTitle(1:maxleLength);
+                studyTitle = strtrim(studyTitle);
+                needHashString = true;
+            end;
+            
+            if length(taskLabel) > maxleLength
+                numberToCutFromCenter = length(taskLabel) - maxleLength - 1;
+                taskLabel = [taskLabel(1:floor(numberToCutFromCenter/2)) '_' taskLabel((end-floor(numberToCutFromCenter/2)):end)];
+                taskLabel = strtrim(taskLabel);
+                needHashString = true;
+            end;
+            
+            if length(freePart) > maxleLength
+                numberToCutFromCenter = length(freePart) - maxleLength - 1;
+                freePart = [freePart(1:floor(numberToCutFromCenter/2)) '_' freePart((end-floor(numberToCutFromCenter/2)):end)];
+                freePart = strtrim(freePart);
+                needHashString = true;
+            end;
+            
+            if needHashString
+                freePart = [freePart '_' hashString];
+            end;
+
+            
+            % replace spaces in study title, freePart and task label with underlines
             studyTitle(studyTitle == ' ') = '_';
+            taskLabel(taskLabel == ' ') = '_';
+            freePart(freePart == ' ') = '_';
             
             if ~ischar(sessionNumber)
                 sessionNumber = num2str(sessionNumber);
@@ -2544,8 +2583,8 @@ classdef level1Study
             end;
             
             % always use tsv extension for event file
-            eegOrEvent = lower(eegOrEvent);
-            if strcmp(eegOrEvent, 'event');
+            fileTypeIdentifier = lower(fileTypeIdentifier);
+            if strcmp(fileTypeIdentifier, 'event');
                 extension = 'tsv';
             end;
             
@@ -2553,7 +2592,7 @@ classdef level1Study
                 extension = extension(2:end);
             end;
             
-            part1 = [eegOrEvent '_' studyTitle '_session_' sessionNumber '_subject_' subjectInSessionNumber '_task_' taskLabel];
+            part1 = [fileTypeIdentifier '_' studyTitle '_session_' sessionNumber '_subject_' subjectInSessionNumber '_task_' taskLabel];
             part2 = ['_recording_' recordingNumber '.' extension];
             
             if nargin > 6 && ~isempty(freePart) % freePart exists

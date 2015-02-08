@@ -31,7 +31,8 @@ classdef level2Study
         % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
         % (we do not combine datasets).
         studyLevel2Files = struct('studyLevel2File', struct('studyLevel2FileName', ' ', ...
-            'dataRecordingUuid', ' ', 'noisyParametersFile', ' ', 'reportFileName', ' ', 'averageReferenceChannels', ' ', ...
+            'dataRecordingUuid', ' ', 'noiseDetectionResultsFile', ' ', 'reportFileName', ' ',...
+            'averageReferenceChannels', ' ', 'eventInstanceFile', ' ',...
             'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'dataQuality', ' '));
     end;
     
@@ -379,12 +380,26 @@ classdef level2Study
                             params.lineNoiseChannels = params.rereferencedChannels;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
+                            % for test only
+                            % EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            
                             % execute the pipeline
                             [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
+                                                        
+                            % use noiseDetection instead of noisyParameters
+                            if isfield(EEG.etc, 'noisyParameters')
+                                EEG.etc.noiseDetection = EEG.etc.noisyParameters;                                
+                            end;
                             
-                            fprintf('Computation times (seconds): %g high pass, %g resampling, %g line noise, %g reference \n', ...
-                                computationTimes.highPass, computationTimes.resampling, ...
-                                computationTimes.lineNoise, computationTimes.reference);
+                            if isfield(computationTimes, 'highPass')
+                                highpassOrDetrendTime = computationTimes.highPass;
+                            else
+                                highpassOrDetrendTime = computationTimes.detrend;
+                            end;
+                            
+                             fprintf('Computation times (seconds): %g high pass/detrend, %g resampling, %g line noise, %g reference \n', ...
+                                 highpassOrDetrendTime, computationTimes.resampling, ...
+                                 computationTimes.lineNoise, computationTimes.reference);
                             
                             % place the recording uuid in EEG.etc so we
                             % keep the association.
@@ -411,11 +426,25 @@ classdef level2Study
                                 % eeg_studyLevel2_
                                 filenameInEss = ['eeg_studyLevel2_' name(5:end) ext];
                             else % convert to ess convention
-                                filenameInEss = obj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                                filenameInEss = obj.level1StudyObj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
+                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, '', extension);
                             end;
                             
                             pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
+                            
+                            % copy the event instance file from level 1
+                            % into level 2 folder and assign the node in
+                            % level 2
+                            eventInstantFileFinalPath = findFile(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile, rootFolder);
+                            copyfile(eventInstantFileFinalPath, [sessionFolder filesep obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile]);
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).eventInstanceFile = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile;
+                            
+                            % write HDF5 file
+                            hdf5Filename = obj.level1StudyObj.essConventionFileName('noise_detection', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
+                                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, '', '.hdf5');
+                            noiseDetection = EEG.etc.noiseDetection;                            
+                            noiseDetection.dataRecordingUuid = EEG.etc.dataRecordingUuid;
+                            writeHdf5Structure([sessionFolder filesep hdf5Filename], 'root', noiseDetection);
                             
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).studyLevel2FileName = filenameInEss;
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
@@ -432,8 +461,8 @@ classdef level2Study
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).averageReferenceChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allScalpChannels, 'UniformOutput', false));
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
 
-                            if isfield(EEG.etc.noisyParameters, 'reference')
-                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
+                            if isfield(EEG.etc.noiseDetection, 'reference')
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels, 'UniformOutput', false));
                                 % assume data quality hass been 'Good' (can be set to
                                 % 'Suspect or 'Unusable' later)
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
@@ -442,7 +471,7 @@ classdef level2Study
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Unusable';
                             end
 
-                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noisyParameters.reference.interpolatedChannels, 'UniformOutput', false));
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels, 'UniformOutput', false));
                             
                            
                             %% write the filters
@@ -463,6 +492,13 @@ classdef level2Study
                                 filterFieldName = {'highPass' 'resampling' 'lineNoise' 'reference'};
                                 filterFunctionName = {'highPassFilter' 'resampleEEG' 'cleanLineNoise' };
                                 
+                                % if detrending was used instea of high-pass
+                                if isfield(EEG.etc.noiseDetection, 'detrend')
+                                    filterLabel{1} = 'Detrend Filter';
+                                    filterFieldName{1} = 'detrend';
+                                    filterFunctionName{1} = 'removeTrend';
+                                end;
+                                
                                 for f=1:length(filterLabel)
                                     newFilter = struct;
                                     newFilter.filterLabel = filterLabel{f};
@@ -470,10 +506,10 @@ classdef level2Study
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
                                     newFilter.functionName = filterFunctionName{f};
-                                    fields = fieldnames(EEG.etc.noisyParameters.(filterFieldName{f}));
+                                    fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
                                     for p=1:length(fields)
                                         newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.(filterFieldName{f}).(fields{p}));
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
                                     end;
                                     newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                     
@@ -481,7 +517,7 @@ classdef level2Study
                                 end;
                                 
                                 % Reference (too complicated to put above)
-                                if (isfield(EEG.etc.noisyParameters, 'reference'))
+                                if (isfield(EEG.etc.noiseDetection, 'reference'))
                                     newFilter = struct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
                                     newFilter.executionOrder = '4';
@@ -493,14 +529,14 @@ classdef level2Study
                                         'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
                                     for p=1:length(fields)
                                         newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noisyParameters.reference.noisyOut.(fields{p}));
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyOut.(fields{p}));
                                     end;
                                     
                                     newFilter.parameters.parameter(end+1).name = 'referenceChannels';
-                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.referenceChannels);
+                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.referenceChannels);
                                     
                                     newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
-                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noisyParameters.reference.rereferencedChannels);
+                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.rereferencedChannels);
                                     newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                     
                                     obj.filters.filter(end+1) = newFilter;
@@ -601,7 +637,7 @@ classdef level2Study
                     eventHedString = '';
                 end;
                 
-                EEG.event(i).usertags = split_HEDstring_to_tags(eventHedString);
+                EEG.event(i).usertags = eventHedString; % usertags should be a string (not a cell array of tags)
                 EEG.urevent(i).usertags = EEG.event(i).usertags;
                 
                 % make sure event types are strings.
