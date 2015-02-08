@@ -2129,8 +2129,8 @@ classdef level1Study
             end;
         end;
         
-               
-        function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName)
+        
+        function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
             
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
@@ -2156,85 +2156,90 @@ classdef level1Study
             
             fullFilePath = [filePath filesep outputFileName];
             
-            EEG = [];
-            for i=1:length(allSearchFolders)
-                if isempty(EEG)
-                    try
-                        EEG = exp_eval(io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]));
-                        %EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
-                    catch
-                    end;
-                end;
-            end;
-            
-            studyEventCode = {obj.eventCodesInfo.code};
-            studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
-            
-            
-            studyEventCodeHedString = {};            
-            for i = 1:length(obj.eventCodesInfo)
-                studyEventCodeHedString{i} = obj.eventCodesInfo(i).condition.tag;
+            if exist(fullFilePath, 'file') && ~overwriteFile
+                fprintf('Skipped writing event instance file %s since it already exists.\n');
+            else
                 
-                % add tags for label and description if they do not already exist
-                hedTags = strtrim(strsplit(studyEventCodeHedString{i}, ','));
-                labelTagExists = strfind(lower(hedTags), 'event/label/');
-                descriptionTagExists = strfind(lower(hedTags), 'event/description/');
-                
-                if all(cellfun(@isempty, labelTagExists))
-                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Label/' obj.eventCodesInfo(i).condition.label];
-                end;
-                
-                if all(cellfun(@isempty, descriptionTagExists))
-                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Description/' obj.eventCodesInfo(i).condition.description];
-                end;
-                
-            end;
-            
-            currentTask = obj.sessionTaskInfo(sessionTaskNumber).taskLabel;
-            currentTaskMask = strcmp(currentTask, studyEventCodeTaskLabel);
-            
-            
-            eventType = {};
-            eventUsertags = {};
-            for i=1:length(EEG.event)
-                type = EEG.event(i).type;
-                if isnumeric(type)
-                    type = num2str(type);
-                end;
-                eventType{i} = type;
-                eventLatency(i) = EEG.event(i).latency / EEG.srate;
-                
-                eventUsertags = '';
-                if isfield(EEG.event, 'usertags')
-                    eventUsertags = EEG.event(i).usertags;
-                    if iscell(eventUsertags)
-                        eventUsertags = strtrim(strjoin_adjoiner_first(', ', eventUsertags));
+                EEG = [];
+                for i=1:length(allSearchFolders)
+                    if isempty(EEG)
+                        try
+                            EEG = exp_eval(io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]));
+                            %EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
+                        catch
+                        end;
                     end;
                 end;
                 
-                id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
-                if any(id)
-                    eventHedString{i} = studyEventCodeHedString{id};
-                else
-                    eventHedString{i} = '';
+                studyEventCode = {obj.eventCodesInfo.code};
+                studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
+                
+                
+                studyEventCodeHedString = {};
+                for i = 1:length(obj.eventCodesInfo)
+                    studyEventCodeHedString{i} = obj.eventCodesInfo(i).condition.tag;
+                    
+                    % add tags for label and description if they do not already exist
+                    hedTags = strtrim(strsplit(studyEventCodeHedString{i}, ','));
+                    labelTagExists = strfind(lower(hedTags), 'event/label/');
+                    descriptionTagExists = strfind(lower(hedTags), 'event/description/');
+                    
+                    if all(cellfun(@isempty, labelTagExists))
+                        studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Label/' obj.eventCodesInfo(i).condition.label];
+                    end;
+                    
+                    if all(cellfun(@isempty, descriptionTagExists))
+                        studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Description/' obj.eventCodesInfo(i).condition.description];
+                    end;
+                    
                 end;
                 
-                % if tags cannot be deduced from the XML, use usertags.
-                if isempty(strtrim(eventHedString{i}))
-                    eventHedString{i} = eventUsertags;
-                end;
-            end;
-            
-            fid = fopen(fullFilePath, 'w');
-            for i=1:length(eventType)
-                fprintf(fid, '%s\t%s\t%s', eventType{i}, num2str(eventLatency(i)), eventHedString{i});
+                currentTask = obj.sessionTaskInfo(sessionTaskNumber).taskLabel;
+                currentTaskMask = strcmp(currentTask, studyEventCodeTaskLabel);
                 
-                if i<length(eventType)
-                    fprintf(fid, '\n');
+                
+                eventType = {};
+                eventUsertags = {};
+                for i=1:length(EEG.event)
+                    type = EEG.event(i).type;
+                    if isnumeric(type)
+                        type = num2str(type);
+                    end;
+                    eventType{i} = type;
+                    eventLatency(i) = EEG.event(i).latency / EEG.srate;
+                    
+                    eventUsertags = '';
+                    if isfield(EEG.event, 'usertags')
+                        eventUsertags = EEG.event(i).usertags;
+                        if iscell(eventUsertags)
+                            eventUsertags = strtrim(strjoin_adjoiner_first(', ', eventUsertags));
+                        end;
+                    end;
+                    
+                    id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
+                    if any(id)
+                        eventHedString{i} = studyEventCodeHedString{id};
+                    else
+                        eventHedString{i} = '';
+                    end;
+                    
+                    % if tags cannot be deduced from the XML, use usertags.
+                    if isempty(strtrim(eventHedString{i}))
+                        eventHedString{i} = eventUsertags;
+                    end;
                 end;
+                
+                fid = fopen(fullFilePath, 'w');
+                for i=1:length(eventType)
+                    fprintf(fid, '%s\t%s\t%s', eventType{i}, num2str(eventLatency(i)), eventHedString{i});
+                    
+                    if i<length(eventType)
+                        fprintf(fid, '\n');
+                    end;
+                end;
+                
+                fclose(fid);
             end;
-            
-            fclose(fid);
             
             [pathstr,name,ext]  = fileparts(fullFilePath); %#ok<ASGLU>
             obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile = [name ext];
@@ -2268,14 +2273,14 @@ classdef level1Study
             allSearchFolders = {nextToXMLFolder fullEssFolder};
         end;
         
-        function obj = createEssContainerFolder(obj, essFolder, stopOnIssues, overwriteEEG)
+        function obj = createEssContainerFolder(obj, essFolder, stopOnIssues, overwriteFiles)
             
             if nargin < 2
                 stopOnIssues = true;
             end;
             
             if nargin < 3
-                overwriteEEG = true;
+                overwriteFiles = true;
             end;
             
             [obj, issue]= obj.validate; % fix solvable issues, like missing UUIDs;.
@@ -2314,10 +2319,9 @@ classdef level1Study
             
             obj = sortDataRecordingsByStartTime(obj);
             
-            progress('init', 'Copying data recording and event instance files.');
             typeOfFile = {'event' 'eeg'};
             for i = 1:length(obj.sessionTaskInfo)
-                progress(i/length(obj.sessionTaskInfo), sprintf('Copying files for session-task %d of %d',i, length(obj.sessionTaskInfo)));
+                fprintf('\nCopying files for session-task %d of %d (%d percent done).\n',i, length(obj.sessionTaskInfo), round(100*i/length(obj.sessionTaskInfo)));
                 
                 for j=1:length(obj.sessionTaskInfo(i).subject)
                     fileNameFromObj = obj.sessionTaskInfo(i).subject(j).channelLocations;
@@ -2335,6 +2339,7 @@ classdef level1Study
                             fprintf('Channel location file for for subject %d of sesion number %s cannot be found.\n', j, obj.sessionTaskInfo(i).sessionNumber);
                         end;
                         
+                        keyboard;
                         if ~isempty(fileFinalPath)
                             
                             essConventionfolder = ['session' filesep obj.sessionTaskInfo(i).sessionNumber];
@@ -2354,17 +2359,10 @@ classdef level1Study
                                 filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                     subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, name, extension);
                             end;
-                            
+                                                        
                             if exist(fileFinalPath, 'file')
-                                destinationFile = [essFolder filesep essConventionfolder filesep filenameInEss];
-                                if overwriteEEG || ~exist(destinationFile, 'file')
-                                    if copyfile(fileFinalPath, destinationFile)
-                                        fprintf('File %s copied successfully to %s.\n', fileFinalPath, destinationFile);
-                                    end;
-                                else
-                                    fprintf('Skipped copying file %s to %s as it already exists.\n', fileFinalPath, destinationFile);
-                                end;
-                                
+                                destinationFile = [essFolder filesep essConventionfolder filesep filenameInEss];                            
+                                copyfile(fileFinalPath, destinationFile)
                                 obj.sessionTaskInfo(i).subject(j).channelLocations = filenameInEss;
                             else
                                 fprintf('Copy failed: file %s does not exist.\n', fileFinalPath);
@@ -2462,9 +2460,18 @@ classdef level1Study
                             end;
                             
                             if exist(fileFinalPath, 'file')
-                                copyfile(fileFinalPath, [essFolder filesep essConventionfolder filesep filenameInEss]);
-                                obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
+                                
+                                destinationFile = [essFolder filesep essConventionfolder filesep filenameInEss];
+                                if overwriteFiles || ~exist(destinationFile, 'file')
+                                    if copyfile(fileFinalPath, destinationFile)
+                                        fprintf('File %s copied successfully to %s.\n', fileFinalPath, destinationFile);
+                                    end;
+                                else
+                                    fprintf('Skipped copying file %s to %s as it already exists.\n', fileFinalPath, destinationFile);
+                                end;                            
+
                                 if strcmp(typeOfFile{k}, 'eeg')
+                                    obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
                                     if length(fileFinalPath) > length(rootFolder) && strcmp(fileFinalPath(1:length(rootFolder)), rootFolder)
                                         originalFileNameForXML = fileFinalPath((length(rootFolder)+1):end);
                                     else
@@ -2472,13 +2479,15 @@ classdef level1Study
                                     end;
                                      
                                     obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath = originalFileNameForXML;
+                                elseif strcmp(typeOfFile{k}, 'event')
+                                    obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile = filenameInEss;
                                 end;
-                            else
+                            else % the file does not exist in the original directory.
                                 switch typeOfFile{k}
                                     case 'eeg'
                                         fprintf('Copy failed: file %s does not exist.\n', fileFinalPath);
                                     case 'event'
-                                        obj = writeEventInstanceFile(obj, i, j, [essFolder filesep essConventionfolder], filenameInEss);
+                                        obj = writeEventInstanceFile(obj, i, j, [essFolder filesep essConventionfolder], filenameInEss, overwriteFiles);
                                 end;
                             end;
                         end;
