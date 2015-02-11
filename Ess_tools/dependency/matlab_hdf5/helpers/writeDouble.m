@@ -10,9 +10,14 @@ function writeDouble(fileId, dataset, value)
 %
 
 emptyDims = [];
+datasetIsLogical = 'false';
 if isempty(value)
     emptyDims = size(value);
     value = NaN;
+end
+if islogical(value)
+    value = double(value);
+    datasetIsLogical = 'true';
 end
 valueType = H5T.copy('H5T_NATIVE_DOUBLE');
 dims = size(value);
@@ -27,6 +32,6 @@ H5S.close(spaceId);
 if ~isempty(emptyDims)
     writeDoubleAttribute(fileId, dataset, 'dims', emptyDims);
 end
-
+writeStrAttribute(fileId, dataset, 'islogical', datasetIsLogical);
 end % writeDouble
 

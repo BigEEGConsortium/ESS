@@ -67,6 +67,12 @@ H5F.close(fileId);
                 case 'double'
                     dataset = double.empty(dims);
             end
+        elseif isscalar(dataset) && isequal('double',class(dataset)) ...
+                && (dataset == 0 || dataset == 1)
+            datasetIsLogical = readAttribute(datasetId, 'islogical')';
+            if strcmpi('true', datasetIsLogical)
+                dataset = logical(dataset);
+            end
         end
     end % postProcessDataset
 
@@ -103,7 +109,7 @@ H5F.close(fileId);
                     readDataset(fileId, ...
                     [hdf5Path, '/', childStructure(a).name]);
             end
-        end      
+        end
     end % readHdf5Data
 
     function structureArray = struct2StructArray(structure)
