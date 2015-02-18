@@ -701,6 +701,13 @@ classdef level2Study
             % [filename outputDataRecordingUuid taskLabel moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
             % Returns information about valid data recording UUIDs. For
             % example Level 2 EEG or event files.
+            % key, value pairs:
+            %
+            % includeFolder:   true ot false. Whether to return full file
+            % path.
+            %
+            % filetype:       one of {'eeg' , 'event', 'noiseDetection' , 'report'}
+            
             
             inputOptions = arg_define(varargin, ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...

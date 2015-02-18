@@ -2545,6 +2545,19 @@ classdef level1Study
         end;
         
         function [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
+            % [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
+            % obtain file names based on a selection criteria, such as task
+            % label(s).
+            % key,value pairs:
+            %
+            % taskLabel:       a cell array with label(s) for session tasks. Only
+            %                  these files will be returned.
+            %
+            % includeFolder:   true ot false. Whether to return full file
+            %                  path.
+            %
+            % filetype:        one of {'eeg' , 'event'}
+            
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
@@ -2589,6 +2602,12 @@ classdef level1Study
             % [filename, outputDataRecordingUuid, taskLabel, sessionTaskNumber, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
             % Returns information about valid data recording UUIDs. For
             % example Level 1 EEG or event files.
+                        % key, value pairs:
+            %
+            % includeFolder:   true ot false. Whether to return full file
+            % path.
+            %
+            % filetype:       one of {'eeg' 'event'}
             
             inputOptions = arg_define(varargin, ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
