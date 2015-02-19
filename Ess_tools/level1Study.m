@@ -1898,7 +1898,7 @@ classdef level1Study
                                 issue(end).issueType = 'missing file';                                                               
 
                             else % if file exists, check if its adheres to ESS naming convention
-                                subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));
+                                subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.sessionTaskInfo(i).dataRecording(j));
                                 
                                 if ~level1Study.fileNameMatchesEssConvention(obj.sessionTaskInfo(i).dataRecording(j).filename, 'eeg', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                         subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j)
@@ -2133,8 +2133,7 @@ classdef level1Study
         
         
         function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile)
-
-            % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName)
+            % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName, overwriteFile)
             
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
@@ -2719,7 +2718,7 @@ classdef level1Study
             hashString = hashString(1:3);          
             
             
-            % remove forbidden Windows filename characeters
+            % remove forbidden Windows OS filename characeters
             forbiddenCharacters = '\/:*?"<>\';
             studyTitle(ismember(studyTitle, forbiddenCharacters)) = [];
             taskLabel(ismember(taskLabel, forbiddenCharacters)) = [];
