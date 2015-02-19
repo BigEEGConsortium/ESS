@@ -1895,8 +1895,16 @@ classdef level1Study
                             
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
                                 issue(end+1).description = [sprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
-                                issue(end).issueType = 'missing file';
-                            end;
+                                issue(end).issueType = 'missing file';                                                               
+
+                            else % if file exists, check if its adheres to ESS naming convention
+                                subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));
+                                
+                                if ~level1Study.fileNameMatchesEssConvention(obj.sessionTaskInfo(i).dataRecording(j).filename, 'eeg', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                                        subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j)
+                                    fprintf('Warning: Filename %s (data recoding %d of sesion number %s) does not follow ESS convention.\n', obj.sessionTaskInfo(i).dataRecording(j).filename, j, obj.sessionTaskInfo(i).sessionNumber);
+                                end;
+                            end
                         end;
                         
                         
@@ -2458,9 +2466,7 @@ classdef level1Study
                             end;
                             
                             % form subjectInSessionNumber
-                            id = strcmpi(obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel, {obj.recordingParameterSet.recordingParameterSetLabel});
-                            subjectInSessionNumberCell = setdiff(unique({obj.recordingParameterSet(id).modality.subjectInSessionNumber}), {'', '-', 'NA'});
-                            subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
+                            subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));                                                                                   
                             
                             % copy the data recording file
                             
@@ -2664,7 +2670,8 @@ classdef level1Study
         
         function subjectInSessionNumber = getInSessionNumberForDataRecording(obj, dataRecording)
             % subjectInSessionNumber = getInSessionNumberForDataRecording(dataRecording)
-            % Returns a cell array with subjectInSessionNumbers.
+            % Returns a string. If multiple subjects are present, they are
+            % joined by _
             subjectInSessionNumber = {};
             for i=1:length(obj.recordingParameterSet)
                 if strcmp(obj.recordingParameterSet(i).recordingParameterSetLabel, dataRecording.recordingParameterSetLabel)
@@ -2674,7 +2681,12 @@ classdef level1Study
                 end;
             end;
             
-            subjectInSessionNumber = unique(subjectInSessionNumber);
+            subjectInSessionNumber = unique(subjectInSessionNumber);                        
+            subjectInSessionNumber = setdiff(unique(subjectInSessionNumber), {'', '-', 'NA'});
+            
+            % join different number by _
+            subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumber);
+
         end;
     end;
     methods (Static)
