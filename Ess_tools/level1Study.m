@@ -607,7 +607,6 @@ classdef level1Study
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).dataRecordingUuid = '';
                                     end;
                                     
-                                    
                                     potentialStartDateNodeArray = currentNode.getElementsByTagName('startDateTime');
                                     if  potentialStartDateNodeArray.getLength > 0
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).startDateTime = readStringFromNode(potentialStartDateNodeArray.item(0));
@@ -1623,7 +1622,7 @@ classdef level1Study
                 issue(end+1).description = 'UUID is empty or less than 10 (random) characeters.';
                 if fixIssues
                     obj.studyUuid = char(java.util.UUID.randomUUID);
-                    issue(end).howItWasFixed = 'A new UUID set.';
+                    issue(end).howItWasFixed = 'A new UUID is set.';
                 end;
             end;
             
@@ -2560,7 +2559,7 @@ classdef level1Study
             
         end;
         
-        function [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid taskLabel sessionTaskNumber dataRecordingNumber] = getFilename(obj, varargin)
             % [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
             % obtain file names based on a selection criteria, such as task
             % label(s).
@@ -2584,8 +2583,9 @@ classdef level1Study
             dataRecordingUuid = {};
             taskLabel = {};
             sessionTaskNumber = [];
+            dataRecordingNumber = [];
             for i=1:length(obj.sessionTaskInfo)
-                if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
+                if isempty(inputOptions.taskLabel) | ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
                         if strcmpi(inputOptions.filetype, 'eeg')
                             basefilename = obj.sessionTaskInfo(i).dataRecording(j).filename;
@@ -2609,6 +2609,7 @@ classdef level1Study
                         dataRecordingUuid{end+1} = obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                         taskLabel{end+1} = obj.sessionTaskInfo(i).taskLabel;
                         sessionTaskNumber(end+1) = i;
+                        dataRecordingNumber(end+1) = j;
                     end;
                 end;
             end;
@@ -2700,6 +2701,14 @@ classdef level1Study
         end;
     end;
     methods (Static)
+        
+        function stringForFileName = removeForbiddenWindowsFilenameCharacters(inString)
+            % remove forbidden Windows OS filename characeters
+            forbiddenCharacters = '\/:*?"<>\';
+            stringForFileName  = inString;
+            stringForFileName(ismember(stringForFileName, forbiddenCharacters)) = [];         
+        end;
+        
         function [name, part1, part2]= essConventionFileName(fileTypeIdentifier, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
@@ -2719,11 +2728,9 @@ classdef level1Study
             
             
             % remove forbidden Windows OS filename characeters
-            forbiddenCharacters = '\/:*?"<>\';
-            studyTitle(ismember(studyTitle, forbiddenCharacters)) = [];
-            taskLabel(ismember(taskLabel, forbiddenCharacters)) = [];
-            freePart(ismember(freePart, forbiddenCharacters)) = [];
-
+            studyTitle = level1Study.removeForbiddenWindowsFilenameCharacters(studyTitle);
+            taskLabel = level1Study.removeForbiddenWindowsFilenameCharacters(taskLabel);
+            freePart = level1Study.removeForbiddenWindowsFilenameCharacters(freePart);
             
             % make sure study title, freePart and task label are less than a certain length
             maxleLength = 22;

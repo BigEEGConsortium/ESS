@@ -341,33 +341,29 @@ font-size= 7pt
 												<xsl:value-of select="link"/>
 											</xsl:attribute>
 											<xsl:value-of select="linkName"/>
-										</a>
-								
+										</a>								
 								</xsl:for-each>
 							</td>
 							<td>
 								<a target="_blank">
 									<xsl:attribute name="href">
-										<xsl:value-of select="dataRecordings/dataRecording/filename"/>
+										session/<xsl:value-of select="number"/>/<xsl:value-of select="dataRecordings/dataRecording/filename"/>
 									</xsl:attribute>
 									<xsl:value-of select="dataRecordings/dataRecording/filename"/>
 								</a>
 							</td>
 							<td>
-								<xsl:for-each select="subject">
+									<xsl:for-each select="subject">
 									<p>
 										<a target="_blank">
 											<xsl:attribute name="href">
-												<xsl:value-of select="channelLocations"/>
+												session/<xsl:value-of select="../number"/>/<xsl:value-of select="channelLocations"/>
 											</xsl:attribute>
 											<xsl:value-of select="channelLocations"/>
 										</a>
 									</p>
 								</xsl:for-each>
 							</td>
-							<!--<td>
-								 <xsl:value-of select="channels"/>
-							</td> -->
 							<td>
 								<xsl:for-each select="subject">
 									<p>
