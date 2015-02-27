@@ -393,7 +393,7 @@ classdef level2Study
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-                            EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                           % EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
                             
                             % execute the pipeline
                             [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
