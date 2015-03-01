@@ -222,6 +222,10 @@ classdef level2Study
             mkdir([inputOptions.level2Folder filesep 'session']);
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
             
+            obj.uuid = char(java.util.UUID.randomUUID);
+            obj.title = obj.level1StudyObj.studyTitle;
+            obj.studyLevel2SchemaVersion  = '1.0';
+            
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
                 for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
@@ -393,7 +397,8 @@ classdef level2Study
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-                           % EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+                            EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
                             
                             % execute the pipeline
                             [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
@@ -489,7 +494,7 @@ classdef level2Study
                             %% write the filters
                             
                             % only add filters for a recordingParameterSetLabel
-                            % if it does not have fileters for the pipeline
+                            % if it does not have filters for the pipeline
                             % already defined for it.
                             listOfEecordingParemeterSetLabelWithFilters = {};
                             for f = 1:length(obj.filters.filter)
@@ -500,21 +505,11 @@ classdef level2Study
                                 eeglabVersionString = ['EEGLAB ' eeg_getversion];
                                 matlabVersionSTring = ['MATLAB '  version];
                                 
-                                filterLabel = {'High-Pass or Trend Filter', 'Resampling', 'Line Noise Removal'};
-                                filterFieldName = {'' 'resampling' 'lineNoise' 'reference'};
-                                filterFunctionName = {'' 'resampleEEG' 'cleanLineNoise' };
+                                filterLabel = {'Resampling', 'Line Noise Removal'};
+                                filterFieldName = {'resampling' 'lineNoise'};
+                                filterFunctionName = {'resampleEEG' 'cleanLineNoise'};
 
-                                % if detrending was used instead of high-pass
-                                if isfield(EEG.etc.noiseDetection, 'trend')
-                                    filterLabel{1} = 'Detrend Filter';
-                                    filterFieldName{1} = 'trend';
-                                    filterFunctionName{1} = 'removeTrend';
-                                else
-                                    filterLabel{1} = 'High-Pass Filter';
-                                    filterFieldName{1} = 'highPass';
-                                    filterFunctionName{1} = 'highPassFilter';
-                                end;
-                                
+                               
                                 for f=1:length(filterLabel)
                                     newFilter = struct;
                                     newFilter.filterLabel = filterLabel{f};
@@ -536,7 +531,7 @@ classdef level2Study
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
                                     newFilter = struct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
-                                    newFilter.executionOrder = '4';
+                                    newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
                                     newFilter.functionName = 'robustReference';
@@ -559,8 +554,18 @@ classdef level2Study
                                 end;
                             end;
                             
+                            % remove any filter with an empty (the first
+                            % one created by the object)
+                            removeId = [];
+                            for f=1:length(obj.filters.filter)
+                                if isempty(strtrim(obj.filters.filter(f).filterLabel))
+                                    removeId = [removeId f];
+                                end;
+                            end;
+                            obj.filters.filter(removeId) = [];
+                            
                             studyLevel2FileCounter = studyLevel2FileCounter + 1;
-                            obj.level2XmlFilePath = [inputOptions.level2Folder filesep 'studyLevel2_description.xml'];
+                            obj.level2XmlFilePath = [inputOptions.level2Folder filesep 'studyLevel2_description.xml'];                            
                             obj.write(obj.level2XmlFilePath);
                         end;
                     end;
