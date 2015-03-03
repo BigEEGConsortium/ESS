@@ -19,6 +19,9 @@ classdef level2Study
         % should always produce a valid, downloadable URI.adable URI.
         rootURI = '.';
         
+        % Total size of data the study folder contains (this could be approximate)
+        totalSize = ' ';
+        
         % Filters have a similar definition here as in BCILAB. They receive as input the EEG data
         % and output a transformation of the data that can be the input to other filters.
         % Here we are assuming a number of filters to have been executed on the data,
@@ -143,7 +146,7 @@ classdef level2Study
             % prevent xml_ioi from adding extra 'Item' fields and write the XML
             Pref.StructItem = false;
             Pref.CellItem = false;
-            xml_write(obj.level2XmlFilePath, xmlAsStructure, 'studyLevel2', Pref);
+            xml_write(obj.level2XmlFilePath, xmlAsStructure, {'studyLevel2' 'xml-stylesheet type="text/xsl" href="xml_level_2_style.xsl"' 'This file is created based on EEG Study Schema (ESS) Level 2. Visit eegstudy.org for more information.'}, Pref);
         end;
         
         function obj = read(obj)
@@ -195,7 +198,8 @@ classdef level2Study
                 arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
                 arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
                 ,arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle') ...
-                );
+                ,arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
+            );
             
             obj.level2Folder = inputOptions.level2Folder;
             
@@ -392,13 +396,15 @@ classdef level2Study
                             params.referenceChannels = allScalpChannels;
                             params.evaluationChannels = allScalpChannels;
                             params.rereferencedChannels = allEEGChannels;
-                            params.highPassChannels = params.rereferencedChannels;
+                            params.detrendChannels = params.rereferencedChannels;
                             params.lineNoiseChannels = params.rereferencedChannels;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-                            fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-                            EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            if inputOptions.forTest
+                                fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+                                EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            end;
                             
                             % execute the pipeline
                             [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
@@ -573,6 +579,10 @@ classdef level2Study
                     clear EEG;
                 end;
             end;
+
+            % Level 2 total study size
+            [dummy, obj.totalSize]= dirsize(fileparts(obj.level2XmlFilePath)); %#ok<ASGLU>
+            obj.write(obj.level2XmlFilePath);
             
             function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder)
                 % search for the file both next to the xml file and in the standard ESS

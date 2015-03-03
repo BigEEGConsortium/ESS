@@ -61,7 +61,7 @@ font-size= 7pt
 					<xsl:for-each select="studyLevel1">
 						<tr>
 							<h2>
-								<xsl:value-of select="title"/> - ESS Level 1
+								<xsl:value-of select="title"/>
 							</h2>
 						</tr>
 					</xsl:for-each>
