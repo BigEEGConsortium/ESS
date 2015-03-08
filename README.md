@@ -2,7 +2,7 @@ ESS
 ===
 
 EEG Study Schema (ESS) and related tools. A packaging schema and convention for sending around EEG studies and processed files.
-See http://www.eegschema.org for more information.
+See http://www.eegstudy.org for more information.
 
 =
 
