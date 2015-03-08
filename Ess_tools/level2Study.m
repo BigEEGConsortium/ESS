@@ -723,12 +723,23 @@ classdef level2Study
         end;
         
         function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
-            
+        		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
+		% You may use the returned values to for example run a function on each of EEG recordings. 
+		%
+		% Options:
+		%	Key			Value
+		% 	'taskLabel'		: Label(s) for session tasks. A cell array containing task labels.
+		%	'includeFolder'		: Add folder to returned filename.
+		%	'filetype'		: Either 'EEG' or  'event' to specify which file types should be returned.
+		% 	'dataQuality'		: Cell array of Strings. Acceptable data quality values (i.e. whether to include Suspect datta or not.
+        	%    
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
-                arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Return EEG or event files.', 'type', 'char'),...
-                arg('dataQuality', {},[],'Acceptable ', 'type', 'cellstr') ...
+                arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event'' to specify which file types should be returned.', 'type', 'char'),...
+                arg('dataQuality', {},[],'Acceptable data quality values (i.e. whether to include Suspect datta or not.', 'type', 'cellstr') ...
                 );
             
             % get the UUids from level 1
