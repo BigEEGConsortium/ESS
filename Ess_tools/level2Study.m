@@ -223,12 +223,12 @@ classdef level2Study
 	% 
 	% Options:
 	%
-	%		Key							Value
-	% 
-	% 	'level2Folder'				: String,  Level 2 study folder. This folder will contain with processed data files, XML..
-	% 	'params'					: Cell array, Input parameters to for the processing pipeline.
-	%		'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
-	% 	'forTest'						: Logical, For Debugging ONLY. Process a small data sample for test.
+	%	Key				Value
+	%
+	% 	'level2Folder'			: String,  Level 2 study folder. This folder will contain with processed data files, XML..
+	% 	'params'			: Cell array, Input parameters to for the processing pipeline.
+	%	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
+	% 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
 		
             
             inputOptions = arg_define(1,varargin, ...
@@ -854,6 +854,11 @@ classdef level2Study
         end;
         
         function [obj, issue] = validate(obj, fixIssues)
+        % [obj, issue] = validate(obj, fixIssues)
+        % Check the existence and  consistentcy data i Level 2 object. It by default fixes some of the issues in
+        % the returned obj value, i.e. obj = obj.validate();
+        % you can turn off this fixing by setting fixIssues to false.
+        % issues are returned in s structure array.
             
             if nargin < 2
                 fixIssues = true;
