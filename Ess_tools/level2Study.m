@@ -1021,7 +1021,17 @@ classdef level2Study
         end;
         
         function studyFilenameAndPath = createEeglabStudy(obj, studyFolder, varargin)
-            
+        % studyFilenameAndPath = createEeglabStudy(obj, studyFolder, {key, value pairs})
+	% Create an EEGLAB Study in a separate folder with its own EEGLAb dataset files.
+	%
+	%	Key			Value
+	%	'taskLabel'		: A cell array containing task labels to indicate the subset of files to be used.
+	%	'studyFileName'		: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
+	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
+	%	'makeTwoFilesPerSet'	: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
+	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
+	%	'dataQuality'		: {'Good' 'Suspect' 'Unusable'}	, Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale).
+	
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('studyFileName', '', [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'char'),...
