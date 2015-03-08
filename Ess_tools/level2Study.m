@@ -64,7 +64,29 @@ classdef level2Study
     
     methods
         function obj = level2Study(varargin)
-            
+        % created a Leve 2 object, either from a Level 2 container, or by starting from a Level 1 container 
+        % (using 'level1XmlFilePath' option) and processing it with Standardized Data Level 2 (STDL2) pipeline 
+        % to create a Level 2 container. This is done in two stages, see Example 1 below: 
+        %
+        % Use:
+        % obj = level2Study([key, value pairs])
+        % 
+        % Example 1: creating a proper Level 2 container from Level 1
+        %
+        %   obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
+        %   obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start appling the preprocessing pipelines and makes a proper Level 2 object. 
+        %  
+        % Example 2: loading an already-made Level 2 container.
+        %
+        % obj = level2Study('level2XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_2\');
+        %
+        % Options 
+        %   Key                      Value
+        %   'level2XmlFilePath'      : a string pointing to either a Level 2 container folder or its xml file.  
+        %   'level1XmlFilePath'      : a string pointing to either a Level 1 container folder or its xml file.
+        %   'createNewFile'          : Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) 
+        %                              ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
+        
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
             if ~(exist('arg', 'file') && exist('is_impure_expression', 'file') &&...
