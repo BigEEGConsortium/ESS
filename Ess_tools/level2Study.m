@@ -210,26 +210,26 @@ classdef level2Study
         end;
         
         function obj = createLevel2Study(obj, varargin)
-            % creates an ESS standardized data level 2 folder from level 1 XML
-            % and its data recordings using standard level 2 EEG processing pipeline.
-            % You can continue where the processing was stopped by running the
-            % exact same command since it skips processing of already
-            % calculated sessions.
-			% 
-			% Example:
-			% 
-			%   obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
-			%   obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object. 
-			% 
-			% Options:
-			%
-			%		Key							Value
-			% 
-			% 	'level2Folder'				: String,  Level 2 study folder. This folder will contain with processed data files, XML..
-			% 	'params'					: Cell array, Input parameters to for the processing pipeline.
-			%		'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
-			% 	'forTest'						: Logical, For Debugging ONLY. Process a small data sample for test.
-			
+        % creates an ESS standardized data level 2 folder from level 1 XML
+        % and its data recordings using standard level 2 EEG processing pipeline.
+        % You can continue where the processing was stopped by running the
+        % exact same command since it skips processing of already
+        % calculated sessions.
+	% 
+	% Example:
+	% 
+	%	obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
+	%	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object. 
+	% 
+	% Options:
+	%
+	%		Key							Value
+	% 
+	% 	'level2Folder'				: String,  Level 2 study folder. This folder will contain with processed data files, XML..
+	% 	'params'					: Cell array, Input parameters to for the processing pipeline.
+	%		'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
+	% 	'forTest'						: Logical, For Debugging ONLY. Process a small data sample for test.
+		
             
             inputOptions = arg_define(1,varargin, ...
                 arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
