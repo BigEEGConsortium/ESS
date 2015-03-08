@@ -643,27 +643,7 @@ classdef level2Study
             end
             
         end;
-        
-        function applyFunctionToLevel2Data(obj, functionHandle, outputFolder, parameters)
-            
-            % find associated level 1 information for each level 2 (EEG) data file
-            uuidList = {};
-            sessionId = [];
-            dataRecordingInLevel1Id = [];
-            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
-                for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
-                    uuidList{end+1} = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
-                    sessionId(end+1) = i;
-                    dataRecordingInLevel1Id(end+1) = j;
-                end;
-            end;
-            
-            for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                level2DataFilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
-                id =strcmp(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, uuidList);
-                level2DataSessionNumber = sessionId(id);
-            end;
-        end;
+       
         
         function EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber)
             % add usertags based on (eventcode,hed string) associations for
