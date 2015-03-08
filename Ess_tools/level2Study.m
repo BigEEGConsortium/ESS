@@ -37,6 +37,22 @@ classdef level2Study
             'dataRecordingUuid', ' ', 'noiseDetectionResultsFile', ' ', 'reportFileName', ' ',...
             'averageReferenceChannels', ' ', 'eventInstanceFile', ' ',...
             'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'dataQuality', ' '));
+        
+        license = struct('type', ' ', 'text', ' ', 'link',' ');
+        
+        % Information about the project under which this experiment is
+        % performed.
+        projectInfo = struct('organization', ' ',  'grantId', ' ');
+        
+        % Information of individual to contact for data results, or more information regarding the study/data.
+        contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
+        
+        % Iinformation regarding the organization that conducted the
+        % research study.
+        organizationInfo = struct('name', ' ', 'logoLink', ' ');
+        
+        % Copyright information.
+        copyrightInfo = ' ';
     end;
     
     % properties that we do not want to be written/read to/from the XML
