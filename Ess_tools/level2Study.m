@@ -226,11 +226,26 @@ classdef level2Study
         end;
         
         function obj = createLevel2Study(obj, varargin)
-            % creates an ESS standardized data level 2 folder from level 1 XML
-            % and its data recordings using standard level 2 EEG processing pipeline.
-            % You can continue where the processing was stopped by running the
-            % exact same command since it skips processing of already
-            % calculated sessions.
+        % creates an ESS standardized data level 2 folder from level 1 XML
+        % and its data recordings using standard level 2 EEG processing pipeline.
+        % You can continue where the processing was stopped by running the
+        % exact same command since it skips processing of already
+        % calculated sessions.
+	% 
+	% Example:
+	% 
+	%	obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
+	%	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object. 
+	% 
+	% Options:
+	%
+	%	Key				Value
+	%
+	% 	'level2Folder'			: String,  Level 2 study folder. This folder will contain with processed data files, XML..
+	% 	'params'			: Cell array, Input parameters to for the processing pipeline.
+	%	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
+	% 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
+		
             
             inputOptions = arg_define(1,varargin, ...
                 arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
@@ -644,27 +659,7 @@ classdef level2Study
             end
             
         end;
-        
-        function applyFunctionToLevel2Data(obj, functionHandle, outputFolder, parameters)
-            
-            % find associated level 1 information for each level 2 (EEG) data file
-            uuidList = {};
-            sessionId = [];
-            dataRecordingInLevel1Id = [];
-            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
-                for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
-                    uuidList{end+1} = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
-                    sessionId(end+1) = i;
-                    dataRecordingInLevel1Id(end+1) = j;
-                end;
-            end;
-            
-            for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                level2DataFilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
-                id =strcmp(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, uuidList);
-                level2DataSessionNumber = sessionId(id);
-            end;
-        end;
+       
         
         function EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber)
             % add usertags based on (eventcode,hed string) associations for
@@ -724,12 +719,23 @@ classdef level2Study
         end;
         
         function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
-            
+        		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
+		% You may use the returned values to for example run a function on each of EEG recordings. 
+		%
+		% Options:
+		%	Key			Value
+		% 	'taskLabel'		: Label(s) for session tasks. A cell array containing task labels.
+		%	'includeFolder'		: Add folder to returned filename.
+		%	'filetype'		: Either 'EEG' or  'event' to specify which file types should be returned.
+		% 	'dataQuality'		: Cell array of Strings. Acceptable data quality values (i.e. whether to include Suspect datta or not.
+        	%    
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
-                arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Return EEG or event files.', 'type', 'char'),...
-                arg('dataQuality', {},[],'Acceptable ', 'type', 'cellstr') ...
+                arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event'' to specify which file types should be returned.', 'type', 'char'),...
+                arg('dataQuality', {},[],'Acceptable data quality values (i.e. whether to include Suspect datta or not.', 'type', 'cellstr') ...
                 );
             
             % get the UUids from level 1
@@ -844,6 +850,11 @@ classdef level2Study
         end;
         
         function [obj, issue] = validate(obj, fixIssues)
+        % [obj, issue] = validate(obj, fixIssues)
+        % Check the existence and  consistentcy data i Level 2 object. It by default fixes some of the issues in
+        % the returned obj value, i.e. obj = obj.validate();
+        % you can turn off this fixing by setting fixIssues to false.
+        % issues are returned in s structure array.
             
             if nargin < 2
                 fixIssues = true;
@@ -1006,7 +1017,17 @@ classdef level2Study
         end;
         
         function studyFilenameAndPath = createEeglabStudy(obj, studyFolder, varargin)
-            
+        % studyFilenameAndPath = createEeglabStudy(obj, studyFolder, {key, value pairs})
+	% Create an EEGLAB Study in a separate folder with its own EEGLAb dataset files.
+	%
+	%	Key			Value
+	%	'taskLabel'		: A cell array containing task labels to indicate the subset of files to be used.
+	%	'studyFileName'		: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
+	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
+	%	'makeTwoFilesPerSet'	: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
+	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
+	%	'dataQuality'		: {'Good' 'Suspect' 'Unusable'}	, Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale).
+	
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('studyFileName', '', [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'char'),...

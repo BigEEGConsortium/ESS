@@ -104,6 +104,24 @@ classdef level1Study
             % create a instance of the object. If essFilePath is provided (optional) it also read the
             % XML file. If the file does not exists, it will be created on
             % obj.write();
+            % 
+            % Example:
+            %
+            % obj = level1Study(xmlFile); % read an existing file
+            %
+            % obj = level1Study(newXmlFile, 'createNewFile', true); % create a new XML file
+            %
+            % Options:
+            %   Key                                     Value   
+            %
+            %   essFilePath                             : String, ESS Standard Level 1 XML Filename or Container folder. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.
+            %   numberOfSessions                        : Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.
+            %   numberOfSubjectsPerSession              : Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.
+            %   numberOfRecordingsPerSessionTask        : Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.
+            %   taskLabels                              : Cell array of strings, Labels for session tasks. A cell array containing task labels. Optional if study only has a single task.
+            %   createNewFile                           : Logical, Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
+            %   recordingParameterSet                   : Structure array, Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).
+            %
             
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
