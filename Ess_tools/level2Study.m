@@ -460,7 +460,7 @@ classdef level2Study
                             end;
                             
                             % execute the pipeline
-                            [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
+                            [EEG, computationTimes] = prepPipeline(EEG, params);
                             
                             % use noiseDetection instead of noisyParameters
                             if isfield(EEG.etc, 'noisyParameters')
@@ -538,7 +538,7 @@ classdef level2Study
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
                             
                             if isfield(EEG.etc.noiseDetection, 'reference')
-                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels, 'UniformOutput', false));
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                                 % assume data quality hass been 'Good' (can be set to
                                 % 'Suspect or 'Unusable' later)
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
@@ -547,7 +547,7 @@ classdef level2Study
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Unusable';
                             end
                             
-                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels, 'UniformOutput', false));
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                             
                             
                             %% write the filters
@@ -1011,7 +1011,7 @@ classdef level2Study
             reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
             relativeSessionFolder = ['.' filesep 'session' ...
                 filesep obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber];
-            publishLevel2Report(EEG, ...
+            publishPrepPipelineReport(EEG, ...
                 level2Folder, 'summaryReport.html', ...
                 relativeSessionFolder, reportFileName);
         end;
