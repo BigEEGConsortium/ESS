@@ -730,7 +730,7 @@ classdef level2Study
 		%	'includeFolder'		: Add folder to returned filename.
 		%	'filetype'		: Either 'EEG' or  'event' to specify which file types should be returned.
 		% 	'dataQuality'		: Cell array of Strings. Acceptable data quality values (i.e. whether to include Suspect datta or not.
-        	%    
+        	    
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
@@ -747,7 +747,7 @@ classdef level2Study
             filename = {};
             sessionNumber = {};
             subject = [];
-            for i=1:length(obj.studyLevel2Files)
+            for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
                     dataRecordingUuid{end+1} = obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid;
