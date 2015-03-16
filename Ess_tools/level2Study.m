@@ -719,7 +719,7 @@ classdef level2Study
         end;
         
         function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
-        		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
 		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
 		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
 		% You may use the returned values to for example run a function on each of EEG recordings. 
