@@ -2225,7 +2225,7 @@ classdef level1Study
                         type = num2str(type);
                     end;
                     eventType{i} = type;
-                    eventLatency(i) = EEG.event(i).latency / EEG.srate;
+                    eventLatency(i) = (EEG.event(i).latency - 1)/ EEG.srate; % -1 since time starts from 0
                     
                     eventUsertags = '';
                     if isfield(EEG.event, 'usertags')
