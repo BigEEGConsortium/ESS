@@ -2152,6 +2152,10 @@ classdef level1Study
         function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName, overwriteFile)
             
+            if nargin < 6
+                overwriteFile = false;
+            end;
+            
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
             if nargin < 4 % use the ESS convention folder location if none is provided.
@@ -2184,11 +2188,15 @@ classdef level1Study
                     if isempty(EEG)
                         try
                             EEG = exp_eval(io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]));
-                            %EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
                         catch
                         end;
                     end;
                 end;
+                
+                
+               if isempty(EEG)
+                   error('EEG file for data recording %d of session task %d cannot be found.', dataRecordingNumber, sessionTaskNumber);
+               end;
                 
                 studyEventCode = {obj.eventCodesInfo.code};
                 studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
