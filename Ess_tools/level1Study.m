@@ -104,6 +104,24 @@ classdef level1Study
             % create a instance of the object. If essFilePath is provided (optional) it also read the
             % XML file. If the file does not exists, it will be created on
             % obj.write();
+            % 
+            % Example:
+            %
+            % obj = level1Study(xmlFile); % read an existing file
+            %
+            % obj = level1Study(newXmlFile, 'createNewFile', true); % create a new XML file
+            %
+            % Options:
+            %   Key                                     Value   
+            %
+            %   essFilePath                             : String, ESS Standard Level 1 XML Filename or Container folder. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.
+            %   numberOfSessions                        : Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.
+            %   numberOfSubjectsPerSession              : Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.
+            %   numberOfRecordingsPerSessionTask        : Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.
+            %   taskLabels                              : Cell array of strings, Labels for session tasks. A cell array containing task labels. Optional if study only has a single task.
+            %   createNewFile                           : Logical, Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
+            %   recordingParameterSet                   : Structure array, Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).
+            %
             
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
@@ -606,7 +624,6 @@ classdef level1Study
                                     else
                                         obj.sessionTaskInfo(sessionCounter+1).dataRecording(dataRecordingCounter+1).dataRecordingUuid = '';
                                     end;
-                                    
                                     
                                     potentialStartDateNodeArray = currentNode.getElementsByTagName('startDateTime');
                                     if  potentialStartDateNodeArray.getLength > 0
@@ -1623,7 +1640,7 @@ classdef level1Study
                 issue(end+1).description = 'UUID is empty or less than 10 (random) characeters.';
                 if fixIssues
                     obj.studyUuid = char(java.util.UUID.randomUUID);
-                    issue(end).howItWasFixed = 'A new UUID set.';
+                    issue(end).howItWasFixed = 'A new UUID is set.';
                 end;
             end;
             
@@ -2135,6 +2152,10 @@ classdef level1Study
         function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName, overwriteFile)
             
+            if nargin < 6
+                overwriteFile = false;
+            end;
+            
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
             if nargin < 4 % use the ESS convention folder location if none is provided.
@@ -2167,11 +2188,15 @@ classdef level1Study
                     if isempty(EEG)
                         try
                             EEG = exp_eval(io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]));
-                            %EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
                         catch
                         end;
                     end;
                 end;
+                
+                
+               if isempty(EEG)
+                   error('EEG file for data recording %d of session task %d cannot be found.', dataRecordingNumber, sessionTaskNumber);
+               end;
                 
                 studyEventCode = {obj.eventCodesInfo.code};
                 studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
@@ -2208,7 +2233,7 @@ classdef level1Study
                         type = num2str(type);
                     end;
                     eventType{i} = type;
-                    eventLatency(i) = EEG.event(i).latency / EEG.srate;
+                    eventLatency(i) = (EEG.event(i).latency - 1)/ EEG.srate; % -1 since time starts from 0
                     
                     eventUsertags = '';
                     if isfield(EEG.event, 'usertags')
@@ -2560,7 +2585,7 @@ classdef level1Study
             
         end;
         
-        function [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid taskLabel sessionTaskNumber dataRecordingNumber] = getFilename(obj, varargin)
             % [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
             % obtain file names based on a selection criteria, such as task
             % label(s).
@@ -2584,8 +2609,9 @@ classdef level1Study
             dataRecordingUuid = {};
             taskLabel = {};
             sessionTaskNumber = [];
+            dataRecordingNumber = [];
             for i=1:length(obj.sessionTaskInfo)
-                if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
+                if isempty(inputOptions.taskLabel) | ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
                         if strcmpi(inputOptions.filetype, 'eeg')
                             basefilename = obj.sessionTaskInfo(i).dataRecording(j).filename;
@@ -2609,6 +2635,7 @@ classdef level1Study
                         dataRecordingUuid{end+1} = obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                         taskLabel{end+1} = obj.sessionTaskInfo(i).taskLabel;
                         sessionTaskNumber(end+1) = i;
+                        dataRecordingNumber(end+1) = j;
                     end;
                 end;
             end;
@@ -2700,6 +2727,14 @@ classdef level1Study
         end;
     end;
     methods (Static)
+        
+        function stringForFileName = removeForbiddenWindowsFilenameCharacters(inString)
+            % remove forbidden Windows OS filename characeters
+            forbiddenCharacters = '\/:*?"<>\';
+            stringForFileName  = inString;
+            stringForFileName(ismember(stringForFileName, forbiddenCharacters)) = [];         
+        end;
+        
         function [name, part1, part2]= essConventionFileName(fileTypeIdentifier, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
@@ -2719,11 +2754,9 @@ classdef level1Study
             
             
             % remove forbidden Windows OS filename characeters
-            forbiddenCharacters = '\/:*?"<>\';
-            studyTitle(ismember(studyTitle, forbiddenCharacters)) = [];
-            taskLabel(ismember(taskLabel, forbiddenCharacters)) = [];
-            freePart(ismember(freePart, forbiddenCharacters)) = [];
-
+            studyTitle = level1Study.removeForbiddenWindowsFilenameCharacters(studyTitle);
+            taskLabel = level1Study.removeForbiddenWindowsFilenameCharacters(taskLabel);
+            freePart = level1Study.removeForbiddenWindowsFilenameCharacters(freePart);
             
             % make sure study title, freePart and task label are less than a certain length
             maxleLength = 22;

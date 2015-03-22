@@ -19,6 +19,9 @@ classdef level2Study
         % should always produce a valid, downloadable URI.adable URI.
         rootURI = '.';
         
+        % Total size of data the study folder contains (this could be approximate)
+        totalSize = ' ';
+        
         % Filters have a similar definition here as in BCILAB. They receive as input the EEG data
         % and output a transformation of the data that can be the input to other filters.
         % Here we are assuming a number of filters to have been executed on the data,
@@ -34,6 +37,22 @@ classdef level2Study
             'dataRecordingUuid', ' ', 'noiseDetectionResultsFile', ' ', 'reportFileName', ' ',...
             'averageReferenceChannels', ' ', 'eventInstanceFile', ' ',...
             'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'dataQuality', ' '));
+        
+        license = struct('type', ' ', 'text', ' ', 'link',' ');
+        
+        % Information about the project under which this experiment is
+        % performed.
+        projectInfo = struct('organization', ' ',  'grantId', ' ');
+        
+        % Information of individual to contact for data results, or more information regarding the study/data.
+        contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
+        
+        % Iinformation regarding the organization that conducted the
+        % research study.
+        organizationInfo = struct('name', ' ', 'logoLink', ' ');
+        
+        % Copyright information.
+        copyrightInfo = ' ';
     end;
     
     % properties that we do not want to be written/read to/from the XML
@@ -61,7 +80,29 @@ classdef level2Study
     
     methods
         function obj = level2Study(varargin)
-            
+        % created a Leve 2 object, either from a Level 2 container, or by starting from a Level 1 container 
+        % (using 'level1XmlFilePath' option) and processing it with Standardized Data Level 2 (STDL2) pipeline 
+        % to create a Level 2 container. This is done in two stages, see Example 1 below: 
+        %
+        % Use:
+        % obj = level2Study([key, value pairs])
+        % 
+        % Example 1: creating a proper Level 2 container from Level 1
+        %
+        %   obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
+        %   obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start appling the preprocessing pipelines and makes a proper Level 2 object. 
+        %  
+        % Example 2: loading an already-made Level 2 container.
+        %
+        % obj = level2Study('level2XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_2\');
+        %
+        % Options 
+        %   Key                      Value
+        %   'level2XmlFilePath'      : a string pointing to either a Level 2 container folder or its xml file.  
+        %   'level1XmlFilePath'      : a string pointing to either a Level 1 container folder or its xml file.
+        %   'createNewFile'          : Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) 
+        %                              ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
+        
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
             if ~(exist('arg', 'file') && exist('is_impure_expression', 'file') &&...
@@ -73,20 +114,24 @@ classdef level2Study
             
             
             inputOptions = arg_define(0,varargin, ...
-                arg('level1XmlFilePath', '','','ESS Standard Level 1 XML Filename.', 'type', 'char'), ...
                 arg('level2XmlFilePath', '','','ESS Standard Level 2 XML Filename.', 'type', 'char'), ...
+                arg('level1XmlFilePath', '','','ESS Standard Level 1 XML Filename.', 'type', 'char'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr') ...
                 );
-            
-            obj.level2XmlFilePath = inputOptions.level2XmlFilePath;
             
             % if the folder 'container' is instead of filename provided, use the default
             % 'study_description.xml' file.
             if exist(inputOptions.level1XmlFilePath, 'dir')...
                     && exist([inputOptions.level1XmlFilePath filesep 'study_description.xml'], 'file')
                 inputOptions.level1XmlFilePath = [inputOptions.level1XmlFilePath filesep 'study_description.xml'];
-                
             end;
+            
+            if exist(inputOptions.level2XmlFilePath, 'dir')...
+                    && exist([inputOptions.level2XmlFilePath filesep 'studyLevel2_description.xml'], 'file')
+                inputOptions.level2XmlFilePath = [inputOptions.level2XmlFilePath filesep 'studyLevel2_description.xml'];
+            end;
+            
+            obj.level2XmlFilePath = inputOptions.level2XmlFilePath;
             
             if ~isempty(obj.level2XmlFilePath)
                 obj = obj.read;
@@ -139,7 +184,7 @@ classdef level2Study
             % prevent xml_ioi from adding extra 'Item' fields and write the XML
             Pref.StructItem = false;
             Pref.CellItem = false;
-            xml_write(obj.level2XmlFilePath, xmlAsStructure, 'studyLevel2', Pref);
+            xml_write(obj.level2XmlFilePath, xmlAsStructure, {'studyLevel2' 'xml-stylesheet type="text/xsl" href="xml_level_2_style.xsl"' 'This file is created based on EEG Study Schema (ESS) Level 2. Visit eegstudy.org for more information.'}, Pref);
         end;
         
         function obj = read(obj)
@@ -171,20 +216,43 @@ classdef level2Study
             % consistency of inner values with deeper structures
             % TODO: Perform consistency check here, or use XSD validation.
             
+            if isempty(obj.title)
+                obj.title  = '';
+            end;
+            
+            if isempty(obj.uuid)
+                obj.uuid =  '';
+            end;
         end;
         
         function obj = createLevel2Study(obj, varargin)
-            % creates an ESS standardized data level 2 folder from level 1 XML
-            % and its data recordings using standard level 2 EEG processing pipeline.
-            % You can continue where the processing was stopped by running the
-            % exact same command since it skips processing of already
-            % calculated sessions.
+        % creates an ESS standardized data level 2 folder from level 1 XML
+        % and its data recordings using standard level 2 EEG processing pipeline.
+        % You can continue where the processing was stopped by running the
+        % exact same command since it skips processing of already
+        % calculated sessions.
+	% 
+	% Example:
+	% 
+	%	obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
+	%	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object. 
+	% 
+	% Options:
+	%
+	%	Key				Value
+	%
+	% 	'level2Folder'			: String,  Level 2 study folder. This folder will contain with processed data files, XML..
+	% 	'params'			: Cell array, Input parameters to for the processing pipeline.
+	%	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
+	% 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
+		
             
             inputOptions = arg_define(1,varargin, ...
                 arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
                 arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
                 ,arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle') ...
-                );
+                ,arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
+            );
             
             obj.level2Folder = inputOptions.level2Folder;
             
@@ -210,6 +278,10 @@ classdef level2Study
             mkdir(inputOptions.level2Folder);
             mkdir([inputOptions.level2Folder filesep 'session']);
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
+            
+            obj.uuid = char(java.util.UUID.randomUUID);
+            obj.title = obj.level1StudyObj.studyTitle;
+            obj.studyLevel2SchemaVersion  = '1.0';
             
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
@@ -259,7 +331,7 @@ classdef level2Study
                             end;
                             
                             % add HED tags based on events
-                            if strcmpi(obj.level1StudyObj.eventSpecificiationMethod, 'Codes')
+                            if ~strcmpi(obj.level1StudyObj.eventSpecificiationMethod, 'Tags')
                                 EEG = addUsertagsToEEG(obj, EEG, i);
                             end;
                             
@@ -356,7 +428,7 @@ classdef level2Study
                                         newLocation = chanlocsFromFile(strcmpi(labelsFromFile, channelLabelsToUse{allEEGChannels(ccounter)}));
                                         if isempty(newLocation) && ismember(lower(channelLabelsToUse{allEEGChannels(ccounter)}), lower(allChannelLabels(allScalpChannels)))
                                             error('Label %s on the scalp does not have a location associated with it in %s file.', channelLabelsToUse{allEEGChannels(ccounter)}, fileNameFromObj);
-                                        else
+                                        elseif ~isempty(newLocation)                                            
                                             fieldNames = fieldnames(newLocation);
                                             for fieldCounter = 1:length(fieldNames)
                                                 EEG.chanlocs(allEEGChannels(ccounter)).(fieldNames{fieldCounter}) = newLocation.(fieldNames{fieldCounter});
@@ -375,35 +447,46 @@ classdef level2Study
                             params = struct();
                             params.lineFrequencies = [60, 120,  180, 212, 240];
                             params.referenceChannels = allScalpChannels;
+                            params.evaluationChannels = allScalpChannels;
                             params.rereferencedChannels = allEEGChannels;
-                            params.highPassChannels = params.rereferencedChannels;
+                            params.detrendChannels = params.rereferencedChannels;
                             params.lineNoiseChannels = params.rereferencedChannels;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-                             EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            if inputOptions.forTest
+                                fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+                                EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            end;
                             
                             % execute the pipeline
-                            [EEG, computationTimes] = standardLevel2Pipeline(EEG, params);
+                            [EEG, computationTimes] = prepPipeline(EEG, params);
                             
                             % use noiseDetection instead of noisyParameters
                             if isfield(EEG.etc, 'noisyParameters')
                                 EEG.etc.noiseDetection = EEG.etc.noisyParameters;
                             end;
                             
-                            if isfield(computationTimes, 'highPass')
-                                highpassOrDetrendTime = computationTimes.highPass;
-                            else
-                                highpassOrDetrendTime = computationTimes.detrend;
-                            end;
-                            
-                            fprintf('Computation times (seconds): %g high pass/detrend, %g resampling, %g line noise, %g reference \n', ...
-                                highpassOrDetrendTime, computationTimes.resampling, ...
-                                computationTimes.lineNoise, computationTimes.reference);
-                            
+                            fprintf('Computation times (seconds): \n%s\n', ...
+                                getStructureString(computationTimes));
+
                             % place the recording uuid in EEG.etc so we
                             % keep the association.
                             EEG.etc.dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
+                            
+                            % place subject and group information inside
+                            % EEG structure
+                            if length(obj.level1StudyObj.sessionTaskInfo(i).subject) == 1                                
+                                if isempty(obj.level1StudyObj.sessionTaskInfo(i).subject.labId)
+                                    EEG.subject = ['subject_of_session_' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
+                                else
+                                    EEG.subject = obj.level1StudyObj.sessionTaskInfo(i).subject.labId;
+                                end;
+                                if ~isempty(obj.level1StudyObj.sessionTaskInfo(i).subject.group)
+                                    EEG.group = obj.level1StudyObj.sessionTaskInfo(i).subject.group;
+                                end;
+                            end;
+                            
                             
                             % write processed EEG data
                             sessionFolder = [inputOptions.level2Folder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber];
@@ -417,7 +500,7 @@ classdef level2Study
                             
                             % see if the file name is already in ESS
                             % format, hence no name change is necessary
-                            subjectInSessionNumber =   obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));
+                            subjectInSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));
                             itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'eeg', obj.level1StudyObj.studyTitle, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
                                 subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j);
                             
@@ -440,7 +523,7 @@ classdef level2Study
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).eventInstanceFile = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile;
                             
                             % write HDF5 file and place the noise detection filename in XML
-                            hdf5Filename = writeNoiseDetectionFile(obj, EEG, i, j, sessionFolder);                                      
+                            hdf5Filename = writeNoiseDetectionFile(obj, EEG, i, j, sessionFolder);
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).noiseDetectionResultsFile = hdf5Filename;
                             
                             % place EEG filename and UUID in XML
@@ -455,7 +538,7 @@ classdef level2Study
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
                             
                             if isfield(EEG.etc.noiseDetection, 'reference')
-                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels, 'UniformOutput', false));
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                                 % assume data quality hass been 'Good' (can be set to
                                 % 'Suspect or 'Unusable' later)
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
@@ -464,13 +547,13 @@ classdef level2Study
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Unusable';
                             end
                             
-                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels, 'UniformOutput', false));
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                             
                             
                             %% write the filters
                             
                             % only add filters for a recordingParameterSetLabel
-                            % if it does not have fileters for the pipeline
+                            % if it does not have filters for the pipeline
                             % already defined for it.
                             listOfEecordingParemeterSetLabelWithFilters = {};
                             for f = 1:length(obj.filters.filter)
@@ -481,17 +564,11 @@ classdef level2Study
                                 eeglabVersionString = ['EEGLAB ' eeg_getversion];
                                 matlabVersionSTring = ['MATLAB '  version];
                                 
-                                filterLabel = {'High-Pass Filter', 'Resampling', 'Line Noise Removal'};
-                                filterFieldName = {'highPass' 'resampling' 'lineNoise' 'reference'};
-                                filterFunctionName = {'highPassFilter' 'resampleEEG' 'cleanLineNoise' };
-                                
-                                % if detrending was used instea of high-pass
-                                if isfield(EEG.etc.noiseDetection, 'detrend')
-                                    filterLabel{1} = 'Detrend Filter';
-                                    filterFieldName{1} = 'detrend';
-                                    filterFunctionName{1} = 'removeTrend';
-                                end;
-                                
+                                filterLabel = {'Resampling', 'Line Noise Removal'};
+                                filterFieldName = {'resampling' 'lineNoise'};
+                                filterFunctionName = {'resampleEEG' 'cleanLineNoise'};
+
+                               
                                 for f=1:length(filterLabel)
                                     newFilter = struct;
                                     newFilter.filterLabel = filterLabel{f};
@@ -513,7 +590,7 @@ classdef level2Study
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
                                     newFilter = struct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
-                                    newFilter.executionOrder = '4';
+                                    newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
                                     newFilter.functionName = 'robustReference';
@@ -522,7 +599,7 @@ classdef level2Study
                                         'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
                                     for p=1:length(fields)
                                         newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyOut.(fields{p}));
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyStatistics.(fields{p}));
                                     end;
                                     
                                     newFilter.parameters.parameter(end+1).name = 'referenceChannels';
@@ -536,8 +613,18 @@ classdef level2Study
                                 end;
                             end;
                             
+                            % remove any filter with an empty (the first
+                            % one created by the object)
+                            removeId = [];
+                            for f=1:length(obj.filters.filter)
+                                if isempty(strtrim(obj.filters.filter(f).filterLabel))
+                                    removeId = [removeId f];
+                                end;
+                            end;
+                            obj.filters.filter(removeId) = [];
+                            
                             studyLevel2FileCounter = studyLevel2FileCounter + 1;
-                            obj.level2XmlFilePath = [inputOptions.level2Folder filesep 'studyLevel2_description.xml'];
+                            obj.level2XmlFilePath = [inputOptions.level2Folder filesep 'studyLevel2_description.xml'];                            
                             obj.write(obj.level2XmlFilePath);
                         end;
                     end;
@@ -545,6 +632,10 @@ classdef level2Study
                     clear EEG;
                 end;
             end;
+
+            % Level 2 total study size
+            [dummy, obj.totalSize]= dirsize(fileparts(obj.level2XmlFilePath)); %#ok<ASGLU>
+            obj.write(obj.level2XmlFilePath);
             
             function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder)
                 % search for the file both next to the xml file and in the standard ESS
@@ -568,27 +659,7 @@ classdef level2Study
             end
             
         end;
-        
-        function applyFunctionToLevel2Data(obj, functionHandle, outputFolder, parameters)
-            
-            % find associated level 1 information for each level 2 (EEG) data file
-            uuidList = {};
-            sessionId = [];
-            dataRecordingInLevel1Id = [];
-            for i=1:length(obj.level1StudyObj.sessionTaskInfo)
-                for j=1:length(obj.level1StudyObj.sessionTaskInfo(i).dataRecording)
-                    uuidList{end+1} = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
-                    sessionId(end+1) = i;
-                    dataRecordingInLevel1Id(end+1) = j;
-                end;
-            end;
-            
-            for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                level2DataFilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
-                id =strcmp(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, uuidList);
-                level2DataSessionNumber = sessionId(id);
-            end;
-        end;
+       
         
         function EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber)
             % add usertags based on (eventcode,hed string) associations for
@@ -647,39 +718,62 @@ classdef level2Study
             end;
         end;
         
-        function [filename, dataRecordingUuid taskLabel] = getFilename(obj, varargin)
-            
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
+		% You may use the returned values to for example run a function on each of EEG recordings. 
+		%
+		% Options:
+		%	Key			Value
+		% 	'taskLabel'		: Label(s) for session tasks. A cell array containing task labels.
+		%	'includeFolder'		: Add folder to returned filename.
+		%	'filetype'		: Either 'EEG' or  'event' to specify which file types should be returned.
+		% 	'dataQuality'		: Cell array of Strings. Acceptable data quality values (i.e. whether to include Suspect datta or not.
+        	    
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
-                arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Return EEG or event files.', 'type', 'char')...
+                arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event''. Specifies which file types should be returned.', 'type', 'char'),...
+                arg('dataQuality', {},[],'Acceptable data quality values. I.e. whether to include Suspect datta or not.', 'type', 'cellstr') ...
                 );
             
-            % disable adding the folder for level 1 since the files do
-            % not exist for level 1, we just need UUIDs.
-            vararginForLevel1 = varargin;
-            removeId = [];
-            for i=1:length(vararginForLevel1)
-                if strcmpi(vararginForLevel1{i}, 'includeFolder')
-                    removeId = [removeId i i+1];
-                end
-            end;
-            vararginForLevel1(removeId) = [];
-            vararginForLevel1{end+1} = 'includeFolder';
-            vararginForLevel1{end+1} = false;
-            
             % get the UUids from level 1
-            [dummy selectedDataRecordingUuid  dummy2 sessionTaskNumber] = obj.level1StudyObj.getFilename(vararginForLevel1{:});
+            [dummy, selectedDataRecordingUuid, dummy2, sessionTaskNumber, dataRecordingNumber] = obj.level1StudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false);
             
             % go over level 2 and match by dataRecordingUuid
             dataRecordingUuid = {};
             taskLabel = {};
             filename = {};
-            for i=1:length(obj.studyLevel2Files)
-                [match id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
+            sessionNumber = {};
+            subject = [];
+            for i=1:length(obj.studyLevel2Files.studyLevel2File)
+                [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
                     dataRecordingUuid{end+1} = obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid;
                     taskLabel{end+1} = obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).taskLabel;
+                    
+                    sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).sessionNumber;
+                    
+                    inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).dataRecording(dataRecordingNumber(id)));
+                    foundSubjectId = [];
+                    for j =1:length(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject)
+                        if strcmp(inSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(j).inSessionNumber)
+                            foundSubjectId = [foundSubjectId j];
+                        end;
+                    end;
+                    if isempty(foundSubjectId)
+                        error('Something iss wrong, subejct with inSession number cannot be found.');
+                    elseif length(foundSubjectId) > 1
+                        error('Something is wrong, more than one sbject with inSession number found.');
+                    else % a single number
+                        newSubject = obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(foundSubjectId);
+                        if isempty(subject)
+                            subject  = newSubject;
+                        else
+                            subject(end+1)  = newSubject;
+                        end;
+                    end;
                     
                     if strcmpi(inputOptions.filetype, 'eeg')
                         basefilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
@@ -689,6 +783,10 @@ classdef level2Study
                     
                     if inputOptions.includeFolder
                         baseFolder = fileparts(obj.level2XmlFilePath);
+                        % remove extra folder separator
+                        if baseFolder(end) ==  filesep
+                            baseFolder = baseFolder(1:end-1);
+                        end;
                         filename{end+1} = [baseFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).sessionNumber filesep basefilename];
                     else
                         filename{end+1} = basefilename;
@@ -754,8 +852,13 @@ classdef level2Study
                 end
             end;
         end;
-    
+        
         function [obj, issue] = validate(obj, fixIssues)
+        % [obj, issue] = validate(obj, fixIssues)
+        % Check the existence and  consistentcy data i Level 2 object. It by default fixes some of the issues in
+        % the returned obj value, i.e. obj = obj.validate();
+        % you can turn off this fixing by setting fixIssues to false.
+        % issues are returned in s structure array.
             
             if nargin < 2
                 fixIssues = true;
@@ -764,7 +867,20 @@ classdef level2Study
             issue = []; % a structure with description and howItWasFixed fields.
             baseFolder = fileparts(obj.level2XmlFilePath);
             
-            for i=1:length(obj.studyLevel2Files.studyLevel2File)                
+            % make sure uuid and title are set
+            if isempty(obj.uuid)
+                obj.uuid = char(java.util.UUID.randomUUID);
+                issue(end+1).description = sprintf('UUID is empty.\n');
+                issue(end).howItWasFixed = 'A new UUID is set.';
+            end;
+            
+            if isempty(obj.title)
+                obj.title = obj.level1StudyObj.studyTitle;
+                issue(end+1).description = sprintf('Title is empty.\n');
+                issue(end).howItWasFixed = 'Title set to level 1 title';
+            end;
+            
+            for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 
                 [dataRecordingFilename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'eeg');
                 if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName))
@@ -827,8 +943,8 @@ classdef level2Study
                     end;
                 end;
                 
-              clear EEG;
-                                
+                clear EEG;
+                
             end;
             
             % display issues
@@ -886,7 +1002,7 @@ classdef level2Study
             
         end;
         
-        function hdf5Filename = writeNoiseDetectionFile(obj, EEG, sessionTaskNumber, dataRecordingNumber, sessionFolder)            
+        function hdf5Filename = writeNoiseDetectionFile(obj, EEG, sessionTaskNumber, dataRecordingNumber, sessionFolder)
             subjectInSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber));
             hdf5Filename = obj.level1StudyObj.essConventionFileName('noise_detection', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
                 subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, '', '.hdf5');
@@ -899,10 +1015,92 @@ classdef level2Study
             reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
             relativeSessionFolder = ['.' filesep 'session' ...
                 filesep obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber];
-            publishLevel2Report(EEG, ...
+            publishPrepPipelineReport(EEG, ...
                 level2Folder, 'summaryReport.html', ...
                 relativeSessionFolder, reportFileName);
         end;
         
+        function studyFilenameAndPath = createEeglabStudy(obj, studyFolder, varargin)
+        % studyFilenameAndPath = createEeglabStudy(obj, studyFolder, {key, value pairs})
+	% Create an EEGLAB Study in a separate folder with its own EEGLAb dataset files.
+	%
+	%	Key			Value
+	%	'taskLabel'		: A cell array containing task labels to indicate the subset of files to be used.
+	%	'studyFileName'		: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
+	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
+	%	'makeTwoFilesPerSet'	: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
+	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
+	%	'dataQuality'		: {'Good' 'Suspect' 'Unusable'}	, Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale).
+	
+            inputOptions = arg_define(varargin, ...
+                arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
+                arg('studyFileName', '', [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'char'),...
+                arg('makeTwoFilesPerSet', true, [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'logical'),...
+                arg('dataQuality', {'Good'},{'Good' 'Suspect' 'Unusable'},'Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale)', 'type', 'cellstr') ...
+                );
+            
+            if ~exist(studyFolder, 'dir')
+                mkdir(studyFolder);
+            end;
+            
+            if isempty(inputOptions.studyFileName)
+                if isempty(obj.title)
+                    inputOptions.studyFileName = 'study_from_ess.study';
+                else
+                    nameForStudy = level1Study.removeForbiddenWindowsFilenameCharacters(obj.title(1:min(end,22)));
+                    nameForStudy = strtrim(nameForStudy);
+                    nameForStudy(nameForStudy == ' ') = '_';
+                    inputOptions.studyFileName = ['study_from_ess_' nameForStudy '.study'];
+                end;
+            end;
+            
+            [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, 'includeFolder', true, 'taskLabel', inputOptions.taskLabel, 'dataQuality', inputOptions.dataQuality);
+            
+            fileSessionFolder = {};
+            clear ALLEEG;
+            counter = 1;
+            for i=1:length(filename)
+                fileSessionFolder{i} = [studyFolder filesep sessionNumber{i}];
+                if ~exist(fileSessionFolder{i}, 'dir')
+                    mkdir(fileSessionFolder{i});
+                end;
+                
+                [loadPath name ext] = fileparts(filename{i});
+                if inputOptions.makeTwoFilesPerSet
+                    EEG = pop_loadset([name ext], loadPath);
+                    pop_saveset(EEG, 'filename', [name ext], 'filepath', fileSessionFolder{i}, 'savemode', 'twofiles', 'version', '7.3');
+                    clear EEG;
+                else
+                    copyfile(filename{i}, [fileSessionFolder{i} filesep name ext]);
+                end;
+                
+                EEG = pop_loadset('filename', [name ext], 'filepath', fileSessionFolder{i}, 'loadmode', 'info');
+                
+                if isempty(subject(i).labId)
+                    EEG.subject = ['subject_of_session_' sessionNumber{i}];
+                else
+                    EEG.subject = subject(i).labId;
+                end;
+                if ~isempty(subject(i).group)
+                    EEG.group = subject(i).group;
+                end;
+                
+                if counter == 1
+                    ALLEEG = EEG;
+                else
+                    ALLEEG(end+1) = EEG;
+                end;
+                clear EEG;
+                counter = counter + 1;
+            end;
+            
+            % make a study from all the files
+            pop_editoptions('option_storedisk', true); % keep only maximum one dataset data in memory
+            STUDY = pop_study([], ALLEEG, 'updatedat', 'on', 'name', obj.title, 'notes', obj.level1StudyObj.studyDescription, 'task', obj.level1StudyObj.studyShortDescription);
+            STUDY.filename = inputOptions.studyFileName;
+            STUDY.filepath = studyFolder;
+            STUDY = pop_savestudy( STUDY, ALLEEG, 'filename', inputOptions.studyFileName, 'filepath', studyFolder);
+            studyFilenameAndPath = [studyFolder filesep inputOptions.studyFileName];
+        end;
     end;
 end
