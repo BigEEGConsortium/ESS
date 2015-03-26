@@ -2343,11 +2343,11 @@ classdef level1Study
         
         function obj = createEssContainerFolder(obj, essFolder, stopOnIssues, overwriteFiles)
             
-            if nargin < 2
+            if nargin < 3
                 stopOnIssues = true;
             end;
             
-            if nargin < 3
+            if nargin < 4
                 overwriteFiles = true;
             end;
             
@@ -2407,7 +2407,6 @@ classdef level1Study
                             fprintf('Channel location file for for subject %d of sesion number %s cannot be found.\n', j, obj.sessionTaskInfo(i).sessionNumber);
                         end;
                         
-                        keyboard;
                         if ~isempty(fileFinalPath)
                             
                             essConventionfolder = ['session' filesep obj.sessionTaskInfo(i).sessionNumber];
