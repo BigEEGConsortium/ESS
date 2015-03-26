@@ -2489,7 +2489,7 @@ classdef level1Study
                             end;
                             
                             % form subjectInSessionNumber
-                            subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));                                                                                   
+                            subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.sessionTaskInfo(i).dataRecording(j));                                                                                   
                             
                             % copy the data recording file
                             
