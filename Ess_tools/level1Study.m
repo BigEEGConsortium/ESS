@@ -2155,7 +2155,7 @@ classdef level1Study
             if nargin < 6
                 overwriteFile = false;
             end;
-            
+             
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
             if nargin < 4 % use the ESS convention folder location if none is provided.
