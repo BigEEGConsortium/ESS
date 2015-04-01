@@ -2147,7 +2147,7 @@ classdef level1Study
                 [dummy, ord] = sort(serialDateNumber, 'ascend'); %#ok<ASGLU>
                 obj.sessionTaskInfo(i).dataRecording = obj.sessionTaskInfo(i).dataRecording(ord);
             end;
-        end;        
+        end;       
         
         function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName, overwriteFile)
@@ -2182,7 +2182,7 @@ classdef level1Study
             if exist(fullFilePath, 'file') && ~overwriteFile
                 fprintf('Skipped writing event instance file %s since it already exists.\n'); %#ok<CTPCT>
             else
-                
+                   
                 EEG = [];
                 for i=1:length(allSearchFolders)
                     if isempty(EEG)
@@ -2226,6 +2226,7 @@ classdef level1Study
                 
                 
                 eventType = {};
+                eventInstanceHedTags = {};
                 for i=1:length(EEG.event)
                     type = EEG.event(i).type;
                     if isnumeric(type)
@@ -2234,7 +2235,15 @@ classdef level1Study
                     eventType{i} = type;
                     eventLatency(i) = (EEG.event(i).latency - 1)/ EEG.srate; % -1 since time starts from 0
                     
+                    % extract per-instance HED tags if they exist
+                    if isfield(EEG.event(i), 'hedtags')
+                        eventInstanceHedTags{i} = EEG.event(i).hedtags;
+                    else
+                        eventInstanceHedTags{i} = '';
+                    end;
+                    
                     eventUsertags = '';
+                    
                     if isfield(EEG.event, 'usertags')
                         eventUsertags = EEG.event(i).usertags;
                         if iscell(eventUsertags)
@@ -2252,6 +2261,15 @@ classdef level1Study
                     % if tags cannot be deduced from the XML, use usertags.
                     if isempty(strtrim(eventHedString{i}))
                         eventHedString{i} = eventUsertags;
+                    end;
+                    
+                    % add per-instance hed tags in .hedtags field to eventHedString
+                    if ~isempty(eventInstanceHedTags{i})
+                        if isempty(eventHedString{i})
+                            eventHedString{i} = eventInstanceHedTags{i};
+                        else
+                            eventHedString{i} = [eventHedString{i} ', ' eventInstanceHedTags{i}];
+                        end;
                     end;
                 end;
                 
