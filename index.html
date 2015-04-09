@@ -1,37 +1,25 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en-us">
   <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="EEG Study Schema (ESS) and related tools : Removing the pain from EEG data sharing">
-
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-
-    <title>EEG Study Schema (ESS) and related tools</title>
+    <meta charset="UTF-8">
+    <title>EEG Study Schema (ESS) and related tools by bigdelys</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
-
   <body>
+    <section class="page-header">
+      <h1 class="project-name">EEG Study Schema (ESS) and related tools</h1>
+      <h2 class="project-tagline">Removing the pain from EEG data sharing</h2>
+      <a href="https://github.com/bigdelys/ESS" class="btn">View on GitHub</a>
+      <a href="https://github.com/bigdelys/ESS/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/bigdelys/ESS/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/bigdelys/ESS">View on GitHub</a>
-
-          <h1 id="project_title">EEG Study Schema (ESS) and related tools</h1>
-          <h2 id="project_tagline">Removing the pain from EEG data sharing</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/bigdelys/ESS/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/bigdelys/ESS/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <p>EEG Study Schema (ESS) makes it easier for researcher in the field of EEG/BCI to package, share and automatize the analysis workflow of their study data. </p>
+    <section class="main-content">
+      <p>EEG Study Schema (ESS) makes it easier for researcher in the field of EEG/BCI to package, share and automatize the analysis workflow of their study data. </p>
 
 <p>You can think of ESS as a "shipping container" for your EEG study data.</p>
 
@@ -88,6 +76,49 @@
 </ul>
 
 <h2>
+<a id="example-code" class="anchor" href="#example-code" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example code</h2>
+
+<h3>
+<a id="running-a-function-on-all-the-recording-in-the-study" class="anchor" href="#running-a-function-on-all-the-recording-in-the-study" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running a function on all the recording in the study</h3>
+
+<pre><code>% load the container in to a MATLAB object
+obj = level2Study('level2XmlFilePath', 'C:\Users\...\[ESS Container Folder]\');
+
+% get all the recording files 
+filenames = obj.getFilename;
+
+% go over all recording and apply a function
+for i=1:length(filenames)
+    [path name ext] = fileparts(filenames{i});
+    EEG = pop_loadset([name ext], path);
+    EEG = [YOUR FUNCTION](EEG,..)
+end;
+</code></pre>
+
+<p>You can limit the tasks for which the files are obtained by using 'taskLabel' option of getFilename() method in level2Study class.</p>
+
+<h3>
+<a id="creating-an-eeglab-study" class="anchor" href="#creating-an-eeglab-study" aria-hidden="true"><span class="octicon octicon-link"></span></a>Creating An EEGLAB STUDY</h3>
+
+<pre><code>% load the container in to a MATLAB object
+obj = level2Study('level2XmlFilePath', 'C:\Users\...\[ESS Container Folder]\');
+
+studyFilenameAndPAth = createEeglabStudy(obj, 'C:\Users\Nima\Documents\MATLAB\tools\playground\eeglabstudy');
+</code></pre>
+
+<h3>
+<a id="making-sure-the-container-has-no-issues-validation" class="anchor" href="#making-sure-the-container-has-no-issues-validation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Making sure the container has no issues (validation)</h3>
+
+<pre><code>% load the container in to a MATLAB object
+obj = level2Study('level2XmlFilePath', 'C:\Users\...\[ESS Container Folder]\');
+
+obj = obj.validate;
+
+</code></pre>
+
+<p>Some minor issues, like missing UUIDs are fixed by default in the validation process, but you need to save the object afterwards.</p>
+
+<h2>
 <a id="people" class="anchor" href="#people" aria-hidden="true"><span class="octicon octicon-link"></span></a>People</h2>
 
 <p>ESS 2.0 specifications were drafted by Nima Bigdely-Shamlo, PhD (<a href="http://www.syntrogi.com">Syntrogi, Inc.</a>), Prof. Kay Robbins (University of Texas at San Antonio) and Tony Johnson (DCS Corp.). ESS 1.0 specifications were drafted by Nima Bigdely-Shamlo, PhD,  Jessica Hsi (UCSD) and Prof. Scott Makeig (Swartz Center for Computational Neueorsciece, UCSD).</p>
@@ -97,18 +128,16 @@
 <hr>
 
 <p>ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.</p>
-      </section>
-    </div>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">EEG Study Schema (ESS) and related tools maintained by <a href="https://github.com/bigdelys">bigdelys</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/bigdelys/ESS">EEG Study Schema (ESS) and related tools</a> is maintained by <a href="https://github.com/bigdelys">bigdelys</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
-    </div>
 
-              <script type="text/javascript">
+    </section>
+
+            <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
             document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
           </script>
@@ -119,6 +148,6 @@
             } catch(err) {}
           </script>
 
-
   </body>
 </html>
+
