@@ -695,7 +695,6 @@ classdef level2Study
                     type = num2str(type);
                 end;
                 eventType{i} = type;
-                eventLatency(i) = EEG.event(i).latency / EEG.srate;
                 
                 id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
                 if any(id)
@@ -739,7 +738,7 @@ classdef level2Study
                 );
             
             % get the UUids from level 1
-            [dummy, selectedDataRecordingUuid, dummy2, sessionTaskNumber, dataRecordingNumber] = obj.level1StudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false);
+            [dummy, selectedDataRecordingUuid, dummy2, sessionTaskNumber, dataRecordingNumber] = obj.level1StudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
             
             % go over level 2 and match by dataRecordingUuid
             dataRecordingUuid = {};
@@ -812,7 +811,7 @@ classdef level2Study
                 arg('filetype', 'eeg',{'eeg' , 'event', 'noiseDetection' , 'report'},'Return EEG or event files.', 'type', 'char')...
                 );
             
-            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, level1MoreInfo] = obj.level1StudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false);
+            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, level1MoreInfo] = obj.level1StudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
             
             taskLabel = {};
             filename = {};
@@ -865,7 +864,6 @@ classdef level2Study
             end;
             
             issue = []; % a structure with description and howItWasFixed fields.
-            baseFolder = fileparts(obj.level2XmlFilePath);
             
             % make sure uuid and title are set
             if isempty(obj.uuid)
@@ -882,7 +880,7 @@ classdef level2Study
             
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 
-                [dataRecordingFilename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'eeg');
+                [dataRecordingFilename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'eeg'); %#ok<ASGLU>
                 if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName))
                     issue(end+1).description = sprintf('Data recording file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                 else
@@ -892,7 +890,7 @@ classdef level2Study
                     end;
                 end;
                 
-                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'event');
+                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'event'); %#ok<ASGLU>
                 if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile))
                     issue(end+1).description = sprintf('Event instance file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                 else
@@ -902,21 +900,21 @@ classdef level2Study
                     end;
                 end;
                 
-                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'report');
-                recreateReportFile = false;
+                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'report'); %#ok<ASGLU>
+                recreateReportFile = false; %#ok<NASGU>
                 if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).reportFileName))
                     issue(end+1).description = sprintf('Report file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
-                    recreateReportFile = fixIssues;
+                    recreateReportFile = fixIssues; %#ok<NASGU>
                 else
                     if ~exist(filename{1}, 'file')
                         issue(end+1).description = sprintf('Report file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
                         issue(end).issueType = 'missing file';
-                        recreateReportFile = fixIssues;
+                        recreateReportFile = fixIssues; %#ok<NASGU>
                     end;
                 end;
                 
-                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'noiseDetection');
-                recreateNoiseFile = false;
+                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'noiseDetection'); %#ok<ASGLU>
+                recreateNoiseFile = false; %#ok<NASGU>
                 if ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).noiseDetectionResultsFile)
                     issue(end+1).description = sprintf('Noise detection parameter file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                     if fixIssues
@@ -935,8 +933,8 @@ classdef level2Study
                                 [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
                                 EEG = pop_loadset([name ext], sessionFolder);
                             end;
-                            level2Folder = fileparts(obj.level2XmlFilePath);
-                            reportFileName = writeReportFile(obj, EEG, [name ext], moreInfo.sessionTaskNumber, level2Folder);
+                            level2Folder = fileparts(obj.level2XmlFilePath); %#ok<PROP>
+                            reportFileName = writeReportFile(obj, EEG, [name ext], moreInfo.sessionTaskNumber, level2Folder); %#ok<PROP>
                             obj.studyLevel2Files.studyLevel2File(i).reportFileName = reportFileName;
                             issue(end).howItWasFixed = 'A new report file was created.';
                         end;
@@ -1020,7 +1018,7 @@ classdef level2Study
                 relativeSessionFolder, reportFileName);
         end;
         
-        function studyFilenameAndPath = createEeglabStudy(obj, studyFolder, varargin)
+        function [STUDY, studyFilenameAndPath] = createEeglabStudy(obj, studyFolder, varargin)
         % studyFilenameAndPath = createEeglabStudy(obj, studyFolder, {key, value pairs})
 	% Create an EEGLAB Study in a separate folder with its own EEGLAb dataset files.
 	%
@@ -1054,7 +1052,7 @@ classdef level2Study
                 end;
             end;
             
-            [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, 'includeFolder', true, 'taskLabel', inputOptions.taskLabel, 'dataQuality', inputOptions.dataQuality);
+            [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, 'includeFolder', true, 'taskLabel', inputOptions.taskLabel, 'dataQuality', inputOptions.dataQuality); %#ok<ASGLU>
             
             fileSessionFolder = {};
             clear ALLEEG;
@@ -1065,7 +1063,7 @@ classdef level2Study
                     mkdir(fileSessionFolder{i});
                 end;
                 
-                [loadPath name ext] = fileparts(filename{i});
+                [loadPath name ext] = fileparts(filename{i}); %#ok<NCOMMA>
                 if inputOptions.makeTwoFilesPerSet
                     EEG = pop_loadset([name ext], loadPath);
                     pop_saveset(EEG, 'filename', [name ext], 'filepath', fileSessionFolder{i}, 'savemode', 'twofiles', 'version', '7.3');
