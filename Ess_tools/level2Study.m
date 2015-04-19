@@ -375,7 +375,7 @@ classdef level2Study
                                     nonScalpChannel = ismember(lower(newChannelLabels), lower(nonScalpChannelLabels));
                                     allEEGChannels = [allEEGChannels newChannels];
                                     allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
-                                    
+                                    channelLocationType = dataRecordingParameterSet.modality(m).channelLocationType;
                                     allEEGChannelLabels = cat(1, allEEGChannelLabels, newChannelLabels);
                                     newChannelLabels = cat(1, newChannelLabels, nonScalpChannelLabels); %#ok<NASGU>
                                 end;
@@ -438,7 +438,7 @@ classdef level2Study
                                     end;
                                     
                                 end;
-                            else % try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
+                            elseif strcmp(channelLocationType, '10-20') % if channels are based on 10-20 syste try assigning channel locations by matching labels to known 10-20 montage standard locations in BEM (MNI head) model
                                 EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
                             end;
                             
