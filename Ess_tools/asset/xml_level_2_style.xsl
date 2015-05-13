@@ -3,8 +3,7 @@
 <!-- Start of defining keys for finding distinct values -->
 	<xsl:key name="SubjectGroupValue" match="/studyLevel1/sessions/session/subject" use="group"/>
 	<xsl:key name="ModalityTypeGroupValue" match="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality" use="type" />
-	<xsl:key name="ModalityChannelLocationTypeGroupValue" match="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality" use="channelLocationType" />
-<!--  	maybe could be used later: <xsl:key name="keyRecordingParameterSetLabel" match="/studyLevel1/recordingParameterSets/recordingParameterSet" use="recordingParameterSetLabel" /> -->
+ 	maybe could be used later: <xsl:key name="keyRecordingParameterSetLabel" match="/studyLevel1/recordingParameterSets/recordingParameterSet" use="recordingParameterSetLabel" /> -->
 <!-- End of definig keys -->
 	<xsl:template match="/">
 		<html>
@@ -62,7 +61,7 @@ font-size= 7pt
 					<xsl:for-each select="studyLevel1">
 						<tr>
 							<h2>
-								<xsl:value-of select="title"/> - ESS Level 1
+								<xsl:value-of select="title"/>
 							</h2>
 						</tr>
 					</xsl:for-each>
@@ -82,7 +81,7 @@ font-size= 7pt
 					<xsl:for-each select="studyLevel1">
 						<tr>
 							<td>
-								<xsl:value-of select="description" disable-output-escaping="yes" />
+								<xsl:value-of select="description"/>
 							</td>
 						</tr>
 					</xsl:for-each>
@@ -159,18 +158,7 @@ font-size= 7pt
 										<xsl:text>, </xsl:text>
 									</xsl:if>
 							</xsl:for-each>
-							</td>	
-						</tr>
-						<tr>
-							<td>Channel Location Type(s): 
-							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality[generate-id()=generate-id(key('ModalityChannelLocationTypeGroupValue' , channelLocationType)[1])]">
-									<xsl:value-of select="concat(channelLocationType, '', '')"/>
-									<xsl:if test="position()!=last()">
-										<xsl:text>, </xsl:text>
-									</xsl:if>
-							</xsl:for-each>
-							</td>
-							
+							</td>						
 						</tr>
 						<tr>
 							<td>Total Size: <xsl:value-of select="totalSize"/>
@@ -261,9 +249,9 @@ font-size= 7pt
 						<!--<td rowspan="2" align="center" bgcolor="#CCCCCC">
 							<strong>Number of Channels</strong>
 						</td>-->
-						<!--<td rowspan="2" align="center" bgcolor="#CCCCCC">
+						<td rowspan="2" align="center" bgcolor="#CCCCCC">
 							<strong>Channel Location Type</strong>
-						</td>-->
+						</td>
 					</tr>
 					<tr>
 						<td align="center" bgcolor="#CCCCCC">
@@ -373,6 +361,13 @@ font-size= 7pt
 											</xsl:attribute>
 											<xsl:value-of select="channelLocations"/>
 										</a>
+									</p>
+								</xsl:for-each>
+							</td>
+							<td>
+								<xsl:for-each select="subject">
+									<p>
+										<xsl:value-of select="channelLocationType"/>
 									</p>
 								</xsl:for-each>
 							</td>
