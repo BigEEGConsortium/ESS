@@ -1,4 +1,4 @@
-classdef level2Study
+classdef levelDerivedStudy
     % creates a Level 2 object, either from a Level 2 container, or by starting from a Level 1 container 
         % (using 'level1XmlFilePath' option) and processing it with Standardized Data Level 2 (STDL2) pipeline 
         % to create a Level 2 container. This is done in two stages, see Example 1 below: 
@@ -102,7 +102,7 @@ classdef level2Study
     end;
     
     methods
-        function obj = level2Study(varargin)
+        function obj = levelDerivedStudy(varargin)
         
             % if dependent files are not in the path, add all file/folders under
             % dependency to Matlab path.
@@ -446,6 +446,7 @@ classdef level2Study
                             
                             % set the parameters
                             params = struct();
+                            params.lineFrequencies = [60, 120,  180, 212, 240];
                             params.referenceChannels = allScalpChannels;
                             params.evaluationChannels = allScalpChannels;
                             params.rereferencedChannels = allEEGChannels;
