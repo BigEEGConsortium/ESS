@@ -57,7 +57,7 @@ classdef level2Study
         % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
         % (we do not combine datasets).
         studyLevel2Files = struct('studyLevel2File', struct('studyLevel2FileName', ' ', ...
-            'dataRecordingUuid', ' ', 'noiseDetectionResultsFile', ' ', 'reportFileName', ' ',...
+            'dataRecordingUuid', ' ', 'uuid', ' ','noiseDetectionResultsFile', ' ', 'reportFileName', ' ',...
             'averageReferenceChannels', ' ', 'eventInstanceFile', ' ',...
             'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'dataQuality', ' '));
         
@@ -474,6 +474,11 @@ classdef level2Study
                             % keep the association.
                             EEG.etc.dataRecordingUuid = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                             
+                            
+                            % create a UUID for the study level 2 file
+                            studyLevel2FileUuid = char(java.util.UUID.randomUUID);                            
+                            EEG.etc.dataRecordingUuidHistory = {EEG.etc.dataRecordingUuid studyLevel2FileUuid};
+                            
                             % place subject and group information inside
                             % EEG structure
                             if length(obj.level1StudyObj.sessionTaskInfo(i).subject) == 1                                
@@ -536,6 +541,7 @@ classdef level2Study
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).reportFileName = reportFileName;
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).averageReferenceChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allScalpChannels, 'UniformOutput', false));
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
+                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).uuid = studyLevel2FileUuid;
                             
                             if isfield(EEG.etc.noiseDetection, 'reference')
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));

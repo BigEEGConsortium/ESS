@@ -67,8 +67,8 @@ classdef level1Study
         isInEssContainer = 'No'; % should be either 'Yes' or 'No'.
         
         % Information about event codes (i.e. triggers, event numbers).
-        eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
-            'label', ' ', 'description', ' ', 'tag', ' '));
+        eventCodesInfo = struct('event', struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
+            'label', ' ', 'description', ' ', 'tag', ' ')));
         
         % Summary of study information.
         summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' '...
@@ -1630,6 +1630,8 @@ classdef level1Study
             
             if ~level1Study.isAvailable(obj.studyShortDescription)
                 issue(end+1).description = 'Study Short Description is not available. This value is required.';
+            elseif length(obj.studyShortDescription) > 120
+                issue(end+1).description = 'Study Short Description is too long (over 120 characters).';
             end;
             
             if ~level1Study.isAvailable(obj.studyDescription)
