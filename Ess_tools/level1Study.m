@@ -67,8 +67,10 @@ classdef level1Study
         isInEssContainer = 'No'; % should be either 'Yes' or 'No'.
         
         % Information about event codes (i.e. triggers, event numbers).
-        eventCodesInfo = struct('event', struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
-            'label', ' ', 'description', ' ', 'tag', ' ')));
+        % Notive, we do not have a separate 'event' node inside the
+        % eventCodesInfo. This is a slightly different mapping from XML.
+        eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
+            'label', ' ', 'description', ' ', 'tag', ' '));
         
         % Summary of study information.
         summaryInfo = struct('totalSize', ' ', 'allSubjectsHealthyAndNormal', ' '...
