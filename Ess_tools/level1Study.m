@@ -2779,7 +2779,7 @@ classdef level1Study
                 dataRecordingModalityString = lower(strjoin_adjoiner_first('_', dataRecordingModalities));
             end;
             
-        end
+        end                
     end;
     methods (Static)
         
@@ -2931,5 +2931,6 @@ classdef level1Study
                 itIs = ~isempty(inputString) && ~strcmpi(inputString, 'NA') && ~strcmp(inputString, '-');
             end;
         end
+        
     end;
 end

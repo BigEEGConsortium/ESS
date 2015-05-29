@@ -242,9 +242,9 @@ classdef level2Study
 	%
 	%	Key				Value
 	%
-	% 	'level2Folder'			: String,  Level 2 study folder. This folder will contain with processed data files, XML..
+	% 	'level2Folder'      : String,  Level 2 study folder. This folder will contain with processed data files, XML..
 	% 	'params'			: Cell array, Input parameters to for the processing pipeline.
-	%	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
+	%	'sessionSubset' 	: Integer Array, Subset of sessions numbers (empty = all).
 	% 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
 		
             
@@ -279,6 +279,18 @@ classdef level2Study
             mkdir(inputOptions.level2Folder);
             mkdir([inputOptions.level2Folder filesep 'session']);
             mkdir([inputOptions.level2Folder filesep 'additional_data']);
+            
+            % copy static files (assets)
+            thisClassFilenameAndPath = mfilename('fullpath');
+            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+            
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'xml_level_2_style.xsl'], [inputOptions.level2Folder filesep 'xml_level_2_style.xsl']);
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'Readme_level_2.txt'], [inputOptions.level2Folder filesep 'Readme.txt']);
+            
+            % if license if CC0, copy the license file into the folder.
+            if strcmpi(obj.level1StudyObj.summaryInfo.license.type, 'cc0')
+                copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [inputOptions.level2Folder filesep 'License.txt']);
+            end;
             
             obj.uuid = char(java.util.UUID.randomUUID);
             obj.title = obj.level1StudyObj.studyTitle;
@@ -570,9 +582,14 @@ classdef level2Study
                                 eeglabVersionString = ['EEGLAB ' eeg_getversion];
                                 matlabVersionSTring = ['MATLAB '  version];
                                 
-                                filterLabel = {'Resampling', 'Line Noise Removal'};
-                                filterFieldName = {'resampling' 'lineNoise'};
-                                filterFunctionName = {'resampleEEG' 'cleanLineNoise'};
+                                % we are not doing resmapling anymore, so 
+                                %filterLabel = {'Resampling', 'Line Noise Removal'};
+                                %filterFieldName = {'resampling' 'lineNoise'};
+                                %filterFunctionName = {'resampleEEG' 'cleanLineNoise'};
+                                
+                                filterLabel = {'Line Noise Removal'};
+                                filterFieldName = {'lineNoise'};
+                                filterFunctionName = {'cleanLineNoise'};
 
                                
                                 for f=1:length(filterLabel)
@@ -935,7 +952,7 @@ classdef level2Study
                         issue(end+1).description = sprintf('Noise detection parameter file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
                         issue(end).issueType = 'missing file';
                         if fixIssues
-                            if ~exist(EEG, 'var')
+                            if ~exist('EEG', 'var')
                                 [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
                                 EEG = pop_loadset([name ext], sessionFolder);
                             end;
@@ -1106,5 +1123,72 @@ classdef level2Study
             STUDY = pop_savestudy( STUDY, ALLEEG, 'filename', inputOptions.studyFileName, 'filepath', studyFolder);
             studyFilenameAndPath = [studyFolder filesep inputOptions.studyFileName];
         end;
+        
+        function obj = combinePartialLevel2Runs(obj, partFolders, finalFolder)
+            % obj = combinePartialLevel2Runs(obj, partFolders, finalFolder)
+            % Combines multiple partial runs of createLevel2Study(), each
+            % with a subset of sessions (e.g. to accelerate computation)
+            % , into one level 2 object. Files are copied from partial-run
+            % folders to the final folder. The function also performs a level 2 
+            % valiation at the end.
+            %
+            % Inputs:
+            % partFolders         : cell array of string of Level 2 folders
+            %                       containing partial runs
+            % finalFolder         : the folder in which the combined Level
+            %                       2 container to be placed.
+            %
+            % Outout:
+            % obj                 : the object representing the final,
+            %                       combined, Level 2 container.
+            %
+            % Example:
+            % >> obj = level2Study;
+            % >> partFolders = {'c:\...\part1\' 'c:\...\part2\' .. };
+            % >> finalFolder = 'c:\...\final\'
+            % >> obj = obj.combinePartialLevel2Runs(partFolders, finalFolder);
+            
+            partObj = level2Study;
+            for i =1:length(partFolders)
+                partObj(i) = level2Study('level2XmlFilePath', [partFolders{i} filesep 'studyLevel2_description.xml']);
+            end;
+            
+            combinedObj = partObj(1);
+            allFilters = partObj(1).filters.filter;
+            for i =2:length(partObj)
+                combinedObj.studyLevel2Files.studyLevel2File = cat(1, combinedObj.studyLevel2Files.studyLevel2File, partObj(i).studyLevel2Files.studyLevel2File);
+                allFilters = cat(1, allFilters,  partObj(i).filters.filter);
+            end;
+            
+            % ToDo: order sessions
+            
+            finalFilters = uniqe_struct(allFilters);
+            combinedObj.filters.filter = finalFilters;
+            
+            % copy files
+            mkdir(finalFolder);
+            copyfile(partFolders{1}, finalFolder);
+            for i = 2:length(partObj)
+                copyfile([partFolders{i} filesep 'session'], [finalFolder filesep 'session']);
+            end;
+            
+            % combine reports
+            combinedText = '';
+            for i =1:length(partFolders)
+                fid =  fopen([partFolders{i} filesep 'summaryReport.html']);
+                text = fread(fid, Inf, 'char=>char');
+                combinedText = [combinedText; text];
+                fclose(fid);
+            end;
+            fid =  fopen([finalFolder filesep 'summaryReport.html'], 'w');
+            fprintf(fid, '%s', combinedText);
+            fclose(fid);
+            
+            combinedObj = combinedObj.write([finalFolder filesep 'studyLevel2_description.xml']);
+            combinedObj = combinedObj.validate;
+            obj = combinedObj;
+        end;
     end;
+
+
 end
