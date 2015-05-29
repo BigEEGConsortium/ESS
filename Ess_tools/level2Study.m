@@ -964,7 +964,15 @@ classdef level2Study
                     end;
                 end;
                 
-                clear EEG;
+                clear EEG;                
+                
+                if ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).uuid)
+                    issue(end+1).description = sprintf('Uuid for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
+                    if fixIssues                        
+                        obj.studyLevel2Files.studyLevel2File(i).uuid = char(java.util.UUID.randomUUID);
+                        issue(end).howItWasFixed = 'A new uuid was created.';
+                    end;
+                end;
                 
             end;
             
