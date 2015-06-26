@@ -55,12 +55,30 @@
 <h2>
 <a id="ess-20" class="anchor" href="#ess-20" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS 2.0</h2>
 
-<p>The latest version of ESS allows for multiple levels of data and inclusion of multiple data modalities (e.g. gaze, motion-capture) in addition to EEG. Fig. 1 shows stages of data and tools used to transform data into ESS standard levels.</p>
+<p>The latest version of ESS (2.0) is capable of dealing with multiple modalities (e.g. Motion Capture, Eye-Tracking,...), and studies where EEG recording parameters (e.g. sampling rate) vary across sessions. The figure below shows stages of data and tools used to transform data into ESS standard levels.</p>
 
-<p><img src="/images/ESS%20process.png" alt="">
-Figure 1: Stages of data and tools used to transform data into ESS standard levels.</p>
+<p><img src="/images/ESS%20process.png" alt=""></p>
 
-<p>You can see <a href="https://docs.google.com/document/d/1JFnyVpY60jhP3FDL2fMqSmoisN5EreQBxD5YnrAo0pU/edit?usp=sharing">ESS 2.0 specification here</a>. It is now capable of dealing with multiple modalities (e.g. Motion Capture, Eye-Tracking,...), and studies where EEG recording parameters (e.g. sampling rate) vary across sessions.</p>
+<h3>
+<a id="standardized-data-level-1" class="anchor" href="#standardized-data-level-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Standardized Data Level 1:</h3>
+
+<p>Level 1 contains data without any processing, except the tagging and synchronization. To prevent misunderstanding it is important to first provide our definition of terms as Study, Task and Session:</p>
+
+<ul>
+<li>Session: A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.</li>
+<li>Study: A set of data collection efforts (Sessions) to answer one or few related scientific questions. </li>
+<li>Task: Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.
+*EEG Recording: The file containing EEG data from one or multiple subjects. In some cases it may also contain non-EEG data (e.g. GSR, ECG or even Motion Capture and Eye tracker data). A Session may produce multiple EEG recordings.</li>
+</ul>
+
+<p>We tried to select terms similar to ones defined in EEGLAB software. The figure below shows ESS Standardized Level 1 folder and file structure. The study_description.xml file is the “header” of ESS container and contains all the study meta data. </p>
+
+<p><img src="/images/ESS%20level%201%20schemas" alt=""></p>
+
+<p>You can see <a href="https://docs.google.com/document/d/1JFnyVpY60jhP3FDL2fMqSmoisN5EreQBxD5YnrAo0pU/edit?usp=sharing">Level 1 specification here</a>. </p>
+
+<h3>
+<a id="standardized-data-level-2" class="anchor" href="#standardized-data-level-2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Standardized Data Level 2:</h3>
 
 <h2>
 <a id="ess-tools" class="anchor" href="#ess-tools" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS tools</h2>
