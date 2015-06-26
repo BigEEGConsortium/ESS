@@ -1866,6 +1866,17 @@ classdef level1Study
                             end;
                         end;
                         
+                        if ~isfield(obj.sessionTaskInfo(i).subject(j), 'labId')
+                            issue(end+1).description =  sprintf('Subject %d of sesion %s does not a labId field.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            
+                            if fixIssues && length(obj.sessionTaskInfo(i).subject) == 1
+                                obj.sessionTaskInfo(i).subject(j).labId = 'NA';
+                                issue(end).howItWasFixed = 'labId field created and set to NA';
+                            end;
+                        end;
+                        
+                        
+                        
                         % check the existence of referred channel locations
                         % and make sure they are specified if channel
                         % location type is specified as Custom (versus e.g. 10-20).
@@ -2191,6 +2202,8 @@ classdef level1Study
                 for i=1:length(allSearchFolders)
                     if isempty(EEG)
                         try
+                            % only read a single channel since we only care
+                            % about events at this point.
                             EEG = exp_eval(io_loadset([allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename]));
                         catch
                         end;
@@ -2202,6 +2215,9 @@ classdef level1Study
                    error('EEG file for data recording %d of session task %d cannot be found.', dataRecordingNumber, sessionTaskNumber);
                end;
                 
+               % we do not need the data, so lets free up its memory
+               EEG.data = [];
+               
                 studyEventCode = {obj.eventCodesInfo.code};
                 studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
                 

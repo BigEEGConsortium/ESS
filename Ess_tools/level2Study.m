@@ -682,8 +682,7 @@ classdef level2Study
             end
             
         end;
-       
-        
+               
         function EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber)
             % add usertags based on (eventcode,hed string) associations for
             % the task.
