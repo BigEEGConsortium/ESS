@@ -2,7 +2,7 @@
 <html lang="en-us">
   <head>
     <meta charset="UTF-8">
-    <title>EEG Study Schema (ESS) and related tools by bigdelys</title>
+    <title>EEG Study Schema (ESS) and related tools by BigEEGConsortium</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
@@ -13,9 +13,9 @@
     <section class="page-header">
       <h1 class="project-name">EEG Study Schema (ESS) and related tools</h1>
       <h2 class="project-tagline">Removing the pain from EEG data sharing</h2>
-      <a href="https://github.com/bigdelys/ESS" class="btn">View on GitHub</a>
-      <a href="https://github.com/bigdelys/ESS/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/bigdelys/ESS/tarball/master" class="btn">Download .tar.gz</a>
+      <a href="https://github.com/BigEEGConsortium/ESS" class="btn">View on GitHub</a>
+      <a href="https://github.com/BigEEGConsortium/ESS/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/BigEEGConsortium/ESS/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
@@ -53,9 +53,40 @@
 <p>ESS also has a convention that specifies how to name and arrange raw session EEG recording files into folders.</p>
 
 <h2>
-<a id="ess-20-is-ready" class="anchor" href="#ess-20-is-ready" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS 2.0 is ready</h2>
+<a id="ess-20" class="anchor" href="#ess-20" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS 2.0</h2>
 
-<p>You can see <a href="https://docs.google.com/document/d/1JFnyVpY60jhP3FDL2fMqSmoisN5EreQBxD5YnrAo0pU/edit?usp=sharing">ESS 2.0 specification here</a>. It is now capable of dealing with multiple modalities (e.g. Motion Capture, Eye-Tracking,...), and studies where EEG recording parameters (e.g. sampling rate) vary across sessions.</p>
+<p>The latest version of ESS (2.0) is capable of dealing with multiple modalities (e.g. Motion Capture, Eye-Tracking,...), and studies where EEG recording parameters (e.g. sampling rate) vary across sessions. The figure below shows stages of data and tools used to transform data into ESS standard levels.</p>
+
+<p><img src="/images/ESS%20process.png" alt=""></p>
+
+<h3>
+<a id="standardized-data-level-1" class="anchor" href="#standardized-data-level-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Standardized Data Level 1</h3>
+
+<p>Level 1 contains data without any processing, except the tagging and synchronization. To prevent misunderstanding it is important to first provide our definition of terms as Study, Task and Session:</p>
+
+<ul>
+<li>Session: A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.</li>
+<li>Study: A set of data collection efforts (Sessions) to answer one or few related scientific questions. </li>
+<li>Task: Each study may contain multiple tasks. For example a baseline ‘eyes closed’ task, followed by a ‘target detection’ task and a ‘mind wandering’, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.
+*EEG Recording: The file containing EEG data from one or multiple subjects. In some cases it may also contain non-EEG data (e.g. GSR, ECG or even Motion Capture and Eye tracker data). A Session may produce multiple EEG recordings.</li>
+</ul>
+
+<p>We tried to select terms similar to ones defined in EEGLAB software. The figure below shows ESS Standardized Level 1 folder and file structure. The study_description.xml file is the “header” of ESS container and contains all the study meta data. </p>
+
+<p><img src="/images/ESS%20level%201%20schema.png" alt="">
+You can see Level 1 specification at <a href="http://www.eegstudy.org/schema/level1">www.eegstudy.org/schema/level1</a>. </p>
+
+<h3>
+<a id="standardized-data-level-2" class="anchor" href="#standardized-data-level-2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Standardized Data Level 2</h3>
+
+<p>Standard Data Level 2 provides a containerized, well-documented version of the data after processing by accepted pre-processing functions and annotated by an extensive summary reporting of data quality. The focus of Standard Data Level 2 is to transform the EEG data into a state that would allow the direct application of machine learning or other analysis algorithms without additional processing. The amount of preprocessing applied is minimal, because we wanted to maximize the usability across a variety of applications. </p>
+
+<p>The Standard Data Level 2 pipeline consists of three steps: initial filtering, removal of a robust reference signal, and interpolation of bad channels. The pipeline also identifies potentially bad sections of the signal. </p>
+
+<p>A Standard Data Level 2 (STDL2) collection has a well-defined folder structure documented in a studyLevel2_description.xml file (see the figure below). This XML file uniquely identifies the data collection and documents the layout of the data in a detailed manner. The XML file also contains the XML generated from the Standard Data Level 1 processing.</p>
+
+<p><img src="/images/ESS%20level%202%20schema.png" alt="">
+You can see Level 2 specification at <a href="http://www.eegstudy.org/schema/level2">www.eegstudy.org/schema/level2</a> .</p>
 
 <h2>
 <a id="ess-tools" class="anchor" href="#ess-tools" aria-hidden="true"><span class="octicon octicon-link"></span></a>ESS tools</h2>
@@ -132,7 +163,7 @@ obj = obj.validate;
 <p>ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.</p>
 
       <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/bigdelys/ESS">EEG Study Schema (ESS) and related tools</a> is maintained by <a href="https://github.com/bigdelys">bigdelys</a>.</span>
+        <span class="site-footer-owner"><a href="https://github.com/BigEEGConsortium/ESS">EEG Study Schema (ESS) and related tools</a> is maintained by <a href="https://github.com/BigEEGConsortium">BigEEGConsortium</a>.</span>
 
         <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
