@@ -2633,8 +2633,8 @@ classdef level1Study
             
         end;
         
-        function [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber] = getFilename(obj, varargin)
-            % [filename, dataRecordingUuid taskLabel sessionTaskNumber] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber, subjectInfo] = getFilename(obj, varargin)
+            % [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber, subjectLabId] = getFilename(obj, varargin)
             % obtain file names based on a selection criteria, such as task
             % label(s).
             % key,value pairs:
@@ -2658,6 +2658,8 @@ classdef level1Study
             taskLabel = {};
             sessionTaskNumber = [];
             dataRecordingNumber = [];
+            subjectInfo = struct;
+            
             for i=1:length(obj.sessionTaskInfo)
                 if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
@@ -2684,6 +2686,7 @@ classdef level1Study
                         taskLabel{end+1} = obj.sessionTaskInfo(i).taskLabel;
                         sessionTaskNumber(end+1) = i;
                         dataRecordingNumber(end+1) = j;
+                        subjectInfo(end+1) = obj.sessionTaskInfo(i).subject;
                     end;
                 end;
             end;

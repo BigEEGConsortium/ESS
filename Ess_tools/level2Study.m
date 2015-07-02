@@ -739,7 +739,7 @@ classdef level2Study
             end;
         end;
         
-        function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, subjectInfo] = getFilename(obj, varargin)
         %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
 		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
 		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
@@ -767,7 +767,7 @@ classdef level2Study
             taskLabel = {};
             filename = {};
             sessionNumber = {};
-            subject = [];
+            subjectInfo = [];
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
@@ -789,10 +789,10 @@ classdef level2Study
                         error('Something is wrong, more than one sbject with inSession number found.');
                     else % a single number
                         newSubject = obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(foundSubjectId);
-                        if isempty(subject)
-                            subject  = newSubject;
+                        if isempty(subjectInfo)
+                            subjectInfo = newSubject;
                         else
-                            subject(end+1)  = newSubject;
+                            subjectInfo(end+1)  = newSubject;
                         end;
                     end;
                     
