@@ -2667,7 +2667,7 @@ classdef level1Study
             taskLabel = {};
             sessionTaskNumber = [];
             dataRecordingNumber = [];
-            subjectInfo = [];
+            subjectInfo = struct;
             
             for i=1:length(obj.sessionTaskInfo)
                 if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
@@ -2695,12 +2695,8 @@ classdef level1Study
                         taskLabel{end+1} = obj.sessionTaskInfo(i).taskLabel;
                         sessionTaskNumber(end+1) = i;
                         dataRecordingNumber(end+1) = j;
-                        if isempty(subjectInfo)
-                            subjectInfo = obj.sessionTaskInfo(i).subject;
-                        else
-                            subjectInfo(end+1) = obj.sessionTaskInfo(i).subject;
-                        end;
-                        
+                        if lengtisempty(h(subjectInfo
+                        subjectInfo(end+1) = obj.sessionTaskInfo(i).subject;
                     end;
                 end;
             end;

@@ -344,18 +344,8 @@ classdef level2Study
                                 EEG = exp_eval(io_loadset(fileFinalPath));
                             end;
                             
-                            channelLabelsAreMadeUp = false;
-                            for qqi = 1:length(EEG.chanlocs)
-                                if strcmp(EEG.chanlocs(qqi).labels, num2str(qqi))
-                                    channelLabelsAreMadeUp = true;
-                                else
-                                    channelLabelsAreMadeUp = false;
-                                    break;
-                                end
-                            end;
-                            if channelLabelsAreMadeUp
-                                EEG.chanlocs = [];
-                            end;
+                            channelLabelsAreMadeUp = true;
+                            for qqi = 1:length
                             
                             % add HED tags based on events
                             if ~strcmpi(obj.level1StudyObj.eventSpecificiationMethod, 'Tags')
@@ -445,7 +435,7 @@ classdef level2Study
                                     % from the EEG.chanlocs or from the XML
                                     % file.
                                     % ToDo: rconsider this if.
-                                    if length(labelsFromFile) >= length(allChannelLabels)
+                                    if length(labelsFromFile) >= length(allEEGChannelLabels)
                                         channelLabelsToUse = labelsFromFile;
                                     else
                                         channelLabelsToUse = allEEGChannelLabels;
