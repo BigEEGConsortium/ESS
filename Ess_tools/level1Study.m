@@ -2196,9 +2196,9 @@ classdef level1Study
                 subjectInSessionNumberCell = setdiff(unique({obj.recordingParameterSet(id).modality.subjectInSessionNumber}), {'', '-', 'NA'});
                 subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
                 
-                
+                % toDo: make this work correctlt for two subjects.
                 outputFileName = obj.essConventionFileName('event', obj.studyTitle, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
-                    subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber);
+                    subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, obj.sessionTaskInfo(sessionTaskNumber).subject(1).labId, length(obj.sessionTaskInfo(sessionTaskNumber).subject));
             end;
             
             fullFilePath = [filePath filesep outputFileName];
@@ -2469,7 +2469,7 @@ classdef level1Study
                                 filenameInEss = [name ext];
                             else
                                 filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, obj.sessionTaskInfo(i).subject(1).labId, length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
                                                         
                             if exist(fileFinalPath, 'file')
@@ -2579,7 +2579,7 @@ classdef level1Study
                                 filenameInEss = [name ext];
                             else
                                 filenameInEss = obj.essConventionFileName(namePrefixString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, name, extension);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j,obj.sessionTaskInfo(i).subject(1).labId, length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
                             
                             if exist(fileFinalPath, 'file')
@@ -2824,6 +2824,122 @@ classdef level1Study
         end;
         
         function [name, part1, part2]= essConventionFileName(fileTypeIdentifier, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, recordingNumber, subjectLabId, numberOfSubjectsInSession, freePart, extension)
+            % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+            %    subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
+                     
+            % create a hash string to prevent (make very unlikely) name
+            % clashes in case of string truncation
+            needHashString = false;
+            hashString = DataHash([studyTitle taskLabel freePart], struct('Method', 'SHA-512', 'Format',  'base64'));
+            hashString(hashString == '/') = [];
+            hashString(hashString == '+') = [];
+            hashString = hashString(1:3);          
+            
+            % if it is a cell, e.g. has two numbers, join them by _, like
+            % 1_2
+            if iscell(subjectInSessionNumber)
+                subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumber);
+            end;
+            
+            if ~ischar(subjectInSessionNumber)
+                subjectInSessionNumber = num2str(subjectInSessionNumber);
+            end;
+            
+            if ~ischar(recordingNumber)
+                recordingNumber = num2str(recordingNumber);
+            end;
+            
+            if iscell(subjectLabId)
+                subjectLabId = strjoin_adjoiner_first('_', subjectLabId);
+            end;
+            
+            % remove forbidden Windows OS filename characeters
+            studyTitle = level1Study.removeForbiddenWindowsFilenameCharacters(studyTitle);
+            taskLabel = level1Study.removeForbiddenWindowsFilenameCharacters(taskLabel);
+            freePart = level1Study.removeForbiddenWindowsFilenameCharacters(freePart);
+            subjectLabId = level1Study.removeForbiddenWindowsFilenameCharacters(subjectLabId);
+            
+            % make sure study title, freePart and task label are less than a certain length
+            maxleLength = 22;
+            if length(studyTitle) > maxleLength
+                studyTitle = studyTitle(1:maxleLength);
+                studyTitle = strtrim(studyTitle);
+                needHashString = true;
+            end;
+            
+            if length(taskLabel) > maxleLength
+                numberToCutFromCenter = length(taskLabel) - maxleLength - 1;
+                taskLabel = [taskLabel(1:floor(numberToCutFromCenter/2)) '_' taskLabel((end-floor(numberToCutFromCenter/2)):end)];
+                taskLabel = strtrim(taskLabel);
+                needHashString = true;
+            end;
+            
+            if length(freePart) > maxleLength
+                numberToCutFromCenter = length(freePart) - maxleLength - 1;
+                freePart = [freePart(1:floor(numberToCutFromCenter/2)) '_' freePart((end-floor(numberToCutFromCenter/2)):end)];
+                freePart = strtrim(freePart);
+                needHashString = true;
+            end;
+            
+            if length(subjectLabId) > maxleLength
+                numberToCutFromCenter = length(subjectLabId) - maxleLength - 1;
+                subjectLabId = [subjectLabId(1:floor(numberToCutFromCenter/2)) '_' subjectLabId((end-floor(numberToCutFromCenter/2)):end)];
+                subjectLabId = strtrim(subjectLabId);
+                needHashString = true;
+            end;
+            
+            if needHashString
+                freePart = [freePart '_' hashString];
+            end;
+
+            
+            % replace spaces in study title, freePart and task label with underlines
+            studyTitle(studyTitle == ' ') = '_';
+            taskLabel(taskLabel == ' ') = '_';
+            freePart(freePart == ' ') = '_';
+            subjectLabId(subjectLabId == ' ') = '_';
+                        
+            if ~ischar(sessionNumber)
+                sessionNumber = num2str(sessionNumber);
+            end;            
+            
+            % always use tsv extension for event file
+            fileTypeIdentifier = lower(fileTypeIdentifier);
+            if strcmp(fileTypeIdentifier, 'event');
+                extension = 'tsv';
+            end;
+            
+            if extension(1) == '.'
+                extension = extension(2:end);
+            end;
+            
+            % only include subject inSession numbers if they are more than
+            % one subejcts in the study.
+            if numberOfSubjectsInSession == 1
+                if isempty(subjectLabId) % skip subject lab id if itis not provided (is empty)
+                    part1 = [fileTypeIdentifier '_' studyTitle '_session_' sessionNumber '_task_' taskLabel];
+                else
+                    part1 = [fileTypeIdentifier '_' studyTitle '_session_' sessionNumber '_task_' taskLabel '_subjectLabId_' subjectLabId];
+                end;
+            else % there are 2 of more subejcts in the session, we need to include inSession numbers
+                if isempty(subjectLabId) % skip subject lab id if itis not provided (is empty)
+                    part1 = [fileTypeIdentifier '_' studyTitle '_session_' sessionNumber '_task_' taskLabel '_subjectNumber_' subjectInSessionNumber];
+                else
+                    part1 = [fileTypeIdentifier '_' studyTitle '_session_' sessionNumber '_task_' taskLabel '_subjectLabId_' subjectLabId '_subjectNumber_' subjectInSessionNumber];
+                end;
+            end;
+            
+            part2 = ['_recording_' recordingNumber '.' extension];
+            
+            if nargin > 6 && ~isempty(freePart) % freePart exists
+                name = [part1  '_' freePart part2];
+            else
+                name = [part1 part2];
+            end;
+        end;
+        
+         function [name, part1, part2]= essConventionFileName_legacy(fileTypeIdentifier, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
             %    subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
@@ -2913,6 +3029,54 @@ classdef level1Study
         end;
         
         function itMatches = fileNameMatchesEssConvention(name, eegOrEvent, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, subjectLabId, numberOfSubjectsInSession, recordingNumber)
+            
+            % replace spaces in study title with underlines
+            studyTitle(studyTitle == ' ') = '_';
+            
+            if ~ischar(sessionNumber)
+                sessionNumber = num2str(sessionNumber);
+            end;
+            
+            if isnumeric(subjectInSessionNumber)
+                subjectInSessionNumber = num2str(subjectInSessionNumber);
+            end;
+            
+            if ~ischar(recordingNumber)
+                recordingNumber = num2str(recordingNumber);
+            end;
+            
+            extension = name(end-2:end);
+            if strcmpi(eegOrEvent, 'event') && ~strcmpi(extension, 'tsv')
+                itMatches = false;
+                fprintf('The only accepted extension of Event Instance file is .tsv.\n');
+                keyboard;
+                return;
+            end;
+            
+            [dummyName, part1, part2]= level1Study.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, recordingNumber, subjectLabId, numberOfSubjectsInSession, '', extension);
+            
+            part1 = strrep(part1, '__', '_');
+            if part1(end) == '_'
+                part1(end) = [];
+            end;
+            
+            if length(name)>=length(dummyName)
+                part1FromName = strrep(name(1:length(part1)), '__', '_');
+                if part1FromName(end) == '_'
+                    part1FromName(end) = [];
+                end;
+            end;
+            
+            itMatches = length(name)>=length(dummyName) && strcmp(part1FromName, part1) && strcmp(name((end - length(part2)+1):end), part2);
+            
+            % make backward compatible with the old naming scheme.
+            itMatches = itMatches || fileNameMatchesEssConvention_legacy(name, eegOrEvent, studyTitle, sessionNumber,...
+                subjectInSessionNumber, taskLabel, recordingNumber);
+        end;
+        
+        function itMatches = fileNameMatchesEssConvention_legacy(name, eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber)
             
             % replace spaces in study title with underlines
