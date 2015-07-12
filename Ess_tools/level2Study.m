@@ -541,7 +541,7 @@ classdef level2Study
                                 filenameInEss = ['eeg_studyLevel2_' name(5:end) ext];
                             else % convert to ess convention
                                 filenameInEss = obj.level1StudyObj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, '', extension);
+                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj.level1StudyObj, i, j), length(obj.level1StudyObj.sessionTaskInfo(i).subject),'', extension);
                             end;
                             
                             pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
@@ -1060,7 +1060,7 @@ classdef level2Study
         function hdf5Filename = writeNoiseDetectionFile(obj, EEG, sessionTaskNumber, dataRecordingNumber, sessionFolder)
             subjectInSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber));
             hdf5Filename = obj.level1StudyObj.essConventionFileName('noise_detection', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
-                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, '', '.hdf5');
+                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, getSubjectLabbIdForDataRecording(obj.level1StudyObj, sessionTaskNumber, dataRecordingNumber), length(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).subject), '', '.hdf5');
             noiseDetection = EEG.etc.noiseDetection;
             noiseDetection.dataRecordingUuid = EEG.etc.dataRecordingUuid;
             writeHdf5Structure([sessionFolder filesep hdf5Filename], 'root', noiseDetection);

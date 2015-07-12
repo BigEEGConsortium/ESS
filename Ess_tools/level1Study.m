@@ -28,9 +28,9 @@ classdef level1Study
         studyUuid = ' ';
         
         % the URI pointing to the root folder of associated ESS folder. If the ESS file is located
-        % in the default root folder, this should be ?.? (current directory). If for example the data files
+        % in the default root folder, this should be . (current directory). If for example the data files
         % and the root folder are placed on a remote FTP location, <rootURI> should be set to
-        % ?ftp://domain.com/study?. The concatenation or <rootURI> and <filename> for each file
+        % ftp://domain.com/study. The concatenation or <rootURI> and <filename> for each file
         % should always produce a valid, downloadable URI.
         rootURI = '.';
         
@@ -155,20 +155,24 @@ classdef level1Study
                     obj.essFilePath = [obj.essFilePath filesep 'study_description.xml'];
                 end;
                 
+                [path, name, ext] = fileparts(obj.essFilePath); 
+                if ~inputOptions.createNewFile && exist(obj.essFilePath, 'file') && ~strcmpi(ext, '.xml')
+                    error('The input file %s needs to be an XML file with .xml extension', obj.essFilePath);
+                end;
                 
                 if exist(obj.essFilePath, 'file') && ~inputOptions.createNewFile % read the ESS information from the file
                     obj = obj.read(obj.essFilePath);
                     if nargin > 1
                         fprintf('An ESS file already exists at the specified location. Loading the file and ignoring other input parameters.\n');
                     end;
-                else
+                elseif inputOptions.createNewFile
                     % input file did not exist. Create an ESS file at that located
                     % and populate it with empty fields according to input
                     % values.
                     
                     % prepare the object based on input values.
                     % assigns a random UUID.
-                    obj.essVersion = '2.0';
+                    obj.essVersion = '2.1';
                     obj.studyUuid = char(java.util.UUID.randomUUID);
                     
                     % if data recodring parameter set if assigned, use it
@@ -1933,7 +1937,7 @@ classdef level1Study
                                 subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.sessionTaskInfo(i).dataRecording(j));
                                 [dataRecordingModalities, dataRecordingModalityString]= obj.getModalitiesForDataRecording(i, j); %#ok<ASGLU>
                                 if ~level1Study.fileNameMatchesEssConvention(obj.sessionTaskInfo(i).dataRecording(j).filename, dataRecordingModalityString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                        subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j)
+                                        subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject))
                                     fprintf('Warning: Filename %s (data recoding %d of sesion number %s) does not follow ESS convention.\n', obj.sessionTaskInfo(i).dataRecording(j).filename, j, obj.sessionTaskInfo(i).sessionNumber);
                                 end;
                             end
@@ -2198,7 +2202,7 @@ classdef level1Study
                 
                 % toDo: make this work correctlt for two subjects.
                 outputFileName = obj.essConventionFileName('event', obj.studyTitle, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
-                    subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, obj.sessionTaskInfo(sessionTaskNumber).subject(1).labId, length(obj.sessionTaskInfo(sessionTaskNumber).subject));
+                    subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, getSubjectLabbIdForDataRecording(obj, sessionTaskNumber, dataRecordingNumber), length(obj.sessionTaskInfo(sessionTaskNumber).subject));
             end;
             
             fullFilePath = [filePath filesep outputFileName];
@@ -2463,13 +2467,13 @@ classdef level1Study
                             [path, name, ext] = fileparts(fileForFreePart);
                             
                             itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
+                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject));
                             
                             if itMatches
                                 filenameInEss = [name ext];
                             else
                                 filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, obj.sessionTaskInfo(i).subject(1).labId, length(obj.sessionTaskInfo(i).subject), name, extension);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
                                                         
                             if exist(fileFinalPath, 'file')
@@ -2568,7 +2572,7 @@ classdef level1Study
                                 % see if the file name is already in ESS
                                 % format, hence no name change is necessary
                                 itMatches = level1Study.fileNameMatchesEssConvention([name ext], namePrefixString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject));
                             else
                                 itMatches = [];
                                 name = [];
@@ -2579,7 +2583,7 @@ classdef level1Study
                                 filenameInEss = [name ext];
                             else
                                 filenameInEss = obj.essConventionFileName(namePrefixString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j,obj.sessionTaskInfo(i).subject(1).labId, length(obj.sessionTaskInfo(i).subject), name, extension);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
                             
                             if exist(fileFinalPath, 'file')
@@ -2812,7 +2816,98 @@ classdef level1Study
                 dataRecordingModalityString = lower(strjoin_adjoiner_first('_', dataRecordingModalities));
             end;
             
-        end                
+        end
+        
+        function subjectLabId = getSubjectLabIdForDataRecording(obj, sessionTaskNumber, dataRecordingNumber)
+            subjectInSessionNumber = getInSessionNumberForDataRecording(obj, obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber));
+            
+            if strfind(subjectInSessionNumber, '_') % there is more than one subject in the recording
+                subjectIds = str2double(strsplit(subjectInSessionNumber, '_'));
+                
+                subjectLabIdCell = {};
+                for i=1:length(subjectIds)
+                    subjectLabIdCell{i} = obj.sessionTaskInfo(sessionTaskNumber).subject(subjectIds(i));
+                end;
+                subjectLabId = strjoin_adjoiner_first('_', subjectLabIdCell);
+                
+            else % only one subject is in the recording
+                if length(obj.sessionTaskInfo(sessionTaskNumber).subject) == 1 || strcmp(subjectInSessionNumber, '1')
+                    subjectLabId = obj.sessionTaskInfo(sessionTaskNumber).subject(1).labId;
+                else
+                    subjectLabId = obj.sessionTaskInfo(sessionTaskNumber).subject(uint8(str2double(subjectInSessionNumber))).ladId;
+                end;
+            end;
+        end;
+        
+        function obj = renameLegacyFileNamesInANewContainerobj(obj, newContainerFolder)
+            % creates a new level 1 container with legacy file names
+            % converted to new names.
+            if strcmpi(obj.isInEssContainer, 'no')
+                error('This functiononly works for a data in an ESS container');
+            end
+            
+            % first copy everything, then rename files
+            mkdir(newContainerFolder);
+            essFolder = fileparts(obj.essFilePath);
+           % copyfile([essFolder filesep '*'], newContainerFolder);
+            
+            newObj = level1Study(newContainerFolder);
+            
+            % fields of obj.sessionTaskInfo.dataRecording that require
+            % name change
+            fieldName = {'filename', 'eventInstanceFile'}; 
+            
+            % go over study sessions and rename files
+            for i=1:length(newObj.sessionTaskInfo)
+                for j=1:length(newObj.sessionTaskInfo(i).dataRecording)
+                    for k = 1:length(fieldName)
+                        currentFilePath = [essFolder filesep 'session' filesep num2str(i) filesep newObj.sessionTaskInfo(i).dataRecording(j).(fieldName{k})];
+                        
+                        % find the first _ and infer modality string from it
+                        namePrefixString = newObj.sessionTaskInfo(i).dataRecording(j).(fieldName{k})(1:find(newObj.sessionTaskInfo(i).dataRecording(j).(fieldName{k}) == '_', 1)-1);
+                        
+                        subjectInSessionNumber = getInSessionNumberForDataRecording(newObj, newObj.sessionTaskInfo(i).dataRecording(j));
+                        [path, name, extension] = fileparts(newObj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath);
+                        
+                        if strcmpi(fieldName, 'eventInstanceFile')
+                            extension = '.tsv';
+                        end;
+                        
+                        filenameInEss = obj.essConventionFileName(namePrefixString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                            subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
+                        
+                        movefile([newContainerFolder filesep 'session' filesep num2str(i) filesep obj.sessionTaskInfo(i).dataRecording(j).(fieldName{k})], [newContainerFolder filesep 'session' filesep num2str(i) filesep filenameInEss]);
+                        
+                        newObj.sessionTaskInfo(i).dataRecording(j).(fieldName{k}) = filenameInEss;
+                    end;                                                            
+                end;
+                
+                if level1Study.isAvailable(newObj.sessionTaskInfo(i).subject.channelLocations)
+                    for j=1:length(newObj.sessionTaskInfo(i).subject)
+                        currentFilePath = [essFolder filesep 'session' filesep num2str(i) filesep newObj.sessionTaskInfo(i).subject(j).channelLocations];
+                        
+                        
+                        namePrefixString = 'channel_locations';
+                        
+                        subjectInSessionNumber = getInSessionNumberForDataRecording(newObj, newObj.sessionTaskInfo(i).dataRecording(j));
+                        [path, name, dummy] = fileparts(newObj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath);
+                        [path, dummy, extension] = fileparts(newObj.sessionTaskInfo(i).subject(j).channelLocations);
+                        
+                        filenameInEss = obj.essConventionFileName(namePrefixString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
+                            subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
+                        
+                        movefile([newContainerFolder filesep 'session' filesep num2str(i) filesep obj.sessionTaskInfo(i).subject(j).channelLocations], [newContainerFolder filesep 'session' filesep num2str(i) filesep filenameInEss]);
+                        
+                        newObj.sessionTaskInfo(i).subject(j).channelLocations = filenameInEss;
+                    end;
+                end;
+            end;
+            
+            obj = newObj;
+            obj.essVersion = '2.1';
+            obj.write;
+            
+        end;
     end;
     methods (Static)
         
@@ -3029,7 +3124,7 @@ classdef level1Study
         end;
         
         function itMatches = fileNameMatchesEssConvention(name, eegOrEvent, studyTitle, sessionNumber,...
-                subjectInSessionNumber, taskLabel, subjectLabId, numberOfSubjectsInSession, recordingNumber)
+                subjectInSessionNumber, taskLabel, recordingNumber, subjectLabId, numberOfSubjectsInSession)
             
             % replace spaces in study title with underlines
             studyTitle(studyTitle == ' ') = '_';
@@ -3072,7 +3167,7 @@ classdef level1Study
             itMatches = length(name)>=length(dummyName) && strcmp(part1FromName, part1) && strcmp(name((end - length(part2)+1):end), part2);
             
             % make backward compatible with the old naming scheme.
-            itMatches = itMatches || fileNameMatchesEssConvention_legacy(name, eegOrEvent, studyTitle, sessionNumber,...
+            itMatches = itMatches || level1Study.fileNameMatchesEssConvention_legacy(name, eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber);
         end;
         
@@ -3102,7 +3197,7 @@ classdef level1Study
                 return;
             end;
             
-            [dummyName, part1, part2]= level1Study.essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
+            [dummyName, part1, part2]= level1Study.essConventionFileName_legacy(eegOrEvent, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, '', extension);
             
             part1 = strrep(part1, '__', '_');
