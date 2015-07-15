@@ -2849,7 +2849,7 @@ classdef level1Study
             % first copy everything, then rename files
             mkdir(newContainerFolder);
             essFolder = fileparts(obj.essFilePath);
-           % copyfile([essFolder filesep '*'], newContainerFolder);
+            copyfile([essFolder filesep '*'], newContainerFolder);
             
             newObj = level1Study(newContainerFolder);
             
