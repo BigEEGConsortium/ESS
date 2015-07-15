@@ -344,8 +344,18 @@ classdef level2Study
                                 EEG = exp_eval(io_loadset(fileFinalPath));
                             end;
                             
-                            channelLabelsAreMadeUp = true;
-                            for qqi = 1:length
+                            channelLabelsAreMadeUp = false;
+                            for qqi = 1:length(EEG.chanlocs)
+                                if strcmp(EEG.chanlocs(qqi).labels, num2str(qqi))
+                                    channelLabelsAreMadeUp = true;
+                                else
+                                    channelLabelsAreMadeUp = false;
+                                    break;
+                                end
+                            end;
+                            if channelLabelsAreMadeUp
+                                EEG.chanlocs = [];
+                            end;
                             
                             % add HED tags based on events
                             if ~strcmpi(obj.level1StudyObj.eventSpecificiationMethod, 'Tags')
@@ -435,7 +445,7 @@ classdef level2Study
                                     % from the EEG.chanlocs or from the XML
                                     % file.
                                     % ToDo: rconsider this if.
-                                    if length(labelsFromFile) >= length(allEEGChannelLabels)
+                                    if length(labelsFromFile) >= length(allChannelLabels)
                                         channelLabelsToUse = labelsFromFile;
                                     else
                                         channelLabelsToUse = allEEGChannelLabels;
@@ -523,7 +533,7 @@ classdef level2Study
                             % format, hence no name change is necessary
                             subjectInSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j));
                             itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'eeg', obj.level1StudyObj.studyTitle, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j);
+                                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj.level1StudyObj, i, j), length(obj.level1StudyObj.sessionTaskInfo(i).subject));
                             
                             if itMatches
                                 % change the eeg_ at the beginning to
@@ -531,7 +541,7 @@ classdef level2Study
                                 filenameInEss = ['eeg_studyLevel2_' name(5:end) ext];
                             else % convert to ess convention
                                 filenameInEss = obj.level1StudyObj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, '', extension);
+                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj.level1StudyObj, i, j), length(obj.level1StudyObj.sessionTaskInfo(i).subject),'', extension);
                             end;
                             
                             pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
@@ -564,12 +574,13 @@ classdef level2Study
                                 % assume data quality hass been 'Good' (can be set to
                                 % 'Suspect or 'Unusable' later)
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Good';
+                                obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                             else
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = [];
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Unusable';
                             end
                             
-                            obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
+                            
                             
                             
                             %% write the filters
@@ -1050,7 +1061,7 @@ classdef level2Study
         function hdf5Filename = writeNoiseDetectionFile(obj, EEG, sessionTaskNumber, dataRecordingNumber, sessionFolder)
             subjectInSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber));
             hdf5Filename = obj.level1StudyObj.essConventionFileName('noise_detection', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
-                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, '', '.hdf5');
+                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, getSubjectLabIdForDataRecording(obj.level1StudyObj, sessionTaskNumber, dataRecordingNumber), length(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).subject), '', '.hdf5');
             noiseDetection = EEG.etc.noiseDetection;
             noiseDetection.dataRecordingUuid = EEG.etc.dataRecordingUuid;
             writeHdf5Structure([sessionFolder filesep hdf5Filename], 'root', noiseDetection);
