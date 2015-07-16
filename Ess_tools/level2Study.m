@@ -538,10 +538,10 @@ classdef level2Study
                             if itMatches
                                 % change the eeg_ at the beginning to
                                 % eeg_studyLevel2_
-                                filenameInEss = ['eeg_studyLevel2_' name(5:end) ext];
+                                filenameInEss = ['eeg_studyLevel2_' name(5:end) '.set'];
                             else % convert to ess convention
                                 filenameInEss = obj.level1StudyObj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj.level1StudyObj, i, j), length(obj.level1StudyObj.sessionTaskInfo(i).subject),'', extension);
+                                    subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj.level1StudyObj, i, j), length(obj.level1StudyObj.sessionTaskInfo(i).subject),'', '.set');
                             end;
                             
                             pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
