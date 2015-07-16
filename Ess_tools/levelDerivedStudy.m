@@ -1,32 +1,11 @@
 classdef levelDerivedStudy
-    % creates a Level 2 object, either from a Level 2 container, or by starting from a Level 1 container 
-        % (using 'level1XmlFilePath' option) and processing it with Standardized Data Level 2 (STDL2) pipeline 
-        % to create a Level 2 container. This is done in two stages, see Example 1 below: 
-        %
-        % Use:
-        % obj = level2Study([key, value pairs])
-        % 
-        % Example 1: creating a proper Level 2 container from Level 1
-        %
-        %   obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
-        %   obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start appling the preprocessing pipelines and makes a proper Level 2 object. 
-        %  
-        % Example 2: loading an already-made Level 2 container.
-        %
-        % obj = level2Study('level2XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_2\');
-        %
-        % Options 
-        %   Key                      Value
-        %   'level2XmlFilePath'      : a string pointing to either a Level 2 container folder or its xml file.  
-        %   'level1XmlFilePath'      : a string pointing to either a Level 1 container folder or its xml file.
-        %   'createNewFile'          : Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) 
-        %                              ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
+    % creates a Level-derived object, from a Level 1 or 2 container
         
     % Be careful! any properties placed below will be written in the XML
     % file.
     properties
         % version of STDL2 used. Mandatory.
-        studyLevel2SchemaVersion = ' ';
+        studyLevelDerivedSchemaVersion = ' ';
         
         % study title, in case file was moved.
         title = ' ';
@@ -56,10 +35,9 @@ classdef levelDerivedStudy
         
         % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
         % (we do not combine datasets).
-        studyLevel2Files = struct('studyLevel2File', struct('studyLevel2FileName', ' ', ...
-            'dataRecordingUuid', ' ', 'noiseDetectionResultsFile', ' ', 'reportFileName', ' ',...
-            'averageReferenceChannels', ' ', 'eventInstanceFile', ' ',...
-            'rereferencedChannels', ' ', 'interpolatedChannels', ' ', 'dataQuality', ' '));
+        studyLevelDerivedFiles = struct('studyLevelDerivedFile', struct('studyLevelDerivedFileName', ' ', ...
+            'dataRecordingUuid', ' ', 'reportFileName', ' ',...
+            'eventInstanceFile', ' ', 'dataQuality', ' '));
         
         license = struct('type', ' ', 'text', ' ', 'link',' ');
         
@@ -83,22 +61,22 @@ classdef levelDerivedStudy
     % This does not really change any of their behavior since AbortSet is
     % only relevant for handle classes.
     properties (AbortSet = true)
-        % Filename (including path) of the ESS Standard Level 2 XML file associated with the
+        % Filename (including path) of the ESS Level-derived XML file associated with the
         % object.
-        level2XmlFilePath
+        levelDerivedXmlFilePath
         
-        % Filename (including path) of the ESS Standard Level 1 XML file
-        % based on which level 2 data may be computed. Could be kept empty
+        % Filename (including path) of the parent study XML file
+        % based on which level-derived data may be computed. Could be kept empty
         % if not available.
-        level1XmlFilePath
+        parentStudyXmlFilePath
         
-        % Level 1 study contains basic information about study and raw data files.
-        % It is created based on level1XmlFilePath input parameter
-        level1StudyObj
+        % Parent study object, created based on parentStudyXmlFilePath input parameter
+        parentStudyObj
         
-        % ESS-convention level 2 folder where all level 2 data are
-        % organized during level 1 -> 2 conversion using the pipeline.
-        level2Folder
+        % ESS-convention level-derived folder where all level-derived data are
+        % organized during parent study -> level-derived conversion using
+        % the given filter transformation(s).
+        levelDeriveFolder
     end;
     
     methods
