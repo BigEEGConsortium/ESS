@@ -93,52 +93,45 @@ classdef levelDerivedStudy
             
             
             inputOptions = arg_define(0,varargin, ...
-                arg('level2XmlFilePath', '','','ESS Standard Level 2 XML Filename.', 'type', 'char'), ...
-                arg('level1XmlFilePath', '','','ESS Standard Level 1 XML Filename.', 'type', 'char'), ...
+                arg('levelDerivedXmlFilePath', '','','ESS Level-derived XML Filename.', 'type', 'char'), ...
+                arg('parentStudyXmlFilePath', '','','Parent study (in ESS) XML Filename.', 'type', 'char'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr') ...
                 );
             
             % if the folder 'container' is instead of filename provided, use the default
             % 'study_description.xml' file.
-            if exist(inputOptions.level1XmlFilePath, 'dir')...
-                    && exist([inputOptions.level1XmlFilePath filesep 'study_description.xml'], 'file')
-                inputOptions.level1XmlFilePath = [inputOptions.level1XmlFilePath filesep 'study_description.xml'];
+            if exist(inputOptions.parentStudyXmlFilePath, 'dir')...
+                    && exist([inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'], 'file')
+                inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'];
             end;
             
-            if exist(inputOptions.level2XmlFilePath, 'dir')...
-                    && exist([inputOptions.level2XmlFilePath filesep 'studyLevel2_description.xml'], 'file')
-                inputOptions.level2XmlFilePath = [inputOptions.level2XmlFilePath filesep 'studyLevel2_description.xml'];
+            if exist(inputOptions.levelDerivedXmlFilePath, 'dir')...
+                    && exist([inputOptions.levelDerivedXmlFilePath filesep 'studyLevelDerived_description.xml'], 'file')
+                inputOptions.levelDerivedXmlFilePath = [inputOptions.levelDerivedXmlFilePath filesep 'studyLevelDerived_description.xml'];
             end;
             
-            obj.level2XmlFilePath = inputOptions.level2XmlFilePath;
+            obj.levelDerivedXmlFilePath = inputOptions.levelDerivedXmlFilePath;
             
-            if ~isempty(obj.level2XmlFilePath)
+            if ~isempty(obj.levelDerivedXmlFilePath)
                 obj = obj.read;
             end;
             
-            if ~isempty(inputOptions.level1XmlFilePath)
-                level1Obj = level1Study(inputOptions.level1XmlFilePath);
+            if ~isempty(inputOptions.parentStudyXmlFilePath)                
+                % read the parent XML file and find out what level it is
+                parentStudyObj = levelDerivedStudy.readLevelXML(inputOptions.parentStudyXmlFilePath);               
                 
-                % make sure the uuids of of the level 2 and the provided
-                % level 1 match.
-                if ~isempty(strtrim(level1Obj.studyUuid)) && ...
-                        ~isempty(obj.level1StudyObj) && ...
-                        ~strcmp(strstim(level1Obj.studyUuid), strstim(obj.level1StudyObj))
-                    error('The level 1 uuid in the provided level 1 XML file is different from the level 1 uuid in the provided level 2 xml file. Are you sure you are using the right file?');
-                else
-                    obj.level1StudyObj = level1Obj;
-                    obj.level1XmlFilePath = inputOptions.level1XmlFilePath;
-                end;
+                obj.parentStudyObj = parentStudyObj;
+                obj.parentStudyXmlFilePath = inputOptions.parentStudyXmlFilePath;
             end;
             
         end;
         
-        function obj = write(obj, level2XmlFilePath)
+        function obj = write(obj, levelDerivedXmlFilePath)
             
             % assign the input file path as the object path and write
             % there.
             if nargin > 1
-                obj.level2XmlFilePath = level2XmlFilePath;
+                obj.levelDerivedXmlFilePath = levelDerivedXmlFilePath;
             end;
             
             % use xml_io tools to write XML from a Matlab structure
@@ -150,39 +143,64 @@ classdef levelDerivedStudy
             xmlAsStructure = rmfield(struct(obj), propertiesToExcludeFromXMLIO);
             warning('on', 'MATLAB:structOnObject');
             
-            % include level 1 xml in studyLevel1 field. Write in a tempora
-            temporaryLevel1XML = [tempname '.xml'];
-            obj.level1StudyObj.write(temporaryLevel1XML);
-            xmlAsStructure.studyLevel1 = xml_read(temporaryLevel1XML);
-            delete(temporaryLevel1XML);
-            if ~isempty(obj.level1XmlFilePath)
-                pathstr = fileparts(obj.level1XmlFilePath);
-                xmlAsStructure.studyLevel1.rootURI = pathstr; % save absolute path in root dir. This is so it can later read the recording files relative to this path.
+            % include parent xml in parentStudy field. Write in a temporary
+            % file
+            temporaryParentXML = [tempname '.xml'];
+            obj.parentStudyObj.write(temporaryParentXML);
+            
+            clear Pref;
+            % make sure the root is also included, tihs is a bit different
+            % from Level 2 xml embedding since we need to include the root XML
+            % node under <parentStudy> too.
+            Pref.RootOnly = false;
+            xmlAsStructure.parentStudy = xml_read(temporaryParentXML, Pref);
+            
+            if isfield(xmlAsStructure.parentStudy, 'PROCESSING_INSTRUCTION')
+                xmlAsStructure.parentStudy = rmfield(xmlAsStructure.parentStudy, 'PROCESSING_INSTRUCTION');
+            end;
+            
+            if isfield(xmlAsStructure.parentStudy, 'COMMENT')
+                xmlAsStructure.parentStudy = rmfield(xmlAsStructure.parentStudy, 'COMMENT');
+            end;
+            
+            delete(temporaryParentXML);
+            if ~isempty(obj.parentStudyXmlFilePath)
+                pathstr = fileparts(obj.parentStudyXmlFilePath);
+                
+                % there should be only one field name, which is
+                % studyLevel1,studyLevel2, etc. 
+                fieldName = fieldnames(xmlAsStructure.parentStudy);
+                
+                xmlAsStructure.parentStudy.(fieldName{1}).rootURI = pathstr; % save absolute path in root dir. This is so it can later read the recording files relative to this path.
             end;
             
             % prevent xml_ioi from adding extra 'Item' fields and write the XML
+            clear Pref
             Pref.StructItem = false;
             Pref.CellItem = false;
-            xml_write(obj.level2XmlFilePath, xmlAsStructure, {'studyLevel2' 'xml-stylesheet type="text/xsl" href="xml_level_2_style.xsl"' 'This file is created based on EEG Study Schema (ESS) Level 2. Visit eegstudy.org for more information.'}, Pref);
+            xml_write(obj.levelDerivedXmlFilePath, xmlAsStructure, {'studyLevelDerived' 'xml-stylesheet type="text/xsl" href="xml_level_derived_style.xsl"' 'This file is created based on EEG Study Schema (ESS) Level-derived. Visit eegstudy.org for more information.'}, Pref);
         end;
         
         function obj = read(obj)
             Pref.Str2Num = false;
-            xmlAsStructure = xml_read(obj.level2XmlFilePath, Pref);
+            Pref.PreserveSpace = true; % keep spaces
+            xmlAsStructure = xml_read(obj.levelDerivedXmlFilePath, Pref);
             names = fieldnames(xmlAsStructure);
             
             for i=1:length(names)
-                if strcmp(names{i}, 'studyLevel1')
+                if strcmp(names{i}, 'parentStudy')
                     % load the level 1 data into its own object instead of
                     % a regular structure field under level 2
                     
                     % prevent xml_ioi from adding extra 'Item' fields and write the XML
+                    clear Pref;
                     Pref.StructItem = false;
                     Pref.CellItem = false;
-                    temporaryLevel1XmlFilePath = [tempname '.xml'];
-                    xml_write(temporaryLevel1XmlFilePath, xmlAsStructure.studyLevel1, 'studyLevel1', Pref);
+                    Pref.RootOnly = false;                    
+                    temporaryparentStudyXmlFilePath = [tempname '.xml'];
+                    xml_write(temporaryparentStudyXmlFilePath, xmlAsStructure.parentStudy, '', Pref);                                        
                     
-                    obj.level1StudyObj = level1Study(temporaryLevel1XmlFilePath);
+                    obj.parentStudyObj = levelDerivedStudy.readLevelXML(temporaryparentStudyXmlFilePath);
                     
                 else
                     obj.(names{i}) = xmlAsStructure.(names{i});
@@ -204,7 +222,7 @@ classdef levelDerivedStudy
             end;
         end;
         
-        function obj = createLevel2Study(obj, varargin)
+        function obj = createLevelDerivedStudy(obj, varargin)
         % creates an ESS standardized data level 2 folder from level 1 XML
         % and its data recordings using standard level 2 EEG processing pipeline.
         % You can continue where the processing was stopped by running the
@@ -213,7 +231,7 @@ classdef levelDerivedStudy
 	% 
 	% Example:
 	% 
-	%	obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
+	%	obj = level2Study('parentStudyXmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
 	%	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object. 
 	% 
 	% Options:
@@ -282,8 +300,8 @@ classdef levelDerivedStudy
                             fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
                             
                             % read data
-                            if ~isempty(obj.level1XmlFilePath)
-                                level1FileFolder = fileparts(obj.level1XmlFilePath);
+                            if ~isempty(obj.parentStudyXmlFilePath)
+                                level1FileFolder = fileparts(obj.parentStudyXmlFilePath);
                                 
                                 if isempty(obj.rootURI)
                                     rootFolder = level1FileFolder;
@@ -603,8 +621,8 @@ classdef levelDerivedStudy
                             obj.filters.filter(removeId) = [];
                             
                             studyLevel2FileCounter = studyLevel2FileCounter + 1;
-                            obj.level2XmlFilePath = [inputOptions.level2Folder filesep 'studyLevel2_description.xml'];                            
-                            obj.write(obj.level2XmlFilePath);
+                            obj.levelDerivedXmlFilePath = [inputOptions.level2Folder filesep 'studyLevel2_description.xml'];                            
+                            obj.write(obj.levelDerivedXmlFilePath);
                         end;
                     end;
                     
@@ -613,8 +631,8 @@ classdef levelDerivedStudy
             end;
 
             % Level 2 total study size
-            [dummy, obj.totalSize]= dirsize(fileparts(obj.level2XmlFilePath)); %#ok<ASGLU>
-            obj.write(obj.level2XmlFilePath);
+            [dummy, obj.totalSize]= dirsize(fileparts(obj.levelDerivedXmlFilePath)); %#ok<ASGLU>
+            obj.write(obj.levelDerivedXmlFilePath);
             
             function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder)
                 % search for the file both next to the xml file and in the standard ESS
@@ -637,64 +655,7 @@ classdef levelDerivedStudy
                 end;
             end
             
-        end;
-       
-        
-        function EEG = addUsertagsToEEG(obj, EEG, sessionTaskNumber)
-            % add usertags based on (eventcode,hed string) associations for
-            % the task.
-            
-            studyEventCode = {obj.level1StudyObj.eventCodesInfo.code};
-            studyEventCodeTaskLabel = {obj.level1StudyObj.eventCodesInfo.taskLabel};
-            
-            studyEventCodeHedString = {};
-            for i = 1:length(obj.level1StudyObj.eventCodesInfo)
-                studyEventCodeHedString{i} = obj.level1StudyObj.eventCodesInfo(i).condition.tag;
-                
-                % add tags for label and description if they do not already exist
-                hedTags = strtrim(strsplit(studyEventCodeHedString{i}, ','));
-                labelTagExists = strfind(lower(hedTags), 'event/label/');
-                descriptionTagExists = strfind(lower(hedTags), 'event/description/');
-                
-                if all(cellfun(@isempty, labelTagExists))
-                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Label/' obj.level1StudyObj.eventCodesInfo(i).condition.label];
-                end;
-                
-                if all(cellfun(@isempty, descriptionTagExists))
-                    studyEventCodeHedString{i} = [studyEventCodeHedString{i} ', Event/Description/' obj.level1StudyObj.eventCodesInfo(i).condition.description];
-                end;
-            end;
-            
-            currentTask = obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel;
-            currentTaskMask = strcmp(currentTask, studyEventCodeTaskLabel);
-            
-            for i=1:length(EEG.event)
-                type = EEG.event(i).type;
-                if isnumeric(type)
-                    type = num2str(type);
-                end;
-                eventType{i} = type;
-                
-                id = currentTaskMask & strcmp(eventType{i}, studyEventCode);
-                if any(id)
-                    eventHedString = studyEventCodeHedString{id};
-                else
-                    eventHedString = '';
-                end;
-                
-                EEG.event(i).usertags = eventHedString; % usertags should be a string (not a cell array of tags)
-                EEG.urevent(i).usertags = EEG.event(i).usertags;
-                
-                % make sure event types are strings.
-                if isnumeric(EEG.event(i).type)
-                    EEG.event(i).type = num2str(EEG.event(i).type);
-                end;
-                if isnumeric(EEG.urevent(i).type)
-                    EEG.urevent(i).type = num2str(EEG.urevent(i).type);
-                end;
-                
-            end;
-        end;
+        end;                      
         
         function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
         %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
@@ -760,7 +721,7 @@ classdef levelDerivedStudy
                     end;
                     
                     if inputOptions.includeFolder
-                        baseFolder = fileparts(obj.level2XmlFilePath);
+                        baseFolder = fileparts(obj.levelDerivedXmlFilePath);
                         % remove extra folder separator
                         if baseFolder(end) ==  filesep
                             baseFolder = baseFolder(1:end-1);
@@ -820,7 +781,7 @@ classdef levelDerivedStudy
                         end;
                         
                         if inputOptions.includeFolder
-                            baseFolder = fileparts(obj.level2XmlFilePath);
+                            baseFolder = fileparts(obj.levelDerivedXmlFilePath);
                             filename{end+1} = [baseFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber(j)).sessionNumber filesep basefilename];
                         else
                             filename{end+1} = basefilename;
@@ -912,7 +873,7 @@ classdef levelDerivedStudy
                                 [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
                                 EEG = pop_loadset([name ext], sessionFolder);
                             end;
-                            level2Folder = fileparts(obj.level2XmlFilePath); %#ok<PROP>
+                            level2Folder = fileparts(obj.levelDerivedXmlFilePath); %#ok<PROP>
                             reportFileName = writeReportFile(obj, EEG, [name ext], moreInfo.sessionTaskNumber, level2Folder); %#ok<PROP>
                             obj.studyLevel2Files.studyLevel2File(i).reportFileName = reportFileName;
                             issue(end).howItWasFixed = 'A new report file was created.';
@@ -977,15 +938,6 @@ classdef levelDerivedStudy
                 end;
             end;
             
-        end;
-        
-        function hdf5Filename = writeNoiseDetectionFile(obj, EEG, sessionTaskNumber, dataRecordingNumber, sessionFolder)
-            subjectInSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber));
-            hdf5Filename = obj.level1StudyObj.essConventionFileName('noise_detection', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
-                subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, '', '.hdf5');
-            noiseDetection = EEG.etc.noiseDetection;
-            noiseDetection.dataRecordingUuid = EEG.etc.dataRecordingUuid;
-            writeHdf5Structure([sessionFolder filesep hdf5Filename], 'root', noiseDetection);
         end;
         
         function reportFileName = writeReportFile(obj, EEG, filenameInEss, sessionTaskNumber, level2Folder)
@@ -1080,4 +1032,19 @@ classdef levelDerivedStudy
             studyFilenameAndPath = [studyFolder filesep inputOptions.studyFileName];
         end;
     end;
+     methods (Static)
+         function levelObject = readLevelXML(levelXML)
+              xmlAsStructure = xml2struct(levelXML);
+                
+                if isfield(xmlAsStructure, 'studyLevel1') % level 1
+                    levelObject = level1Study(levelXML);
+                elseif isfield(xmlAsStructure, 'studyLevel2') % level 2
+                    levelObject = level2Study('level2XmlFilePath', levelXML);
+                elseif isfield(xmlAsStructure, 'studyLevelDerived') % level-derived
+                    levelObject = levelDerivedStudy('levelDerivedXmlFilePath', levelXML); %#ok<*PROP>
+                else
+                    error('Provided xml file cannot be recognized as either Level 1, 2 or derived.');
+                end
+         end
+     end;
 end
