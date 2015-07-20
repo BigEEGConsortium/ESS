@@ -191,6 +191,7 @@ classdef level2Study
         
         function obj = read(obj)
             Pref.Str2Num = false;
+            Pref.PreserveSpace = true; % keep spaces
             xmlAsStructure = xml_read(obj.level2XmlFilePath, Pref);
             names = fieldnames(xmlAsStructure);
             
