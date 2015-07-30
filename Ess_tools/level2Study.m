@@ -247,15 +247,17 @@ classdef level2Study
 	% 	'level2Folder'      : String,  Level 2 study folder. This folder will contain with processed data files, XML..
 	% 	'params'			: Cell array, Input parameters to for the processing pipeline.
 	%	'sessionSubset' 	: Integer Array, Subset of sessions numbers (empty = all).
+    %   'forceRedo'         : Force re-execution of the pipeline on files where that it already has been executed. 
 	% 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
 		
-            
-            inputOptions = arg_define(1,varargin, ...
-                arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
-                arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object') ...
-                ,arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle') ...
-                ,arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
-            );
+    
+    inputOptions = arg_define(1,varargin, ...
+        arg('level2Folder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
+        arg({'params', 'Parameters'}, struct(),[],'Input parameters to for the processing pipeline.', 'type', 'object'), ...
+        arg('forceRedo', false,[],'re-execute callback on recordings.', 'type', 'logical'), ...
+        arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle'), ...
+        arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
+        );
             
             obj.level2Folder = inputOptions.level2Folder;
             
@@ -312,7 +314,8 @@ classdef level2Study
                             level2FileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
                             processedFileIsOnDisk = ~isempty(findFile(level2FileNameOfProcessed, inputOptions.level2Folder));
                         end;
-                        if fileIsListedAsProcessed && processedFileIsOnDisk
+                        
+                        if ~inputOptions.forceRedo && fileIsListedAsProcessed && processedFileIsOnDisk
                             fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
                         else % file has not yet been processed
                             fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
@@ -581,9 +584,6 @@ classdef level2Study
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).dataQuality = 'Unusable';
                             end
                             
-                            
-                            
-                            
                             %% write the filters
                             
                             % only add filters for a recordingParameterSetLabel
@@ -768,8 +768,7 @@ classdef level2Study
         end;
         
         function [filename, dataRecordingUuid, taskLabel, sessionNumber, subjectInfo] = getFilename(obj, varargin)
-        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
-		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subjectInfo] = getFilename(obj, varargin)
 		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
 		% You may use the returned values to for example run a function on each of EEG recordings. 
 		%

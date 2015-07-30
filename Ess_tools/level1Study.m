@@ -2985,9 +2985,12 @@ classdef level1Study
             end;
             
             if needHashString
-                freePart = [freePart '_' hashString];
+                if isempty(freePart)
+                    freePart = hashString;
+                else
+                    freePart = [freePart '_' hashString];
+                end;
             end;
-
             
             % replace spaces in study title, freePart and task label with underlines
             studyTitle(studyTitle == ' ') = '_';
