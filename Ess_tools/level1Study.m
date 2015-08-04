@@ -1,4 +1,4 @@
-classdef level1Study
+classdef level1Study < levelStudy;
     % Allow reading, writing and manipulatoion of information contained in ESS-formatted Standard Level 1 XML files.
     % EEG Studdy Schema (ESS) Level 1 contains EEG study meta-data information (subject information, sessions file
     % associations...). On read data are loaded in the object properties, you can change this data
@@ -125,14 +125,7 @@ classdef level1Study
             %   recordingParameterSet                   : Structure array, Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).
             %
             
-            % if dependent files are not in the path, add all file/folders under
-            % dependency to Matlab path.
-            if ~(exist('arg', 'file') && exist('is_impure_expression', 'file') &&...
-                    exist('is_impure_expression', 'file') && exist('PropertyEditor', 'file') && exist('hlp_struct2varargin', 'file') && exist('validate_schema', 'file'))
-                thisClassFilenameAndPath = mfilename('fullpath');
-                pathstr = fileparts(thisClassFilenameAndPath);
-                addpath(genpath([pathstr filesep 'dependency']));
-            end;
+            obj = obj@levelStudy;
             
             inputOptions = arg_define(1,varargin, ...
                 arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
@@ -2646,10 +2639,11 @@ classdef level1Study
             
         end;
         
-        function [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber, subjectInfo] = getFilename(obj, varargin)
-            % [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber, subjectLabId] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber] = getFilename(obj, varargin)
+            % [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber] = getFilename(obj, varargin)
             % obtain file names based on a selection criteria, such as task
             % label(s).
+            % The output sessionNumber is of type Integer.
             % key,value pairs:
             %
             % taskLabel:       a cell array with label(s) for session tasks. Only
@@ -2672,7 +2666,7 @@ classdef level1Study
             sessionTaskNumber = [];
             dataRecordingNumber = [];
             subjectInfo = [];
-            
+            sessionNumber = {};
             for i=1:length(obj.sessionTaskInfo)
                 if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
@@ -2698,6 +2692,7 @@ classdef level1Study
                         dataRecordingUuid{end+1} = obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                         taskLabel{end+1} = obj.sessionTaskInfo(i).taskLabel;
                         sessionTaskNumber(end+1) = i;
+                        sessionNumber{end+1} = obj.sessionTaskInfo(i).sessionNumber;
                         dataRecordingNumber(end+1) = j;
                         if isempty(subjectInfo)
                             subjectInfo = obj.sessionTaskInfo(i).subject;

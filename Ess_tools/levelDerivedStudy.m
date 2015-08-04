@@ -1,4 +1,4 @@
-classdef levelDerivedStudy
+classdef levelDerivedStudy  < levelStudy;
     % creates a Level-derived object, from a Level 1 or 2 container
         
     % Be careful! any properties placed below will be written in the XML
@@ -82,15 +82,7 @@ classdef levelDerivedStudy
     methods
         function obj = levelDerivedStudy(varargin)
         
-            % if dependent files are not in the path, add all file/folders under
-            % dependency to Matlab path.
-            if ~(exist('arg', 'file') && exist('is_impure_expression', 'file') &&...
-                    exist('is_impure_expression', 'file') && exist('PropertyEditor', 'file') && exist('hlp_struct2varargin', 'file'))
-                thisClassFilenameAndPath = mfilename('fullpath');
-                pathstr = fileparts(thisClassFilenameAndPath);
-                addpath(genpath([pathstr filesep 'dependency']));
-            end;
-            
+            obj = obj@levelStudy;           
             
             inputOptions = arg_define(0,varargin, ...
                 arg('levelDerivedXmlFilePath', '','','ESS Level-derived XML Filename.', 'type', 'char'), ...
@@ -326,7 +318,7 @@ classdef levelDerivedStudy
                 
                obj.title = obj.parentStudyObj.title;
                 
-               [filenames, dataRecordingUuid, taskLabel, sessionNumber, subjectInfo] = obj.parentStudyObj.getFilename('filetype', 'eeg');
+               [filenames, dataRecordingUuid, taskLabel, sessionNumber, parentDataRecordingNumber, subjectInfo] = obj.parentStudyObj.getFilename('filetype', 'eeg');
                [eventFilenames, eventDataRecordingUuidfrom] = obj.parentStudyObj.getFilename('filetype', 'event');
                
                if ~isequal(dataRecordingUuid, eventDataRecordingUuidfrom)
@@ -335,7 +327,7 @@ classdef levelDerivedStudy
                
                % sub-select files for requested sessions
                if ~isempty(inputOptions.sessionSubset)
-                   id = ismember(str2double(sessionNumber),inputOptions.sessionSubset);
+                   id = ismember(str2double(sessionNumber), inputOptions.sessionSubset);
                    filenames = filenames(id);
                    dataRecordingUuid = dataRecordingUuid(id);
                    eventFilenames = eventFilenames(id);
@@ -352,7 +344,7 @@ classdef levelDerivedStudy
                    % for test only
                    if inputOptions.forTest
                        fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-                       EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                       EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/500));
                    end;
                    
                    EEG = callbackFunction(EEG, callbackArgumentList{:});
@@ -421,8 +413,8 @@ classdef levelDerivedStudy
             obj.write(obj.levelDerivedXmlFilePath);                        
         end;                      
         
-        function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
-        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subjectInfo] = getFilename(obj, varargin)
+        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subject] = getFilename(obj, varargin)
 		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
 		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
 		% You may use the returned values to for example run a function on each of EEG recordings. 
@@ -442,40 +434,28 @@ classdef levelDerivedStudy
                 );
             
             % get the UUids from level 1
-            [dummy, selectedDataRecordingUuid, dummy2, sessionTaskNumber, dataRecordingNumber] = obj.parentStudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
+            [dummy, selectedDataRecordingUuid, taskLabelFromParent, selectedSessionNumber, dataRecordingNumber, selectedSubjectInfo] = obj.parentStudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
             
-            % go over level 2 and match by dataRecordingUuid
+            % go over level-derived records and match by dataRecordingUuid
             dataRecordingUuid = {};
             taskLabel = {};
             filename = {};
             sessionNumber = {};
-            subject = [];
+            subjectInfo = [];
+            levelDerivedDataRecordingNumber = [];
             for i=1:length(obj.studyLevelDerivedFiles.studyLevelDerivedFile)
                 [match, id] = ismember(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
+                    levelDerivedDataRecordingNumber(end+1) = i;
                     dataRecordingUuid{end+1} = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid;
-                    taskLabel{end+1} = obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).taskLabel;
+                    taskLabel{end+1} = taskLabelFromParent(id);
                     
-                    sessionNumber{end+1} = obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).sessionNumber;
+                    sessionNumber{end+1} = selectedSessionNumber{id};
                     
-                    inSessionNumber = obj.parentStudyObj.getInSessionNumberForDataRecording(obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).dataRecording(dataRecordingNumber(id)));
-                    foundSubjectId = [];
-                    for j =1:length(obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject)
-                        if strcmp(inSessionNumber, obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(j).inSessionNumber)
-                            foundSubjectId = [foundSubjectId j];
-                        end;
-                    end;
-                    if isempty(foundSubjectId)
-                        error('Something iss wrong, subejct with inSession number cannot be found.');
-                    elseif length(foundSubjectId) > 1
-                        error('Something is wrong, more than one sbject with inSession number found.');
-                    else % a single number
-                        newSubject = obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(foundSubjectId);
-                        if isempty(subject)
-                            subject  = newSubject;
-                        else
-                            subject(end+1)  = newSubject;
-                        end;
+                    if isempty(subjectInfo)
+                        subjectInfo = selectedSubjectInfo(id);
+                    else
+                        subjectInfo(end+1)  = selectedSubjectInfo(id);
                     end;
                     
                     if strcmpi(inputOptions.filetype, 'eeg')
@@ -490,7 +470,7 @@ classdef levelDerivedStudy
                         if baseFolder(end) ==  filesep
                             baseFolder = baseFolder(1:end-1);
                         end;
-                        filename{end+1} = [baseFolder filesep 'session' filesep obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).sessionNumber filesep basefilename];
+                        filename{end+1} = [baseFolder filesep 'session' filesep sessionNumber{end} filesep basefilename];
                     else
                         filename{end+1} = basefilename;
                     end;
