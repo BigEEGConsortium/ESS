@@ -381,6 +381,7 @@ classdef levelDerivedStudy  < levelStudy;
                    obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName = filenameInEss;
                    obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid = dataRecordingUuid{i};
                    obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).uuid = studyLevelDerivedFileUuid;
+                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName = 'NA';
                    
                    % ToDo: Get data quality from the filter.
                    obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataQuality = 'Good';                                                         
@@ -495,7 +496,7 @@ classdef levelDerivedStudy  < levelStudy;
                 arg('filetype', 'eeg',{'eeg' , 'event', 'noiseDetection' , 'report'},'Return EEG or event files.', 'type', 'char')...
                 );
             
-            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, level1MoreInfo] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
+            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, parentLevelMoreInfo] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
             
             taskLabel = {};
             filename = {};
@@ -510,16 +511,14 @@ classdef levelDerivedStudy  < levelStudy;
                         
                         taskLabel{end+1} = level1TaskLabel{j};
                         outputDataRecordingUuid{end+1} = level1dataRecordingUuid{j};
-                        moreInfo.sessionNumber{end+1} = level1MoreInfo.sessionNumber{j};
-                        moreInfo.dataRecordingNumber(end+1) = level1MoreInfo.dataRecordingNumber(j);
+                        moreInfo.sessionNumber{end+1} = parentLevelMoreInfo.sessionNumber{j};
+                        moreInfo.dataRecordingNumber(end+1) = parentLevelMoreInfo.dataRecordingNumber(j);
                         moreInfo.sessionTaskNumber(end+1) = sessionTaskNumber(j);
                         switch lower(inputOptions.filetype)
                             case 'eeg'
                                 basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName;
                             case 'event'
-                                basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile;
-                            case 'noisedetection'
-                                basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).noiseDetectionResultsFile;
+                                basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile;                          
                             case 'report'
                                 basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName;
                         end;
@@ -527,7 +526,7 @@ classdef levelDerivedStudy  < levelStudy;
                         if inputOptions.includeFolder
                             baseFolder = fileparts(obj.levelDerivedXmlFilePath);
 
-                            filename{end+1} = [baseFolder filesep 'session' filesep obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(j)).sessionNumber filesep basefilename];
+                            filename{end+1} = [baseFolder filesep 'session' filesep parentLevelMoreInfo.sessionNumber{j} filesep basefilename];
                         else
                             filename{end+1} = basefilename;
                         end;
@@ -587,48 +586,12 @@ classdef levelDerivedStudy  < levelStudy;
                 
                 [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, 'type', 'report'); %#ok<ASGLU>
                 recreateReportFile = false; %#ok<NASGU>
-                if isempty(strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName))
-                    issue(end+1).description = sprintf('Report file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
-                    recreateReportFile = fixIssues; %#ok<NASGU>
-                else
-                    if ~exist(filename{1}, 'file')
-                        issue(end+1).description = sprintf('Report file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
-                        issue(end).issueType = 'missing file';
-                        recreateReportFile = fixIssues; %#ok<NASGU>
-                    end;
-                end;
-                
-                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, 'type', 'noiseDetection'); %#ok<ASGLU>
-                recreateNoiseFile = false; %#ok<NASGU>
-                if ~level1Study.isAvailable(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).noiseDetectionResultsFile)
-                    issue(end+1).description = sprintf('Noise detection parameter file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
-                    if fixIssues
-                        [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
-                        EEG = pop_loadset([name ext], sessionFolder);
-                        hdf5Filename = writeNoiseDetectionFile(obj, EEG, moreInfo.sessionTaskNumber , moreInfo.dataRecordingNumber, sessionFolder);
-                        obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).noiseDetectionResultsFile = hdf5Filename;
-                        issue(end).howItWasFixed = 'A new noisy detection file was created.';
-                    end;
-                else
-                    if ~exist(filename{1}, 'file')
-                        issue(end+1).description = sprintf('Noise detection parameter file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
-                        issue(end).issueType = 'missing file';
-                        if fixIssues
-                            if ~exist(EEG, 'var')
-                                [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
-                                EEG = pop_loadset([name ext], sessionFolder);
-                            end;
-
-                            levelDerivedFolder = fileparts(obj.levelDerivedXmlFilePath); %#ok<PROP>
-                            reportFileName = writeReportFile(obj, EEG, [name ext], moreInfo.sessionTaskNumber, levelDerivedFolder); %#ok<PROP>
-                            obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName = reportFileName;
-                            issue(end).howItWasFixed = 'A new report file was created.';
-                        end;
-                    end;
+                if level1Study.isAvailable(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName) && ~exist(filename{1}, 'file')
+                    issue(end+1).description = sprintf('Report file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
+                    issue(end).issueType = 'missing file';
                 end;
                 
                 clear EEG;
-                
             end;
             
             % display issues

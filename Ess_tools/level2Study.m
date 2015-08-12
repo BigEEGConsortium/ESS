@@ -641,7 +641,7 @@ classdef level2Study < levelStudy;
             end;
         end;
         
-        function [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
+        function [filename, outputDataRecordingUuid, taskLabel, level2DataRecordingNumber, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
             % [filename outputDataRecordingUuid taskLabel moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
             % Returns information about valid data recording UUIDs. For
             % example Level 2 EEG or event files.
@@ -662,6 +662,7 @@ classdef level2Study < levelStudy;
             
             taskLabel = {};
             filename = {};
+            level2DataRecordingNumber = [];
             moreInfo = struct;
             moreInfo.sessionNumber = {};
             moreInfo.dataRecordingNumber = [];
@@ -673,6 +674,7 @@ classdef level2Study < levelStudy;
                         
                         taskLabel{end+1} = level1TaskLabel{j};
                         outputDataRecordingUuid{end+1} = level1dataRecordingUuid{j};
+                        level2DataRecordingNumber(end+1) = i;
                         moreInfo.sessionNumber{end+1} = level1MoreInfo.sessionNumber{j};
                         moreInfo.dataRecordingNumber(end+1) = level1MoreInfo.dataRecordingNumber(j);
                         moreInfo.sessionTaskNumber(end+1) = sessionTaskNumber(j);
