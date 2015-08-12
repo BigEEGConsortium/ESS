@@ -1828,11 +1828,6 @@ classdef level1Study < levelStudy;
                 % session numbers must be an integer number
                 if isnan(sessionNumber) || round(sessionNumber) ~= sessionNumber || sessionNumber < 1
                     issue(end+1).description = sprintf('Sesion number in sessionTaskInfo(%d).sessionNumber is not a positive integer.', i); %#ok<AGROW>
-                    if fixIssues
-                        obj.sessionTaskInfo(i).sessionNumber = num2str(i);
-                        issue(end).howItWasFixed = sprintf('Session Number of ''%d'' assigned to the item.', i);
-                        numberOfFixedIssues = numberOfFixedIssues + 1;
-                    end;
                 else
                     sessionNumbers = [sessionNumbers sessionNumber];
                 end;

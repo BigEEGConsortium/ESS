@@ -1,6 +1,6 @@
 classdef levelStudy
     methods
-        function obj = level1Study(varargin)
+        function obj = levelStudy(varargin)
             add_ess_path_if_needed;
         end;
         
@@ -29,8 +29,7 @@ classdef levelStudy
             
             if ~exist(studyFolder, 'dir')
                 mkdir(studyFolder);
-            end;
-            
+            end;           
             
             
             if ismember(class(obj), {'level2Study', 'levelDerivedStudy'})
@@ -40,8 +39,17 @@ classdef levelStudy
                     studyDescription = obj.level1StudyObj.studyDescription;
                     studyShortDescription = obj.level1StudyObj.studyShortDescription;
                 else % We need to define a method for getting description out
-                    error('not implemented');
-                    %studyDescription = obj.parentStudyObj.studyDescription;
+                    parentObj = obj.parentStudyObj;
+                    while ~strcmp(class(parentObj),'level1Study')
+                        switch class(parentObj)
+                            case 'level2Study'
+                                parentObj = parentObj.level1StudyObj;
+                            case 'levelDerivedStudy'
+                                parentObj = parentObj.parentStudyObj;
+                        end;
+                    end;                    
+                    studyDescription = parentObj.studyDescription;
+                    studyShortDescription = parentObj.studyShortDescription;
                 end;
             else
                 titleFromESSContainer = obj.studyTitle;

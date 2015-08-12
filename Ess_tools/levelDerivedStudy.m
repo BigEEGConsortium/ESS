@@ -33,7 +33,7 @@ classdef levelDerivedStudy  < levelStudy;
             'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ',...
             'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
-        % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
+        % files containing EEGLAB datasets, each recording gets its own file
         % (we do not combine datasets).
         studyLevelDerivedFiles = struct('studyLevelDerivedFile', struct('studyLevelDerivedFileName', ' ', ...
             'dataRecordingUuid', ' ', 'reportFileName', ' ',...
@@ -288,8 +288,8 @@ classdef levelDerivedStudy  < levelStudy;
                      
             obj.levelDerivedFolder = inputOptions.levelDerivedFolder;
             
-            % start from index 1 if the first studyLevel2File is pactically empty,
-            % otherwise start after the last studyLevel2File
+            % start from index 1 if the first studyLevelDerivedFile is pactically empty,
+            % otherwise start after the last studyLevelDerivedFile
             if length(obj.studyLevelDerivedFiles.studyLevelDerivedFile) == 1 && isempty(strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(1).studyLevelDerivedFileName))
                 studyLevelDerivedFileCounter = 1;
             else
@@ -302,7 +302,7 @@ classdef levelDerivedStudy  < levelStudy;
                 recordingUuid = strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid);
                 if ~isempty(recordingUuid)
                     alreadyProcessedDataRecordingUuid{end+1} = recordingUuid;
-                    alreadyProcessedDataRecordingFileName{end+1} = strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevel2FileName);
+                    alreadyProcessedDataRecordingFileName{end+1} = strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName);
                 end;
             end;
             
@@ -686,7 +686,6 @@ classdef levelDerivedStudy  < levelStudy;
             
         end;
         
-
         function reportFileName = writeReportFile(obj, EEG, filenameInEss, sessionTaskNumber, levelDerivedFolder)
             reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
             relativeSessionFolder = ['.' filesep 'session' ...
@@ -696,88 +695,7 @@ classdef levelDerivedStudy  < levelStudy;
                 relativeSessionFolder, reportFileName);
         end;
         
-        function [STUDY, studyFilenameAndPath] = createEeglabStudy(obj, studyFolder, varargin)
-        % studyFilenameAndPath = createEeglabStudy(obj, studyFolder, {key, value pairs})
-	% Create an EEGLAB Study in a separate folder with its own EEGLAb dataset files.
-	%
-	%	Key			Value
-	%	'taskLabel'		: A cell array containing task labels to indicate the subset of files to be used.
-	%	'studyFileName'		: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
-	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
-	%	'makeTwoFilesPerSet'	: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
-	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
-	%	'dataQuality'		: {'Good' 'Suspect' 'Unusable'}	, Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale).
-	
-            inputOptions = arg_define(varargin, ...
-                arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
-                arg('studyFileName', '', [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'char'),...
-                arg('makeTwoFilesPerSet', true, [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'logical'),...
-                arg('dataQuality', {'Good'},{'Good' 'Suspect' 'Unusable'},'Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale)', 'type', 'cellstr') ...
-                );
-            
-            if ~exist(studyFolder, 'dir')
-                mkdir(studyFolder);
-            end;
-            
-            if isempty(inputOptions.studyFileName)
-                if isempty(obj.title)
-                    inputOptions.studyFileName = 'study_from_ess.study';
-                else
-                    nameForStudy = level1Study.removeForbiddenWindowsFilenameCharacters(obj.title(1:min(end,22)));
-                    nameForStudy = strtrim(nameForStudy);
-                    nameForStudy(nameForStudy == ' ') = '_';
-                    inputOptions.studyFileName = ['study_from_ess_' nameForStudy '.study'];
-                end;
-            end;
-            
-            [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, 'includeFolder', true, 'taskLabel', inputOptions.taskLabel, 'dataQuality', inputOptions.dataQuality); %#ok<ASGLU>
-            
-            fileSessionFolder = {};
-            clear ALLEEG;
-            counter = 1;
-            for i=1:length(filename)
-                fileSessionFolder{i} = [studyFolder filesep sessionNumber{i}];
-                if ~exist(fileSessionFolder{i}, 'dir')
-                    mkdir(fileSessionFolder{i});
-                end;
-                
-                [loadPath name ext] = fileparts(filename{i}); %#ok<NCOMMA>
-                if inputOptions.makeTwoFilesPerSet
-                    EEG = pop_loadset([name ext], loadPath);
-                    pop_saveset(EEG, 'filename', [name ext], 'filepath', fileSessionFolder{i}, 'savemode', 'twofiles', 'version', '7.3');
-                    clear EEG;
-                else
-                    copyfile(filename{i}, [fileSessionFolder{i} filesep name ext]);
-                end;
-                
-                EEG = pop_loadset('filename', [name ext], 'filepath', fileSessionFolder{i}, 'loadmode', 'info');
-                
-                if isempty(subject(i).labId)
-                    EEG.subject = ['subject_of_session_' sessionNumber{i}];
-                else
-                    EEG.subject = subject(i).labId;
-                end;
-                if ~isempty(subject(i).group)
-                    EEG.group = subject(i).group;
-                end;
-                
-                if counter == 1
-                    ALLEEG = EEG;
-                else
-                    ALLEEG(end+1) = EEG;
-                end;
-                clear EEG;
-                counter = counter + 1;
-            end;
-            
-            % make a study from all the files
-            pop_editoptions('option_storedisk', true); % keep only maximum one dataset data in memory
-            STUDY = pop_study([], ALLEEG, 'updatedat', 'on', 'name', obj.title, 'notes', obj.parentStudyObj.studyDescription, 'task', obj.parentStudyObj.studyShortDescription);
-            STUDY.filename = inputOptions.studyFileName;
-            STUDY.filepath = studyFolder;
-            STUDY = pop_savestudy( STUDY, ALLEEG, 'filename', inputOptions.studyFileName, 'filepath', studyFolder);
-            studyFilenameAndPath = [studyFolder filesep inputOptions.studyFileName];
-        end;
+  
     end;
      methods (Static)
          function levelObject = readLevelXML(levelXML)
