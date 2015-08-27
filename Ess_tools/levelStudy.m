@@ -374,6 +374,33 @@ classdef levelStudy
                 EEG = pop_chanedit(EEG, 'lookup', 'standard_1005.elc');
             end;
         end
+        
+        function runShellCommandOnFiles(obj, shellString, fileType)
+            % runShellCommandOnFiles(shellString, fileType)
+            % Lets you execute a shell (OS) command on each of the data
+            % recording, events (or both types) file.
+            % The shellString must contact a %s where the name of the file
+            % goes. For example 'chmod %s' will run 'chmod' command on each of the files.
+            %
+            % 'fileType' is a cell array with types of files to be included ('eeg', 'event', or both)
+            
+            if ischar(fileType)
+                fileType = {fileType};
+            end;
+            
+            if isempty(strfind(shellString, '%s'))
+                error('Input ''shellString'' is missing ''%s''.'); 
+            end;
+            
+            fullFile = {};
+            for i=1:length(fileType)
+                fullFile = cat(1, fullFile, obj.getFilename('filetype', fileType{i}));
+            end;
+            
+            for i=1:length(fullFile)
+                eval(sprintf(['!' shellString], fullFile{i}));
+            end;
+        end;
     end
     methods (Static)
         function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder, sessionNumber, recordingNumber)
