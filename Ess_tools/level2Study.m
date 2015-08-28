@@ -868,12 +868,12 @@ classdef level2Study < levelStudy;
         end;
         
         function reportFileName = writeReportFile(obj, EEG, filenameInEss, sessionTaskNumber, level2Folder)
+            summary = [level2Folder filesep 'summaryReport.html'];
             reportFileName = ['report_' filenameInEss(1:end-4) '.pdf'];
-            relativeSessionFolder = ['.' filesep 'session' ...
-                filesep obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber];
-            publishPrepPipelineReport(EEG, ...
-                level2Folder, 'summaryReport.html', ...
-                relativeSessionFolder, reportFileName);
+            session = [level2Folder filesep 'session' filesep ...
+                obj.level1StudyObj.sessionTaskInfo(sessionTaskNumber).sessionNumber ...
+                filesep reportFileName];
+            publishPrepReport(EEG, summary, session, 1, true);
         end;
         
         function obj = combinePartialLevel2Runs(obj, partFolders, finalFolder)
