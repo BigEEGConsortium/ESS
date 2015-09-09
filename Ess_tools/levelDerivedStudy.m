@@ -341,6 +341,7 @@ classdef levelDerivedStudy  < levelStudy;
                    eventDataRecordingUuidfrom = eventDataRecordingUuidfrom(id);
                    taskLabel = taskLabel(id);
                    subjectInfo = subjectInfo(id);
+                   sessionNumber = sessionNumber(id);
                end;
                
                for i=1:length(filenames)
