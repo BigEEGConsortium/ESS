@@ -378,7 +378,7 @@ classdef levelDerivedStudy  < levelStudy;
                        % create a UUID for the study level derived file and add
                        % it to the end of dataRecordingUuidHistory.
                        studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
-                       EEG.etc.dataRecordingUuidHistory = {EEG.etc.dataRecordingUuidHistory studyLevelDerivedFileUuid};
+                       EEG.etc.dataRecordingUuidHistory = [EEG.etc.dataRecordingUuidHistory {studyLevelDerivedFileUuid}];
                        
                        % write processed EEG data
                        sessionFolder = [inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i}];
