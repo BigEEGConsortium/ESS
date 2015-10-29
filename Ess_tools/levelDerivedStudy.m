@@ -345,55 +345,78 @@ classdef levelDerivedStudy  < levelStudy;
                end;
                
                for i=1:length(filenames)
-                   [path name ext] = fileparts(filenames{i});
-                   clear EEG;
-                   EEG = pop_loadset([name ext], path);
                    
-                   % for test only
-                   if inputOptions.forTest
-                       fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-                       EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/500));
+                   
+                   
+                   % do not processed data recordings that have already
+                   % been processed.
+                   [fileIsListedAsProcessed, id]= ismember(dataRecordingUuid{i}, alreadyProcessedDataRecordingUuid);
+                   
+                   % make sure not only the file is listed as processed,
+                   % but also it exists on disk (otherwise recompute).
+                   if fileIsListedAsProcessed
+                       levelDerivedFileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
+                       processedFileIsOnDisk = exist([inputOptions.levelDerivedFolder filesep sessionNumber{i} filesep levelDerivedFileNameOfProcessed],'file');
                    end;
                    
-                   EEG = callbackFunction(EEG, callbackArgumentList{:});
-                                     
-                   % create a UUID for the study level derived file and add
-                   % it to the end of dataRecordingUuidHistory.
-                   studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
-                   EEG.etc.dataRecordingUuidHistory = {EEG.etc.dataRecordingUuidHistory studyLevelDerivedFileUuid};
-                   
-                   % write processed EEG data
-                   sessionFolder = [inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i}];
-                   if ~exist(sessionFolder, 'dir')
-                       mkdir(sessionFolder);
+                   if ~inputOptions.forceRedo && fileIsListedAsProcessed && processedFileIsOnDisk
+                       fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', sessionNumber{i});
+                   else % file has not yet been processed
+                       
+                       [path name ext] = fileparts(filenames{i});
+                       clear EEG;
+                       EEG = pop_loadset([name ext], path);
+                       
+                       % for test only
+                       if inputOptions.forTest
+                           fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+                           EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/500));
+                       end;
+                       
+                       EEG = callbackFunction(EEG, callbackArgumentList{:});
+                       
+                       % create a UUID for the study level derived file and add
+                       % it to the end of dataRecordingUuidHistory.
+                       studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
+                       EEG.etc.dataRecordingUuidHistory = {EEG.etc.dataRecordingUuidHistory studyLevelDerivedFileUuid};
+                       
+                       % write processed EEG data
+                       sessionFolder = [inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i}];
+                       if ~exist(sessionFolder, 'dir')
+                           mkdir(sessionFolder);
+                       end;
+                       
+                       [path, name, ext] = fileparts(filenames{i}); %#ok<ASGLU>
+                       
+                       switch class(obj.parentStudyObj)
+                           case 'level2Study'
+                               nameWithoutLevelpart = name(length('eeg_studyLevel2_'):end);
+                           case 'levelDerivedStudy'
+                               nameWithoutLevelpart = name(length('eeg_studyLevelDerived_'):end);
+                       end;
+                       
+                       filenameInEss = ['eeg_studyLevelDerived_' inputOptions.filterLabel '_' nameWithoutLevelpart '.set'];
+                       pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
+                       
+                       % copy the event instance file from parent study
+                       [pathstr, name, ext] = fileparts(eventFilenames{i});
+                       copyfile(eventFilenames{i}, [sessionFolder filesep name ext]);
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile = [name ext];
+                       
+                       % place EEG filename and UUID in XML
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName = filenameInEss;
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid = dataRecordingUuid{i};
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).uuid = studyLevelDerivedFileUuid;
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName = 'NA';
+                       
+                       % ToDo: Get data quality from the filter.
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataQuality = 'Good';
+                       
+                       % write the XML file so it things break it could be
+                       % resumed.
+                       obj.write(obj.levelDerivedXmlFilePath);
                    end;
-                   
-                   [path, name, ext] = fileparts(filenames{i}); %#ok<ASGLU>
-                   
-                   switch class(obj.parentStudyObj)                       
-                       case 'level2Study'
-                           nameWithoutLevelpart = name(length('eeg_studyLevel2_'):end);
-                       case 'levelDerivedStudy'
-                           nameWithoutLevelpart = name(length('eeg_studyLevelDerived_'):end);
-                   end;
-                   
-                   filenameInEss = ['eeg_studyLevelDerived_' inputOptions.filterLabel '_' nameWithoutLevelpart '.set'];                                      
-                   pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
-
-                   % copy the event instance file from parent study
-                   [pathstr, name, ext] = fileparts(eventFilenames{i});
-                   copyfile(eventFilenames{i}, [sessionFolder filesep name ext]);                   
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile = [name ext];
-                   
-                   % place EEG filename and UUID in XML
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName = filenameInEss;
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid = dataRecordingUuid{i};
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).uuid = studyLevelDerivedFileUuid;
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName = 'NA';
-                   
-                   % ToDo: Get data quality from the filter.
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataQuality = 'Good';                                                         
-                end;
+               end;
                 
                 % write the filter
                 eeglabVersionString = ['EEGLAB ' eeg_getversion];
@@ -411,8 +434,6 @@ classdef levelDerivedStudy  < levelStudy;
                     obj.filters.filter.parameters.parameter(p).value = evalc('disp(parameterValue{p})');
                 end;
                 
-                obj.levelDerivedXmlFilePath = [inputOptions.levelDerivedFolder filesep 'studyLevelDerived_description.xml'];
-                obj.write(obj.levelDerivedXmlFilePath);
             else
                 error('Level-derived from Level 1 studies is not implemented yet');
             end;
