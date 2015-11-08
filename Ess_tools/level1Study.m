@@ -2403,7 +2403,7 @@ classdef level1Study < levelStudy;
             
             mkdir(essFolder);
             mkdir([essFolder filesep 'session']);
-            mkdir([essFolder filesep 'publications']);
+            mkdir([essFolder filesep 'additional_documentation']);
             
             % find the number of session from number of sessionTasks
             sessionNumber = {obj.sessionTaskInfo.sessionNumber};
