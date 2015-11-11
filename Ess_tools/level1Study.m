@@ -2174,7 +2174,7 @@ classdef level1Study < levelStudy;
              
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
-            if nargin < 4 % use the ESS convention folder location if none is provided.
+            if nargin < 4 || isempty(filePath) % use the ESS convention folder location if none is provided.
                 filePath = fullEssFolder;
                 
                 if ~exist(fullEssFolder, 'dir')
@@ -3217,5 +3217,15 @@ classdef level1Study < levelStudy;
             end;
         end
         
+        function recreateEventInstanceFiles(obj)
+            for sessionTaskNumber = 1:length(obj.sessionTaskInfo)
+                for dataRecordingNumber=1:length(obj.sessionTaskInfo(sessionTaskNumber).dataRecording)
+                    filePath = [];
+                    outputFileName = obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile;
+                    overwriteFile = true;
+                    obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile);
+                end;
+            end;            
+        end;
     end;
 end

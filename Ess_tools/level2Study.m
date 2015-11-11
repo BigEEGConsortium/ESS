@@ -712,7 +712,7 @@ classdef level2Study < levelStudy;
                 fixIssues = true;
             end;
             
-            issue = []; % a structure with description and howItWasFixed fields.
+            issue = struct('description', '', 'howItWasFixed', ''); % a structure with description and howItWasFixed fields.
             
             % make sure uuid and title are set
             if isempty(obj.uuid)
@@ -730,7 +730,9 @@ classdef level2Study < levelStudy;
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 
                 [dataRecordingFilename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'eeg'); %#ok<ASGLU>
-                if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName))
+                if isempty(moreInfo)
+                    issue(end+1).description = sprintf('Data recording UUID (value: ''%s''for Level 2 record %d is empty or invalid (does not exist in level 1).\n', obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, i);
+                elseif isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName))
                     issue(end+1).description = sprintf('Data recording file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                 else
                     if ~exist(dataRecordingFilename{1}, 'file')
@@ -740,10 +742,10 @@ classdef level2Study < levelStudy;
                 end;
                 
                 [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'event'); %#ok<ASGLU>
-                if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile))
+                if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile)) && ~isempty(moreInfo)
                     issue(end+1).description = sprintf('Event instance file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                 else
-                    if ~exist(filename{1}, 'file')
+                    if ~isempty(filename) && ~exist(filename{1}, 'file')
                         issue(end+1).description = sprintf('Event instance file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
                         issue(end).issueType = 'missing file';
                     end;
@@ -751,11 +753,11 @@ classdef level2Study < levelStudy;
                 
                 [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'report'); %#ok<ASGLU>
                 recreateReportFile = false; %#ok<NASGU>
-                if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).reportFileName))
+                if isempty(strtrim(obj.studyLevel2Files.studyLevel2File(i).reportFileName)) && ~isempty(moreInfo)
                     issue(end+1).description = sprintf('Report file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                     recreateReportFile = fixIssues; %#ok<NASGU>
                 else
-                    if ~exist(filename{1}, 'file')
+                    if ~isempty(filename) && ~exist(filename{1}, 'file')
                         issue(end+1).description = sprintf('Report file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
                         issue(end).issueType = 'missing file';
                         recreateReportFile = fixIssues; %#ok<NASGU>
@@ -764,7 +766,7 @@ classdef level2Study < levelStudy;
                 
                 [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, 'type', 'noiseDetection'); %#ok<ASGLU>
                 recreateNoiseFile = false; %#ok<NASGU>
-                if ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).noiseDetectionResultsFile)
+                if ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).noiseDetectionResultsFile) && ~isempty(moreInfo)
                     issue(end+1).description = sprintf('Noise detection parameter file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                     if fixIssues && exist(dataRecordingFilename{1}, 'file')
                         [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
@@ -774,7 +776,7 @@ classdef level2Study < levelStudy;
                         issue(end).howItWasFixed = 'A new noisy detection file was created.';
                     end;
                 else
-                    if ~exist(filename{1}, 'file')
+                    if ~isempty(filename) && ~exist(filename{1}, 'file')
                         issue(end+1).description = sprintf('Noise detection parameter file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
                         issue(end).issueType = 'missing file';
                         [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
@@ -793,7 +795,7 @@ classdef level2Study < levelStudy;
                 
                 clear EEG;                
                 
-                if ~isfield(obj.studyLevel2Files.studyLevel2File(i), 'uuid') || ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).uuid)
+                if ~isfield(obj.studyLevel2Files.studyLevel2File(i), 'uuid') || ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).uuid) && ~isempty(moreInfo)
                     issue(end+1).description = sprintf('Uuid for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                     if fixIssues                        
                         obj.studyLevel2Files.studyLevel2File(i).uuid = char(java.util.UUID.randomUUID);

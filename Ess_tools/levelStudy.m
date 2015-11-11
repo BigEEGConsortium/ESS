@@ -394,11 +394,11 @@ classdef levelStudy
             
             fullFile = {};
             for i=1:length(fileType)
-                fullFile = cat(1, fullFile, obj.getFilename('filetype', fileType{i}));
+                fullFile = cat(2, fullFile, obj.getFilename('filetype', fileType{i}));
             end;
             
             for i=1:length(fullFile)
-                eval(sprintf(['!' shellString], fullFile{i}));
+                eval(sprintf(['!' shellString], ['''' fullFile{i} '''']));
             end;
         end;
     end
