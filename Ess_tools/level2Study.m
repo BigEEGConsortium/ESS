@@ -308,8 +308,10 @@ classdef level2Study < levelStudy;
                         end;
                         
                         if ~inputOptions.forceRedo && fileIsListedAsProcessed && processedFileIsOnDisk
-                            fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
+                            fprintf('Skipping a data recording in session %s: it has already been processed (both listed in the XML and exists on disk).\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
                         else % file has not yet been processed
+                            fprintf('Processing a data recording in session %s.\n', obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
+                            
                             fileNameFromObj = obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).filename;
                             
                             % read data

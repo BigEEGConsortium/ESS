@@ -224,7 +224,7 @@ classdef levelDerivedStudy  < levelStudy;
             %
             % callbackAndParameters is a cell array containing these in the exact
             % order:
-            % (1) callback      a function handle that  accepts an EEG structure
+            % (1) callback      a function handle that accepts an EEG structure
             %                   as the first argument.
             % (2) either a cell array of ('key', value) pairs to be passed verbatim to 
             % the callback function, or a regular comma-separated list of ('key', value)
@@ -249,13 +249,12 @@ classdef levelDerivedStudy  < levelStudy;
             %	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
             % 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
             %
-
-    
+   
             
             inputOptions = arg_define(varargin, ...
                 arg('filterLabel', '','','Label of the filter function. Like ASR or ICA.', 'type', 'char'), ...
                 arg('filterDescription', '','','Description of the filter function. Could be long, e.g. a paragraph.', 'type', 'char'), ...
-                arg('levelDerivedFolder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
+                arg('levelDerivedFolder', '','','Level-derived study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
                 arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle'), ...
                 arg('forceRedo', false,[],'re-execute callback on recordings.', 'type', 'logical'), ...
                 arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
@@ -294,6 +293,7 @@ classdef levelDerivedStudy  < levelStudy;
             end;
                      
             obj.levelDerivedFolder = inputOptions.levelDerivedFolder;
+            obj.levelDerivedXmlFilePath = [obj.levelDerivedFolder filesep 'studyLevelDerived_description.xml'];
             
             % start from index 1 if the first studyLevelDerivedFile is pactically empty,
             % otherwise start after the last studyLevelDerivedFile
@@ -356,12 +356,13 @@ classdef levelDerivedStudy  < levelStudy;
                    % but also it exists on disk (otherwise recompute).
                    if fileIsListedAsProcessed
                        levelDerivedFileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
-                       processedFileIsOnDisk = exist([inputOptions.levelDerivedFolder filesep sessionNumber{i} filesep levelDerivedFileNameOfProcessed],'file');
+                       processedFileIsOnDisk = exist([inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i} filesep levelDerivedFileNameOfProcessed],'file');
                    end;
                    
                    if ~inputOptions.forceRedo && fileIsListedAsProcessed && processedFileIsOnDisk
-                       fprintf('Skipping session %s: it has already been processed (both listed in the XML and exists on disk).\n', sessionNumber{i});
+                       fprintf('Skipping a data recording in session %s: it has already been processed (both listed in the XML and exists on disk).\n', sessionNumber{i});
                    else % file has not yet been processed
+                       fprintf('Processing a data recording in session %s.\n', sessionNumber{i});
                        
                        [path name ext] = fileparts(filenames{i});
                        clear EEG;
