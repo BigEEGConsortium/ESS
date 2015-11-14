@@ -2,7 +2,7 @@ This folder has been arranges according to EEG Study Schema (ESS) Level 1 conven
 
 In this folder you will find the following:
 
-1. The 'publications' folder: includes experiment publications.
+1. The 'additional_documentation' folder: includes experiment publications, notes and other relevant documents regarding the study.
 
 2. The 'session' folder: includes numbered folders that correspond to each experiment session. Within these numbered folders you will find files that contain information regarding the channel locations and the EEG recordings for that session. Other files found may include, but are not limited to, video recordings, audio recordings, and PhaseSpace LED profiles for a particular session.
 
