@@ -2455,13 +2455,13 @@ classdef level1Study < levelStudy;
                             [path, name, ext] = fileparts(fileForFreePart);
                             
                             itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject));
+                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject));
                             
                             if itMatches
                                 filenameInEss = [name ext];
                             else
                                 filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
                                                         
                             if exist(fileFinalPath, 'file')
