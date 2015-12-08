@@ -2898,6 +2898,24 @@ classdef level1Study < levelStudy;
             obj.write;
             
         end;
+        
+        function recreateEventInstanceFiles(obj)
+            % re-create event instance files. Only works if the object is
+            % already a proper ESS container
+            if strcmpi(obj.isInEssContainer, 'No')
+                error('To use this function, the object must already be a proper ESS container.');
+            else
+                for sessionTaskNumber = 1:length(obj.sessionTaskInfo)
+                    for dataRecordingNumber=1:length(obj.sessionTaskInfo(sessionTaskNumber).dataRecording)
+                        filePath = [];
+                        outputFileName = obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile;
+                        overwriteFile = true;
+                        obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile);
+                    end;
+                end;
+            end;
+        end;
+        
     end;
     methods (Static)
         
@@ -3216,16 +3234,6 @@ classdef level1Study < levelStudy;
                 itIs = ~isempty(inputString) && ~strcmpi(inputString, 'NA') && ~strcmp(inputString, '-');
             end;
         end
-        
-        function recreateEventInstanceFiles(obj)
-            for sessionTaskNumber = 1:length(obj.sessionTaskInfo)
-                for dataRecordingNumber=1:length(obj.sessionTaskInfo(sessionTaskNumber).dataRecording)
-                    filePath = [];
-                    outputFileName = obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile;
-                    overwriteFile = true;
-                    obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile);
-                end;
-            end;            
-        end;
+                
     end;
 end
