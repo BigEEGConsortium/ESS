@@ -3234,6 +3234,6 @@ classdef level1Study < levelStudy;
                 itIs = ~isempty(inputString) && ~strcmpi(inputString, 'NA') && ~strcmp(inputString, '-');
             end;
         end
-                
+                 
     end;
 end
