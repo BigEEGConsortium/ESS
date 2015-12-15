@@ -62,12 +62,13 @@ font-size= 7pt
 					<xsl:for-each select="studyLevel1">
 						<tr>
 							<h2>
-								<xsl:value-of select="title"/> - ESS Level 1
+								<xsl:value-of select="title"/>
 							</h2>
 						</tr>
 					</xsl:for-each>
 				</h2>
-				<h3>Short Description:</h3>
+				<p>This study is an <a href="http://www.eegstudy.org/#level1">ESS Standard Data Level 1 container</a>. This means that it contains raw, unprocessed EEG data (and possibly other modalities) arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.</p>
+				<h3>Short Description</h3>
 				<p>
 					<xsl:for-each select="studyLevel1">
 						<tr>
@@ -77,7 +78,7 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</p>
-				<h3>Full Description:</h3>
+				<h3>Full Description</h3>
 				<p>
 					<xsl:for-each select="studyLevel1">
 						<tr>
@@ -87,7 +88,7 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</p>				
-				<h3>Summary:</h3>
+				<h3>Summary</h3>
 			
 				<table>
 					<xsl:for-each select="studyLevel1/summary">
@@ -188,7 +189,7 @@ font-size= 7pt
 				</table>
 				<xsl:choose>
 				<xsl:when test="studyLevel1/publications/publication/citation != ''">
-				<h3>Publications:</h3>
+				<h3>Publications</h3>
 				<table>
 					<xsl:for-each select="studyLevel1/publications/publication">
 						<tr>
@@ -221,7 +222,7 @@ font-size= 7pt
 				</table>
 				</xsl:when>
 				</xsl:choose>
-				<h3>Experimenters:</h3>
+				<h3>Experimenters</h3>
 				<table>
 					<xsl:for-each select="studyLevel1/experimenters/experimenter">
 						<tr>
@@ -231,7 +232,7 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</table>
-				<h3>Table of Session Information:</h3>
+				<h3>Session Information</h3>
 				<table width="1300" height="800" border="1" class="tablebody">
 					<tr>
 						<td rowspan="2" align="center" bgcolor="#CCCCCC">
@@ -437,7 +438,7 @@ font-size= 7pt
 				</xsl:when>
 				
 				</xsl:choose>
-				<h3>Table of Event Codes:</h3>
+				<h3>Event Codes</h3>
 				<table width="770"  border="1" class="tablebody">
 					<tr>
 						<td rowspan="2" align="center" bgcolor="#CCCCCC">
@@ -480,7 +481,7 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</table>
-				<h3>Contact:</h3>
+				<h3>Contact</h3>
 				<table>
 					<xsl:for-each select="studyLevel1/contact">
 						<tr>
@@ -506,7 +507,7 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</table>
-				<h3>License Agreement:</h3>
+				<h3>License Agreement</h3>
 				<xsl:for-each select="studyLevel1">
 					<tr>
 						<td>
