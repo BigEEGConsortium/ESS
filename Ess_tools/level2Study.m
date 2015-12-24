@@ -643,7 +643,7 @@ classdef level2Study < levelStudy;
             end;
         end;
         
-        function [filename, outputDataRecordingUuid, taskLabel, level2DataRecordingNumber, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
+        function [filename, outputDataRecordingUuid, taskLabel, moreInfo, level2DataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
             % [filename outputDataRecordingUuid taskLabel moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
             % Returns information about valid data recording UUIDs. For
             % example Level 2 EEG or event files.
