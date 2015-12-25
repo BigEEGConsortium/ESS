@@ -1,0 +1,19 @@
+%% LevelDerived creation
+level2Folder = [fileparts(which('level1Study')) filesep 'unit_test' filesep 'dummy_level_2'];
+
+obj = levelDerivedStudy('parentStudyXmlFilePath', level2Folder); % this load the data but does not make a Level-derived 2 container yet (Obj it is still mostly empty).
+sameFunction = @(x,y) x;
+callbackAndParameters = {sameFunction, 'cutoff', 5};
+
+temporaryDir = [tempdir filesep 'dummy_level_derived'];
+rmdir(temporaryDir, 's');
+
+fprintf('\n--------------------------------------\n');
+fprintf('Output Level-drived folder: %s\n', temporaryDir);
+fprintf('--------------------------------------\n\n');
+
+% this command starts applying the ASR function to all the recordings and makes a fully-realized Level-derived object.
+obj = obj.createLevelDerivedStudy(callbackAndParameters, ...
+    'levelDerivedFolder', temporaryDir, 'filterLabel', 'same', 'filterDescription', 'no changhe');
+
+obj.validate;

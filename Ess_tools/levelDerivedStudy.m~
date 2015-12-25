@@ -97,8 +97,8 @@ classdef levelDerivedStudy  < levelStudy;
                     inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'];
                     end;
                     
-                    if exist([inputOptions.parentStudyXmlFilePath filesep 'studyLevel2_description.xml'], 'file')
-                        inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'studyLevel2_description.xml'];
+                    if exist([inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'], 'file')
+                        inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'];
                     end;
             end;
             
@@ -384,16 +384,7 @@ classdef levelDerivedStudy  < levelStudy;
                        % create a UUID for the study level derived file and add
                        % it to the end of dataRecordingUuidHistory.
                        studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
-                       
-                       if isfield(EEG, 'etc') && isempty(EEG.etc)
-                           EEG.etc = struct;
-                       end;
-                       
-                       if isfield(EEG.etc, 'dataRecordingUuidHistory')
-                           EEG.etc.dataRecordingUuidHistory = [EEG.etc.dataRecordingUuidHistory {studyLevelDerivedFileUuid}];
-                       else
-                           EEG.etc.dataRecordingUuidHistory = {studyLevelDerivedFileUuid};
-                       end;
+                       EEG.etc.dataRecordingUuidHistory = [EEG.etc.dataRecordingUuidHistory {studyLevelDerivedFileUuid}];
                        
                        % write processed EEG data
                        sessionFolder = [inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i}];
@@ -541,7 +532,7 @@ classdef levelDerivedStudy  < levelStudy;
                 arg('filetype', 'eeg',{'eeg' , 'event', 'noiseDetection' , 'report'},'Return EEG or event files.', 'type', 'char')...
                 );
             
-            [dummy1, level1dataRecordingUuid, level1TaskLabel, parentLevelMoreInfo, sessionTaskNumber] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
+            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, parentLevelMoreInfo] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
             
             taskLabel = {};
             filename = {};

@@ -5,4 +5,5 @@ if ~(exist('uniqe_file_to_test_ESS_path', 'file') && exist('is_impure_expression
     thisClassFilenameAndPath = mfilename('fullpath');
     pathstr = fileparts(thisClassFilenameAndPath);
     addpath(genpath([pathstr filesep 'dependency']));
+    addpath([pathstr filesep 'unit_test']);
 end;
