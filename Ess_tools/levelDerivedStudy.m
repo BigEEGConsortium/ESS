@@ -242,8 +242,9 @@ classdef levelDerivedStudy  < levelStudy;
             %   callbackAndParameters = {@clean_asr, 'cutoff', 5};
             %	
             %   % this command starts applying the ASR function to all the recordings and makes a fully-realized Level-derived object.
-            %   obj = obj.createLevelDerivedStudy('asr',callbackAndParameters, ...
-            %        'levelDerivedFolder', 'C:\Users\You\Awesome_EEG_study\level_derived_asr\');                
+            %   obj = obj.createLevelDerivedStudy(callbackAndParameters, ...
+            %        'levelDerivedFolder', 'C:\Users\You\Awesome_EEG_study\level_derived_asr\', ...
+            %        'filterLabel', 'ASR', 'filterDescription', 'Artifact Space Reconstruction method for data cleaning');                
             %
             % Options:
             %
@@ -252,7 +253,7 @@ classdef levelDerivedStudy  < levelStudy;
             % 	'levelDerivedFolder'	: String,  Level 2 study folder. This folder will contain with processed data files, XML..
             % 	'params'			    : Cell array, Input parameters to for the processing pipeline.
             %	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
-            % 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
+            % 	'forTest'			    : Logical, For Debugging ONLY. Process a small data sample for test.
             %
    
             
