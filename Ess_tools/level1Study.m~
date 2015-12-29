@@ -3236,7 +3236,7 @@ classdef level1Study < levelStudy;
         end
          
         function modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
-        % modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
+        % modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, EEGDeviceName)
         % 
         % Creates a modality array, used as part of level 1 RecordingParameterSet from channel
         % types, labels, etc.
