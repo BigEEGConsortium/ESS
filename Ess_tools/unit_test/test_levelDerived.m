@@ -6,7 +6,9 @@ sameFunction = @(x,y) x;
 callbackAndParameters = {sameFunction, 'cutoff', 5};
 
 temporaryDir = [tempdir filesep 'dummy_level_derived'];
-rmdir(temporaryDir, 's');
+if exist(temporaryDir, 'file')
+    rmdir(temporaryDir, 's');
+end;
 
 fprintf('\n--------------------------------------\n');
 fprintf('Output Level-drived folder: %s\n', temporaryDir);
@@ -17,3 +19,18 @@ obj = obj.createLevelDerivedStudy(callbackAndParameters, ...
     'levelDerivedFolder', temporaryDir, 'filterLabel', 'same', 'filterDescription', 'no changhe');
 
 obj.validate;
+
+%% LevelDerived combination of partial runs
+
+partialLevelDerivedFolder1 = [fileparts(which('level1Study')) filesep 'unit_test' filesep 'dummy_level_derived_partial_1'];
+partialLevelDerivedFolder2 = [fileparts(which('level1Study')) filesep 'unit_test' filesep 'dummy_level_derived_partial_2'];
+combinedDirectory = [tempdir filesep 'dummy_level_derived_combined'];
+if exist(combinedDirectory, 'file')
+    rmdir(combinedDirectory, 's');
+end;
+
+obj = levelDerivedStudy;
+obj = obj.combinePartialRuns({partialLevelDerivedFolder1 partialLevelDerivedFolder2}, combinedDirectory);
+
+[obj issues] = obj.validate;
+assert(isempty(issues));

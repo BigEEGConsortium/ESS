@@ -16,20 +16,20 @@ classdef levelStudy
             %				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
             %	'dataQuality'		: {'Good' 'Suspect' 'Unusable'}	, Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale).
             %                         this is only supported in Level 2 and Derived containers and will be ignored for Level 1 (since data is raw)
-          	% 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
-		
-
+            % 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
+            
+            
             inputOptions = arg_define(varargin, ...
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('studyFileName', '', [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'char'),...
                 arg('makeTwoFilesPerSet', true, [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'logical'),...
                 arg('dataQuality', {'Good'},{'Good' 'Suspect' 'Unusable'},'Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale)', 'type', 'cellstr'), ...
-                arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...    
-            );
+                arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
+                );
             
             if ~exist(studyFolder, 'dir')
                 mkdir(studyFolder);
-            end;           
+            end;
             
             
             if ismember(class(obj), {'level2Study', 'levelDerivedStudy'})
@@ -47,7 +47,7 @@ classdef levelStudy
                             case 'levelDerivedStudy'
                                 parentObj = parentObj.parentStudyObj;
                         end;
-                    end;                    
+                    end;
                     studyDescription = parentObj.studyDescription;
                     studyShortDescription = parentObj.studyShortDescription;
                 end;
@@ -84,7 +84,7 @@ classdef levelStudy
                 end;
                 
                 [loadPath name ext] = fileparts(filename{i}); %#ok<NCOMMA>
-                if ismember(class(obj), {'level2Study', 'levelDerivedStudy'})   % level 2 and derived                  
+                if ismember(class(obj), {'level2Study', 'levelDerivedStudy'})   % level 2 and derived
                     if inputOptions.makeTwoFilesPerSet
                         EEG = pop_loadset([name ext], loadPath);
                         pop_saveset(EEG, 'filename', [name ext], 'filepath', fileSessionFolder{i}, 'savemode', 'twofiles', 'version', '7.3');
@@ -107,7 +107,7 @@ classdef levelStudy
                         end;
                     else
                         rootFolder = obj.rootURI;
-                    end;                   
+                    end;
                     
                     fileFinalPath = filename{i};
                     currentTask = taskLabel{i};
@@ -389,7 +389,7 @@ classdef levelStudy
             end;
             
             if isempty(strfind(shellString, '%s'))
-                error('Input ''shellString'' is missing ''%s''.'); 
+                error('Input ''shellString'' is missing ''%s''.');
             end;
             
             fullFile = {};
@@ -400,6 +400,108 @@ classdef levelStudy
             for i=1:length(fullFile)
                 eval(sprintf(['!' shellString], ['''' fullFile{i} '''']));
             end;
+        end;
+        
+        
+        function obj = combinePartialRuns(obj, partFolders, finalFolder)
+            % obj = combinePartialRuns(obj, partFolders, finalFolder)
+            %
+            % Combine multiple partial runs of Level2 or LevelDerived (
+            % functions 'createLevel2Study', and 'createLevelDerivedStudy')
+            % with a subset of sessions (e.g. to accelerate computation)
+            % , into one container (object). Files are copied from partial-run
+            % folders to the final folder. The function also performs valiation 
+            % at the end.
+            %
+            % Inputs:
+            % partFolders         : cell array of string of folders
+            %                       containing partial runs
+            % finalFolder         : the folder in which the combined container 
+            %                       to be placed.
+            %
+            % Outout:
+            % obj                 : the object representing the final,
+            %                       combined ESS container.
+            %
+            % Example (for Level 2):
+            % 
+            % >> obj = level2Study;
+            % >> partFolders = {'c:\...\part1\' 'c:\...\part2\' .. };
+            % >> finalFolder = 'c:\...\final\'
+            % >> obj = obj.combinePartialRuns(partFolders, finalFolder);
+            %
+            %
+            % Example (for Level-Derived):
+            % 
+            % >> obj = levelDerivedStudy;
+            % >> partFolders = {'c:\...\part1\' 'c:\...\part2\' .. };
+            % >> finalFolder = 'c:\...\final\'
+            % >> obj = obj.combinePartialRuns(partFolders, finalFolder);
+            
+            switch class(obj)
+                case 'level1Study'
+                    error('This fynction currently works only for levels 2 or derived');
+                case 'level2Study'
+                    partObj = level2Study;
+                    for i =1:length(partFolders)
+                        partObj(i) = level2Study('level2XmlFilePath', [partFolders{i} filesep 'studyLevel2_description.xml']);
+                    end;
+                    
+                    filesFieldName = 'studyLevel2Files';
+                    fileFieldName = 'studyLevel2File';
+                    
+                case 'levelDerivedStudy'
+                    partObj = levelDerivedStudy;
+                    for i =1:length(partFolders)
+                        partObj(i) = levelDerivedStudy('levelDerivedXmlFilePath', [partFolders{i} filesep 'studyLevelDerived_description.xml']);
+                    end;
+                    
+                    filesFieldName = 'studyLevelDerivedFiles';
+                    fileFieldName = 'studyLevelDerivedFile';
+            end;
+            
+            combinedObj = partObj(1);
+            allFilters = partObj(1).filters.filter;
+            for i =2:length(partObj)
+                combinedObj.(filesFieldName).(fileFieldName) = cat(1, combinedObj.(filesFieldName).(fileFieldName), partObj(i).(filesFieldName).(fileFieldName));
+                allFilters = cat(1, allFilters,  partObj(i).filters.filter);
+            end;
+            
+            % ToDo: order sessions
+            
+            finalFilters = uniqe_struct(allFilters);
+            combinedObj.filters.filter = finalFilters;
+            
+            % copy files
+            mkdir(finalFolder);
+            copyfile(partFolders{1}, finalFolder);
+            for i = 2:length(partObj)
+                copyfile([partFolders{i} filesep 'session'], [finalFolder filesep 'session']);
+            end;
+            
+            % if Level2, combine reports
+            if isa(obj, 'level2Study')
+                combinedText = '';
+                for i =1:length(partFolders)
+                    fid =  fopen([partFolders{i} filesep 'summaryReport.html']);
+                    text = fread(fid, Inf, 'char=>char');
+                    combinedText = [combinedText; text];
+                    fclose(fid);
+                end;
+                fid =  fopen([finalFolder filesep 'summaryReport.html'], 'w');
+                fprintf(fid, '%s', combinedText);
+                fclose(fid);
+            end;
+            
+            switch class(obj)
+                case 'level2Study'
+                    combinedObj = combinedObj.write([finalFolder filesep 'studyLevel2_description.xml']);
+                case 'levelDerivedStudy'
+                    combinedObj = combinedObj.write([finalFolder filesep 'studyLevelDerived_description.xml']);
+            end;
+            
+            combinedObj = combinedObj.validate;
+            obj = combinedObj;
         end;
     end
     methods (Static)

@@ -702,11 +702,9 @@ classdef levelDerivedStudy  < levelStudy;
             publishPrepPipelineReport(EEG, ...
                 levelDerivedFolder, 'summaryReport.html', ...
                 relativeSessionFolder, reportFileName);
-        end;
-        
-  
+        end;       
     end;
-     methods (Static)
+    methods (Static)
          function levelObject = readLevelXML(levelXML)
               xmlAsStructure = xml2struct(levelXML);
                 

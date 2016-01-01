@@ -879,71 +879,7 @@ classdef level2Study < levelStudy;
                 filesep reportFileName];
             publishPrepReport(EEG, summary, session, 1, true);
         end;
-        
-        function obj = combinePartialLevel2Runs(obj, partFolders, finalFolder)
-            % obj = combinePartialLevel2Runs(obj, partFolders, finalFolder)
-            % Combines multiple partial runs of createLevel2Study(), each
-            % with a subset of sessions (e.g. to accelerate computation)
-            % , into one level 2 object. Files are copied from partial-run
-            % folders to the final folder. The function also performs a level 2 
-            % valiation at the end.
-            %
-            % Inputs:
-            % partFolders         : cell array of string of Level 2 folders
-            %                       containing partial runs
-            % finalFolder         : the folder in which the combined Level
-            %                       2 container to be placed.
-            %
-            % Outout:
-            % obj                 : the object representing the final,
-            %                       combined, Level 2 container.
-            %
-            % Example:
-            % >> obj = level2Study;
-            % >> partFolders = {'c:\...\part1\' 'c:\...\part2\' .. };
-            % >> finalFolder = 'c:\...\final\'
-            % >> obj = obj.combinePartialLevel2Runs(partFolders, finalFolder);
-            
-            partObj = level2Study;
-            for i =1:length(partFolders)
-                partObj(i) = level2Study('level2XmlFilePath', [partFolders{i} filesep 'studyLevel2_description.xml']);
-            end;
-            
-            combinedObj = partObj(1);
-            allFilters = partObj(1).filters.filter;
-            for i =2:length(partObj)
-                combinedObj.studyLevel2Files.studyLevel2File = cat(1, combinedObj.studyLevel2Files.studyLevel2File, partObj(i).studyLevel2Files.studyLevel2File);
-                allFilters = cat(1, allFilters,  partObj(i).filters.filter);
-            end;
-            
-            % ToDo: order sessions
-            
-            finalFilters = uniqe_struct(allFilters);
-            combinedObj.filters.filter = finalFilters;
-            
-            % copy files
-            mkdir(finalFolder);
-            copyfile(partFolders{1}, finalFolder);
-            for i = 2:length(partObj)
-                copyfile([partFolders{i} filesep 'session'], [finalFolder filesep 'session']);
-            end;
-            
-            % combine reports
-            combinedText = '';
-            for i =1:length(partFolders)
-                fid =  fopen([partFolders{i} filesep 'summaryReport.html']);
-                text = fread(fid, Inf, 'char=>char');
-                combinedText = [combinedText; text];
-                fclose(fid);
-            end;
-            fid =  fopen([finalFolder filesep 'summaryReport.html'], 'w');
-            fprintf(fid, '%s', combinedText);
-            fclose(fid);
-            
-            combinedObj = combinedObj.write([finalFolder filesep 'studyLevel2_description.xml']);
-            combinedObj = combinedObj.validate;
-            obj = combinedObj;
-        end;
+                
     end;
 
 
