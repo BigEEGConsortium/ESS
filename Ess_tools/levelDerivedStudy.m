@@ -84,7 +84,7 @@ classdef levelDerivedStudy  < levelStudy;
         
             obj = obj@levelStudy;           
             
-            inputOptions = arg_define(0,varargin, ...
+            inputOptions = arg_define([0 1],varargin, ...
                 arg('levelDerivedXmlFilePath', '','','ESS Level-derived XML Filename.', 'type', 'char'), ...
                 arg('parentStudyXmlFilePath', '','','Parent study (in ESS) XML Filename.', 'type', 'char'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr') ...
@@ -99,6 +99,10 @@ classdef levelDerivedStudy  < levelStudy;
                     
                     if exist([inputOptions.parentStudyXmlFilePath filesep 'studyLevel2_description.xml'], 'file')
                         inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'studyLevel2_description.xml'];
+                    end;
+                    
+                    if exist([inputOptions.parentStudyXmlFilePath filesep 'studyLevelDerived_description.xml'], 'file')
+                        inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'studyLevelDerived_description.xml'];
                     end;
             end;
             
@@ -268,8 +272,8 @@ classdef levelDerivedStudy  < levelStudy;
             
             if ~ischar(inputOptions.filterLabel)
                 error('Filter label must be a string');
-            elseif length(inputOptions.filterLabel) > 10
-                error('Filter label is too long. It ust be 10 characters or less');
+            elseif length(inputOptions.filterLabel) > 20
+                error('Filter label is too long. It must be 10 characters or less');
             elseif isempty(strtrim(inputOptions.filterLabel))
                 error('You must provide a non-empty filter label.');
             end;
@@ -525,8 +529,8 @@ classdef levelDerivedStudy  < levelStudy;
             end;
         end;
         
-        function [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
-            % [filename outputDataRecordingUuid taskLabel moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
+        function [filename, outputDataRecordingUuid, taskLabel, moreInfo, levelDerivedDataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
+            % [filename outputDataRecordingUuid taskLabel moreInfo levelDerivedDataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
             % Returns information about valid data recording UUIDs. For
             % example Level 2 EEG or event files.
             % key, value pairs:
@@ -547,6 +551,7 @@ classdef levelDerivedStudy  < levelStudy;
             taskLabel = {};
             filename = {};
             moreInfo = struct;
+            levelDerivedDataRecordingNumber = [];
             moreInfo.sessionNumber = {};
             moreInfo.dataRecordingNumber = [];
             moreInfo.sessionTaskNumber = [];
@@ -557,6 +562,7 @@ classdef levelDerivedStudy  < levelStudy;
                         
                         taskLabel{end+1} = level1TaskLabel{j};
                         outputDataRecordingUuid{end+1} = level1dataRecordingUuid{j};
+                        levelDerivedDataRecordingNumber(end+1) = i;
                         moreInfo.sessionNumber{end+1} = parentLevelMoreInfo.sessionNumber{j};
                         moreInfo.dataRecordingNumber(end+1) = parentLevelMoreInfo.dataRecordingNumber(j);
                         moreInfo.sessionTaskNumber(end+1) = sessionTaskNumber(j);
