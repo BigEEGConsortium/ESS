@@ -1,6 +1,8 @@
 ESS
 ===
 
+[![Join the chat at https://gitter.im/BigEEGConsortium/ESS](https://badges.gitter.im/BigEEGConsortium/ESS.svg)](https://gitter.im/BigEEGConsortium/ESS?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 EEG Study Schema (ESS) and related tools. A packaging schema and convention for sending around EEG studies and processed files.
 See http://www.eegstudy.org for more information.
 
