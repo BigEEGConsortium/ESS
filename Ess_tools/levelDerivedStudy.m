@@ -1,4 +1,4 @@
-classdef levelDerivedStudy
+classdef levelDerivedStudy  < levelStudy;
     % creates a Level-derived object, from a Level 1 or 2 container
         
     % Be careful! any properties placed below will be written in the XML
@@ -29,11 +29,11 @@ classdef levelDerivedStudy
         % Here we are assuming a number of filters to have been executed on the data,
         % in the order specified in executionOrder (multiple numbers here mean multiple filter
         % runs.
-        filters = struct('filter', struct('filterLabel', ' ', 'executionOrder', ' ', ...
+        filters = struct('filter', struct('filterLabel', ' ', 'filterDescription', ' ', 'executionOrder', ' ', ...
             'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ',...
             'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
-        % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
+        % files containing EEGLAB datasets, each recording gets its own file
         % (we do not combine datasets).
         studyLevelDerivedFiles = struct('studyLevelDerivedFile', struct('studyLevelDerivedFileName', ' ', ...
             'dataRecordingUuid', ' ', 'reportFileName', ' ',...
@@ -82,17 +82,9 @@ classdef levelDerivedStudy
     methods
         function obj = levelDerivedStudy(varargin)
         
-            % if dependent files are not in the path, add all file/folders under
-            % dependency to Matlab path.
-            if ~(exist('arg', 'file') && exist('is_impure_expression', 'file') &&...
-                    exist('is_impure_expression', 'file') && exist('PropertyEditor', 'file') && exist('hlp_struct2varargin', 'file'))
-                thisClassFilenameAndPath = mfilename('fullpath');
-                pathstr = fileparts(thisClassFilenameAndPath);
-                addpath(genpath([pathstr filesep 'dependency']));
-            end;
+            obj = obj@levelStudy;           
             
-            
-            inputOptions = arg_define(0,varargin, ...
+            inputOptions = arg_define([0 1],varargin, ...
                 arg('levelDerivedXmlFilePath', '','','ESS Level-derived XML Filename.', 'type', 'char'), ...
                 arg('parentStudyXmlFilePath', '','','Parent study (in ESS) XML Filename.', 'type', 'char'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr') ...
@@ -101,8 +93,17 @@ classdef levelDerivedStudy
             % if the folder 'container' is instead of filename provided, use the default
             % 'study_description.xml' file.
             if exist(inputOptions.parentStudyXmlFilePath, 'dir')...
-                    && exist([inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'], 'file')
-                inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'];
+                    if exist([inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'], 'file')
+                    inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'study_description.xml'];
+                    end;
+                    
+                    if exist([inputOptions.parentStudyXmlFilePath filesep 'studyLevel2_description.xml'], 'file')
+                        inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'studyLevel2_description.xml'];
+                    end;
+                    
+                    if exist([inputOptions.parentStudyXmlFilePath filesep 'studyLevelDerived_description.xml'], 'file')
+                        inputOptions.parentStudyXmlFilePath = [inputOptions.parentStudyXmlFilePath filesep 'studyLevelDerived_description.xml'];
+                    end;
             end;
             
             if exist(inputOptions.levelDerivedXmlFilePath, 'dir')...
@@ -232,7 +233,7 @@ classdef levelDerivedStudy
             %
             % callbackAndParameters is a cell array containing these in the exact
             % order:
-            % (1) callback      a function handle that  accepts an EEG structure
+            % (1) callback      a function handle that accepts an EEG structure
             %                   as the first argument.
             % (2) either a cell array of ('key', value) pairs to be passed verbatim to 
             % the callback function, or a regular comma-separated list of ('key', value)
@@ -241,12 +242,13 @@ classdef levelDerivedStudy
             %
             % Example:
             %
-            %	obj = levelDerivedStudy('parentStudyXmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this load the data but does not make a Level-derived 2 container yet (Obj it is still mostly empty).
+            %   obj = levelDerivedStudy('parentStudyXmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this load the data but does not make a Level-derived 2 container yet (Obj it is still mostly empty).
             %   callbackAndParameters = {@clean_asr, 'cutoff', 5};
             %	
             %   % this command starts applying the ASR function to all the recordings and makes a fully-realized Level-derived object.
-            %   obj = obj.createLevelDerivedStudy('asr',callbackAndParameters, ...
-            %        'levelDerivedFolder', 'C:\Users\You\Awesome_EEG_study\level_derived_asr\');                
+            %   obj = obj.createLevelDerivedStudy(callbackAndParameters, ...
+            %        'levelDerivedFolder', 'C:\Users\You\Awesome_EEG_study\level_derived_asr\', ...
+            %        'filterLabel', 'ASR', 'filterDescription', 'Artifact Space Reconstruction method for data cleaning');                
             %
             % Options:
             %
@@ -255,23 +257,29 @@ classdef levelDerivedStudy
             % 	'levelDerivedFolder'	: String,  Level 2 study folder. This folder will contain with processed data files, XML..
             % 	'params'			    : Cell array, Input parameters to for the processing pipeline.
             %	'sessionSubset' 		: Integer Array, Subset of sessions numbers (empty = all).
-            % 	'forTest'			: Logical, For Debugging ONLY. Process a small data sample for test.
+            % 	'forTest'			    : Logical, For Debugging ONLY. Process a small data sample for test.
             %
-
-    
-    
-    inputOptions = arg_define(varargin, ...
-        arg('filterLabel', '','','Label of the filter function. Like ASR or ICA.', 'type', 'char'), ...
-        arg('levelDerivedFolder', '','','Level 2 study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
-        arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle'), ...
-        arg('forceRedo', false,[],'re-execute callback on recordings.', 'type', 'logical'), ...
-        arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
-        );
+   
+            
+            inputOptions = arg_define(varargin, ...
+                arg('filterLabel', '','','Label of the filter function. Like ASR or ICA.', 'type', 'char'), ...
+                arg('filterDescription', '','','Description of the filter function. Could be long, e.g. a paragraph.', 'type', 'char'), ...
+                arg('levelDerivedFolder', '','','Level-derived study folder. This folder will contain with processed data files, XML..', 'type', 'char'), ...
+                arg('sessionSubset', [],[],'Subset of sessions numbers (empty = all).', 'type', 'denserealsingle'), ...
+                arg('forceRedo', false,[],'re-execute callback on recordings.', 'type', 'logical'), ...
+                arg('forTest', false,[],'Process a small data sample for test.', 'type', 'logical') ...
+                );
             
             if ~ischar(inputOptions.filterLabel)
                 error('Filter label must be a string');
-            elseif length(inputOptions.filterLabel) > 10
-                error('Filter label is too long. It ust be 10 characters or less');
+            elseif length(inputOptions.filterLabel) > 20
+                error('Filter label is too long. It must be 10 characters or less');
+            elseif isempty(strtrim(inputOptions.filterLabel))
+                error('You must provide a non-empty filter label.');
+            end;
+            
+            if isempty(strtrim(inputOptions.filterDescription))
+                error('You must provide a non-empty filter description.');
             end;
         
             if ~iscell(callbackAndParameters)
@@ -293,12 +301,12 @@ classdef levelDerivedStudy
                 parameterName = callbackAndParameters(2:2:end);
                 parameterValue = callbackArgumentList;
             end;
-            
-            
+                     
             obj.levelDerivedFolder = inputOptions.levelDerivedFolder;
+            obj.levelDerivedXmlFilePath = [obj.levelDerivedFolder filesep 'studyLevelDerived_description.xml'];
             
-            % start from index 1 if the first studyLevel2File is pactically empty,
-            % otherwise start after the last studyLevel2File
+            % start from index 1 if the first studyLevelDerivedFile is pactically empty,
+            % otherwise start after the last studyLevelDerivedFile
             if length(obj.studyLevelDerivedFiles.studyLevelDerivedFile) == 1 && isempty(strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(1).studyLevelDerivedFileName))
                 studyLevelDerivedFileCounter = 1;
             else
@@ -311,7 +319,7 @@ classdef levelDerivedStudy
                 recordingUuid = strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid);
                 if ~isempty(recordingUuid)
                     alreadyProcessedDataRecordingUuid{end+1} = recordingUuid;
-                    alreadyProcessedDataRecordingFileName{end+1} = strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevel2FileName);
+                    alreadyProcessedDataRecordingFileName{end+1} = strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName);
                 end;
             end;
             
@@ -327,7 +335,7 @@ classdef levelDerivedStudy
                 
                obj.title = obj.parentStudyObj.title;
                 
-               [filenames, dataRecordingUuid, taskLabel, sessionNumber, subjectInfo] = obj.parentStudyObj.getFilename('filetype', 'eeg');
+               [filenames, dataRecordingUuid, taskLabel, sessionNumber, parentDataRecordingNumber, subjectInfo] = obj.parentStudyObj.getFilename('filetype', 'eeg');
                [eventFilenames, eventDataRecordingUuidfrom] = obj.parentStudyObj.getFilename('filetype', 'event');
                
                if ~isequal(dataRecordingUuid, eventDataRecordingUuidfrom)
@@ -336,70 +344,106 @@ classdef levelDerivedStudy
                
                % sub-select files for requested sessions
                if ~isempty(inputOptions.sessionSubset)
-                   id = ismember(str2double(sessionNumber),inputOptions.sessionSubset);
+                   id = ismember(str2double(sessionNumber), inputOptions.sessionSubset);
                    filenames = filenames(id);
                    dataRecordingUuid = dataRecordingUuid(id);
                    eventFilenames = eventFilenames(id);
                    eventDataRecordingUuidfrom = eventDataRecordingUuidfrom(id);
                    taskLabel = taskLabel(id);
                    subjectInfo = subjectInfo(id);
+                   sessionNumber = sessionNumber(id);
                end;
                
                for i=1:length(filenames)
-                   [path name ext] = fileparts(filenames{i});
-                   clear EEG;
-                   EEG = pop_loadset([name ext], path);
                    
-                   % for test only
-                   if inputOptions.forTest
-                       fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-                       EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                   
+                   
+                   % do not processed data recordings that have already
+                   % been processed.
+                   [fileIsListedAsProcessed, id]= ismember(dataRecordingUuid{i}, alreadyProcessedDataRecordingUuid);
+                   
+                   % make sure not only the file is listed as processed,
+                   % but also it exists on disk (otherwise recompute).
+                   if fileIsListedAsProcessed
+                       levelDerivedFileNameOfProcessed = alreadyProcessedDataRecordingFileName{id};
+                       processedFileIsOnDisk = exist([inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i} filesep levelDerivedFileNameOfProcessed],'file');
                    end;
                    
-                   EEG = callbackFunction(EEG, callbackArgumentList{:});
-                                     
-                   % create a UUID for the study level derived file and add
-                   % it to the end of dataRecordingUuidHistory.
-                   studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
-                   EEG.etc.dataRecordingUuidHistory = {EEG.etc.dataRecordingUuidHistory studyLevelDerivedFileUuid};
-                   
-                   % write processed EEG data
-                   sessionFolder = [inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i}];
-                   if ~exist(sessionFolder, 'dir')
-                       mkdir(sessionFolder);
+                   if ~inputOptions.forceRedo && fileIsListedAsProcessed && processedFileIsOnDisk
+                       fprintf('Skipping a data recording in session %s: it has already been processed (both listed in the XML and exists on disk).\n', sessionNumber{i});
+                   else % file has not yet been processed
+                       fprintf('Processing a data recording in session %s.\n', sessionNumber{i});
+                       
+                       [path name ext] = fileparts(filenames{i});
+                       clear EEG;
+                       EEG = pop_loadset([name ext], path);
+                       
+                       % for test only
+                       if inputOptions.forTest
+                           fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+                           EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/500));
+                       end;
+                       
+                       EEG = callbackFunction(EEG, callbackArgumentList{:});
+                       
+                       % create a UUID for the study level derived file and add
+                       % it to the end of dataRecordingUuidHistory.
+                       studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
+                       
+                       if isfield(EEG, 'etc') && isempty(EEG.etc)
+                           EEG.etc = struct;
+                       end;
+                       
+                       if isfield(EEG.etc, 'dataRecordingUuidHistory')
+                           EEG.etc.dataRecordingUuidHistory = [EEG.etc.dataRecordingUuidHistory {studyLevelDerivedFileUuid}];
+                       else
+                           EEG.etc.dataRecordingUuidHistory = {studyLevelDerivedFileUuid};
+                       end;
+                       
+                       % write processed EEG data
+                       sessionFolder = [inputOptions.levelDerivedFolder filesep 'session' filesep sessionNumber{i}];
+                       if ~exist(sessionFolder, 'dir')
+                           mkdir(sessionFolder);
+                       end;
+                       
+                       [path, name, ext] = fileparts(filenames{i}); %#ok<ASGLU>
+                       
+                       switch class(obj.parentStudyObj)
+                           case 'level2Study'
+                               nameWithoutLevelpart = name(length('eeg_studyLevel2_'):end);
+                           case 'levelDerivedStudy'
+                               nameWithoutLevelpart = name(length('eeg_studyLevelDerived_'):end);
+                       end;
+                       
+                       filenameInEss = ['eeg_studyLevelDerived_' inputOptions.filterLabel '_' nameWithoutLevelpart '.set'];
+                       pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
+                       
+                       % copy the event instance file from parent study
+                       [pathstr, name, ext] = fileparts(eventFilenames{i});
+                       copyfile(eventFilenames{i}, [sessionFolder filesep name ext]);
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile = [name ext];
+                       
+                       % place EEG filename and UUID in XML
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName = filenameInEss;
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid = dataRecordingUuid{i};
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).uuid = studyLevelDerivedFileUuid;
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName = 'NA';
+                       
+                       % ToDo: Get data quality from the filter.
+                       obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataQuality = 'Good';
+                       
+                       % write the XML file so it things break it could be
+                       % resumed.
+                       obj.write(obj.levelDerivedXmlFilePath);
                    end;
-                   
-                   [path, name, ext] = fileparts(filenames{i}); %#ok<ASGLU>
-                   
-                   switch class(obj.parentStudyObj)                       
-                       case 'level2Study'
-                           nameWithoutLevelpart = name(length('eeg_studyLevel2_'):end);
-                       case 'levelDerivedStudy'
-                           nameWithoutLevelpart = name(length('eeg_studyLevelDerived_'):end);
-                   end;
-                   
-                   filenameInEss = ['eeg_studyLevelDerived_' inputOptions.filterLabel '_' nameWithoutLevelpart '.set'];                                      
-                   pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
-
-                   % copy the event instance file from parent study
-                   [pathstr, name, ext] = fileparts(eventFilenames{i});
-                   copyfile(eventFilenames{i}, [sessionFolder filesep name ext]);                   
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile = [name ext];
-                   
-                   % place EEG filename and UUID in XML
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName = filenameInEss;
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid = dataRecordingUuid{i};
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).uuid = studyLevelDerivedFileUuid;
-                   
-                   % ToDo: Get data quality from the filter.
-                   obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataQuality = 'Good';                                                         
-                end;
+               end;
                 
                 % write the filter
                 eeglabVersionString = ['EEGLAB ' eeg_getversion];
                 matlabVersionSTring = ['MATLAB '  version];
                 
                 obj.filters.filter.filterLabel = inputOptions.filterLabel;
+                obj.filters.filter.filterDescription = inputOptions.filterDescription;
                 obj.filters.filter.executionOrder = 1;
                 obj.filters.filter.softwareEnvironment = matlabVersionSTring;
                 obj.filters.filter.softwarePackage = eeglabVersionString;
@@ -410,8 +454,6 @@ classdef levelDerivedStudy
                     obj.filters.filter.parameters.parameter(p).value = evalc('disp(parameterValue{p})');
                 end;
                 
-                obj.levelDerivedXmlFilePath = [inputOptions.levelDerivedFolder filesep 'studyLevelDerived_description.xml'];
-                obj.write(obj.levelDerivedXmlFilePath);
             else
                 error('Level-derived from Level 1 studies is not implemented yet');
             end;
@@ -422,8 +464,8 @@ classdef levelDerivedStudy
             obj.write(obj.levelDerivedXmlFilePath);                        
         end;                      
         
-        function [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
-        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subjectInfo] = getFilename(obj, varargin)
+        %		[filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subject] = getFilename(obj, varargin)
 		% [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, varargin)
 		% Obtains [full] filenames and other information for all or a subset of Level 2 data.
 		% You may use the returned values to for example run a function on each of EEG recordings. 
@@ -443,40 +485,28 @@ classdef levelDerivedStudy
                 );
             
             % get the UUids from level 1
-            [dummy, selectedDataRecordingUuid, dummy2, sessionTaskNumber, dataRecordingNumber] = obj.parentStudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
+            [dummy, selectedDataRecordingUuid, taskLabelFromParent, selectedSessionNumber, dataRecordingNumber, selectedSubjectInfo] = obj.parentStudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
             
-            % go over level 2 and match by dataRecordingUuid
+            % go over level-derived records and match by dataRecordingUuid
             dataRecordingUuid = {};
             taskLabel = {};
             filename = {};
             sessionNumber = {};
-            subject = [];
+            subjectInfo = [];
+            levelDerivedDataRecordingNumber = [];
             for i=1:length(obj.studyLevelDerivedFiles.studyLevelDerivedFile)
                 [match, id] = ismember(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
+                    levelDerivedDataRecordingNumber(end+1) = i;
                     dataRecordingUuid{end+1} = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid;
-                    taskLabel{end+1} = obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).taskLabel;
+                    taskLabel{end+1} = taskLabelFromParent(id);
                     
-                    sessionNumber{end+1} = obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).sessionNumber;
+                    sessionNumber{end+1} = selectedSessionNumber{id};
                     
-                    inSessionNumber = obj.parentStudyObj.getInSessionNumberForDataRecording(obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).dataRecording(dataRecordingNumber(id)));
-                    foundSubjectId = [];
-                    for j =1:length(obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject)
-                        if strcmp(inSessionNumber, obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(j).inSessionNumber)
-                            foundSubjectId = [foundSubjectId j];
-                        end;
-                    end;
-                    if isempty(foundSubjectId)
-                        error('Something iss wrong, subejct with inSession number cannot be found.');
-                    elseif length(foundSubjectId) > 1
-                        error('Something is wrong, more than one sbject with inSession number found.');
-                    else % a single number
-                        newSubject = obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).subject(foundSubjectId);
-                        if isempty(subject)
-                            subject  = newSubject;
-                        else
-                            subject(end+1)  = newSubject;
-                        end;
+                    if isempty(subjectInfo)
+                        subjectInfo = selectedSubjectInfo(id);
+                    else
+                        subjectInfo(end+1)  = selectedSubjectInfo(id);
                     end;
                     
                     if strcmpi(inputOptions.filetype, 'eeg')
@@ -491,7 +521,7 @@ classdef levelDerivedStudy
                         if baseFolder(end) ==  filesep
                             baseFolder = baseFolder(1:end-1);
                         end;
-                        filename{end+1} = [baseFolder filesep 'session' filesep obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(id)).sessionNumber filesep basefilename];
+                        filename{end+1} = [baseFolder filesep 'session' filesep sessionNumber{end} filesep basefilename];
                     else
                         filename{end+1} = basefilename;
                     end;
@@ -499,8 +529,8 @@ classdef levelDerivedStudy
             end;
         end;
         
-        function [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
-            % [filename outputDataRecordingUuid taskLabel moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
+        function [filename, outputDataRecordingUuid, taskLabel, moreInfo, levelDerivedDataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
+            % [filename outputDataRecordingUuid taskLabel moreInfo levelDerivedDataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, {key, value pair options})
             % Returns information about valid data recording UUIDs. For
             % example Level 2 EEG or event files.
             % key, value pairs:
@@ -516,11 +546,12 @@ classdef levelDerivedStudy
                 arg('filetype', 'eeg',{'eeg' , 'event', 'noiseDetection' , 'report'},'Return EEG or event files.', 'type', 'char')...
                 );
             
-            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, level1MoreInfo] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
+            [dummy1, level1dataRecordingUuid, level1TaskLabel, parentLevelMoreInfo, sessionTaskNumber] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
             
             taskLabel = {};
             filename = {};
             moreInfo = struct;
+            levelDerivedDataRecordingNumber = [];
             moreInfo.sessionNumber = {};
             moreInfo.dataRecordingNumber = [];
             moreInfo.sessionTaskNumber = [];
@@ -531,23 +562,23 @@ classdef levelDerivedStudy
                         
                         taskLabel{end+1} = level1TaskLabel{j};
                         outputDataRecordingUuid{end+1} = level1dataRecordingUuid{j};
-                        moreInfo.sessionNumber{end+1} = level1MoreInfo.sessionNumber{j};
-                        moreInfo.dataRecordingNumber(end+1) = level1MoreInfo.dataRecordingNumber(j);
+                        levelDerivedDataRecordingNumber(end+1) = i;
+                        moreInfo.sessionNumber{end+1} = parentLevelMoreInfo.sessionNumber{j};
+                        moreInfo.dataRecordingNumber(end+1) = parentLevelMoreInfo.dataRecordingNumber(j);
                         moreInfo.sessionTaskNumber(end+1) = sessionTaskNumber(j);
                         switch lower(inputOptions.filetype)
                             case 'eeg'
                                 basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName;
                             case 'event'
-                                basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile;
-                            case 'noisedetection'
-                                basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).noiseDetectionResultsFile;
+                                basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile;                          
                             case 'report'
                                 basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName;
                         end;
                         
                         if inputOptions.includeFolder
                             baseFolder = fileparts(obj.levelDerivedXmlFilePath);
-                            filename{end+1} = [baseFolder filesep 'session' filesep obj.parentStudyObj.sessionTaskInfo(sessionTaskNumber(j)).sessionNumber filesep basefilename];
+
+                            filename{end+1} = [baseFolder filesep 'session' filesep parentLevelMoreInfo.sessionNumber{j} filesep basefilename];
                         else
                             filename{end+1} = basefilename;
                         end;
@@ -607,47 +638,12 @@ classdef levelDerivedStudy
                 
                 [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, 'type', 'report'); %#ok<ASGLU>
                 recreateReportFile = false; %#ok<NASGU>
-                if isempty(strtrim(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName))
-                    issue(end+1).description = sprintf('Report file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
-                    recreateReportFile = fixIssues; %#ok<NASGU>
-                else
-                    if ~exist(filename{1}, 'file')
-                        issue(end+1).description = sprintf('Report file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
-                        issue(end).issueType = 'missing file';
-                        recreateReportFile = fixIssues; %#ok<NASGU>
-                    end;
-                end;
-                
-                [filename, outputDataRecordingUuid, taskLabel, moreInfo] = infoFromDataRecordingUuid(obj, obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, 'type', 'noiseDetection'); %#ok<ASGLU>
-                recreateNoiseFile = false; %#ok<NASGU>
-                if ~level1Study.isAvailable(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).noiseDetectionResultsFile)
-                    issue(end+1).description = sprintf('Noise detection parameter file for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
-                    if fixIssues
-                        [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
-                        EEG = pop_loadset([name ext], sessionFolder);
-                        hdf5Filename = writeNoiseDetectionFile(obj, EEG, moreInfo.sessionTaskNumber , moreInfo.dataRecordingNumber, sessionFolder);
-                        obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).noiseDetectionResultsFile = hdf5Filename;
-                        issue(end).howItWasFixed = 'A new noisy detection file was created.';
-                    end;
-                else
-                    if ~exist(filename{1}, 'file')
-                        issue(end+1).description = sprintf('Noise detection parameter file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
-                        issue(end).issueType = 'missing file';
-                        if fixIssues
-                            if ~exist(EEG, 'var')
-                                [sessionFolder, name, ext] = fileparts(dataRecordingFilename{1});
-                                EEG = pop_loadset([name ext], sessionFolder);
-                            end;
-                            levelDerivedFolder = fileparts(obj.levelDerivedXmlFilePath); %#ok<PROP>
-                            reportFileName = writeReportFile(obj, EEG, [name ext], moreInfo.sessionTaskNumber, levelDerivedFolder); %#ok<PROP>
-                            obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName = reportFileName;
-                            issue(end).howItWasFixed = 'A new report file was created.';
-                        end;
-                    end;
+                if level1Study.isAvailable(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).reportFileName) && ~exist(filename{1}, 'file')
+                    issue(end+1).description = sprintf('Report file %s of session %s is missing.\n', filename{1}, moreInfo.sessionNumber{1});
+                    issue(end).issueType = 'missing file';
                 end;
                 
                 clear EEG;
-                
             end;
             
             % display issues
@@ -712,92 +708,9 @@ classdef levelDerivedStudy
             publishPrepPipelineReport(EEG, ...
                 levelDerivedFolder, 'summaryReport.html', ...
                 relativeSessionFolder, reportFileName);
-        end;
-        
-        function [STUDY, studyFilenameAndPath] = createEeglabStudy(obj, studyFolder, varargin)
-        % studyFilenameAndPath = createEeglabStudy(obj, studyFolder, {key, value pairs})
-	% Create an EEGLAB Study in a separate folder with its own EEGLAb dataset files.
-	%
-	%	Key			Value
-	%	'taskLabel'		: A cell array containing task labels to indicate the subset of files to be used.
-	%	'studyFileName'		: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
-	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
-	%	'makeTwoFilesPerSet'	: Create two files per EEG dataset. Saves the structure without the data in a Matlab 
-	%				  ''.set'' file and the transposed data in a binary float ''.dat'' file.
-	%	'dataQuality'		: {'Good' 'Suspect' 'Unusable'}	, Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale).
-	
-            inputOptions = arg_define(varargin, ...
-                arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
-                arg('studyFileName', '', [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'char'),...
-                arg('makeTwoFilesPerSet', true, [],'Create two files per EEG dataset. Saves the structure without the data in a Matlab ''.set'' file and the transposed data in a binary float ''.dat'' file.', 'type', 'logical'),...
-                arg('dataQuality', {'Good'},{'Good' 'Suspect' 'Unusable'},'Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale)', 'type', 'cellstr') ...
-                );
-            
-            if ~exist(studyFolder, 'dir')
-                mkdir(studyFolder);
-            end;
-            
-            if isempty(inputOptions.studyFileName)
-                if isempty(obj.title)
-                    inputOptions.studyFileName = 'study_from_ess.study';
-                else
-                    nameForStudy = level1Study.removeForbiddenWindowsFilenameCharacters(obj.title(1:min(end,22)));
-                    nameForStudy = strtrim(nameForStudy);
-                    nameForStudy(nameForStudy == ' ') = '_';
-                    inputOptions.studyFileName = ['study_from_ess_' nameForStudy '.study'];
-                end;
-            end;
-            
-            [filename, dataRecordingUuid, taskLabel, sessionNumber, subject] = getFilename(obj, 'includeFolder', true, 'taskLabel', inputOptions.taskLabel, 'dataQuality', inputOptions.dataQuality); %#ok<ASGLU>
-            
-            fileSessionFolder = {};
-            clear ALLEEG;
-            counter = 1;
-            for i=1:length(filename)
-                fileSessionFolder{i} = [studyFolder filesep sessionNumber{i}];
-                if ~exist(fileSessionFolder{i}, 'dir')
-                    mkdir(fileSessionFolder{i});
-                end;
-                
-                [loadPath name ext] = fileparts(filename{i}); %#ok<NCOMMA>
-                if inputOptions.makeTwoFilesPerSet
-                    EEG = pop_loadset([name ext], loadPath);
-                    pop_saveset(EEG, 'filename', [name ext], 'filepath', fileSessionFolder{i}, 'savemode', 'twofiles', 'version', '7.3');
-                    clear EEG;
-                else
-                    copyfile(filename{i}, [fileSessionFolder{i} filesep name ext]);
-                end;
-                
-                EEG = pop_loadset('filename', [name ext], 'filepath', fileSessionFolder{i}, 'loadmode', 'info');
-                
-                if isempty(subject(i).labId)
-                    EEG.subject = ['subject_of_session_' sessionNumber{i}];
-                else
-                    EEG.subject = subject(i).labId;
-                end;
-                if ~isempty(subject(i).group)
-                    EEG.group = subject(i).group;
-                end;
-                
-                if counter == 1
-                    ALLEEG = EEG;
-                else
-                    ALLEEG(end+1) = EEG;
-                end;
-                clear EEG;
-                counter = counter + 1;
-            end;
-            
-            % make a study from all the files
-            pop_editoptions('option_storedisk', true); % keep only maximum one dataset data in memory
-            STUDY = pop_study([], ALLEEG, 'updatedat', 'on', 'name', obj.title, 'notes', obj.parentStudyObj.studyDescription, 'task', obj.parentStudyObj.studyShortDescription);
-            STUDY.filename = inputOptions.studyFileName;
-            STUDY.filepath = studyFolder;
-            STUDY = pop_savestudy( STUDY, ALLEEG, 'filename', inputOptions.studyFileName, 'filepath', studyFolder);
-            studyFilenameAndPath = [studyFolder filesep inputOptions.studyFileName];
-        end;
+        end;       
     end;
-     methods (Static)
+    methods (Static)
          function levelObject = readLevelXML(levelXML)
               xmlAsStructure = xml2struct(levelXML);
                 

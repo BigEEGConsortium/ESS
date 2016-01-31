@@ -1,4 +1,4 @@
-classdef level1Study
+classdef level1Study < levelStudy;
     % Allow reading, writing and manipulatoion of information contained in ESS-formatted Standard Level 1 XML files.
     % EEG Studdy Schema (ESS) Level 1 contains EEG study meta-data information (subject information, sessions file
     % associations...). On read data are loaded in the object properties, you can change this data
@@ -125,16 +125,9 @@ classdef level1Study
             %   recordingParameterSet                   : Structure array, Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).
             %
             
-            % if dependent files are not in the path, add all file/folders under
-            % dependency to Matlab path.
-            if ~(exist('arg', 'file') && exist('is_impure_expression', 'file') &&...
-                    exist('is_impure_expression', 'file') && exist('PropertyEditor', 'file') && exist('hlp_struct2varargin', 'file') && exist('validate_schema', 'file'))
-                thisClassFilenameAndPath = mfilename('fullpath');
-                pathstr = fileparts(thisClassFilenameAndPath);
-                addpath(genpath([pathstr filesep 'dependency']));
-            end;
+            obj = obj@levelStudy;
             
-            inputOptions = arg_define(1,varargin, ...
+            inputOptions = arg_define([0 1],varargin, ...
                 arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
@@ -1835,11 +1828,6 @@ classdef level1Study
                 % session numbers must be an integer number
                 if isnan(sessionNumber) || round(sessionNumber) ~= sessionNumber || sessionNumber < 1
                     issue(end+1).description = sprintf('Sesion number in sessionTaskInfo(%d).sessionNumber is not a positive integer.', i); %#ok<AGROW>
-                    if fixIssues
-                        obj.sessionTaskInfo(i).sessionNumber = num2str(i);
-                        issue(end).howItWasFixed = sprintf('Session Number of ''%d'' assigned to the item.', i);
-                        numberOfFixedIssues = numberOfFixedIssues + 1;
-                    end;
                 else
                     sessionNumbers = [sessionNumbers sessionNumber];
                 end;
@@ -2186,7 +2174,7 @@ classdef level1Study
              
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
-            if nargin < 4 % use the ESS convention folder location if none is provided.
+            if nargin < 4 || isempty(filePath) % use the ESS convention folder location if none is provided.
                 filePath = fullEssFolder;
                 
                 if ~exist(fullEssFolder, 'dir')
@@ -2415,7 +2403,7 @@ classdef level1Study
             
             mkdir(essFolder);
             mkdir([essFolder filesep 'session']);
-            mkdir([essFolder filesep 'publications']);
+            mkdir([essFolder filesep 'additional_documentation']);
             
             % find the number of session from number of sessionTasks
             sessionNumber = {obj.sessionTaskInfo.sessionNumber};
@@ -2467,13 +2455,13 @@ classdef level1Study
                             [path, name, ext] = fileparts(fileForFreePart);
                             
                             itMatches = level1Study.fileNameMatchesEssConvention([name ext], 'channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject));
+                                subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject));
                             
                             if itMatches
                                 filenameInEss = [name ext];
                             else
                                 filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
-                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabbIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
+                                    subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
                                                         
                             if exist(fileFinalPath, 'file')
@@ -2646,10 +2634,11 @@ classdef level1Study
             
         end;
         
-        function [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber, subjectInfo] = getFilename(obj, varargin)
-            % [filename, dataRecordingUuid, taskLabel, sessionTaskNumber, dataRecordingNumber, subjectLabId] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber] = getFilename(obj, varargin)
+            % [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber] = getFilename(obj, varargin)
             % obtain file names based on a selection criteria, such as task
             % label(s).
+            % The output sessionNumber is of type Integer.
             % key,value pairs:
             %
             % taskLabel:       a cell array with label(s) for session tasks. Only
@@ -2672,7 +2661,7 @@ classdef level1Study
             sessionTaskNumber = [];
             dataRecordingNumber = [];
             subjectInfo = [];
-            
+            sessionNumber = {};
             for i=1:length(obj.sessionTaskInfo)
                 if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
@@ -2698,6 +2687,7 @@ classdef level1Study
                         dataRecordingUuid{end+1} = obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid;
                         taskLabel{end+1} = obj.sessionTaskInfo(i).taskLabel;
                         sessionTaskNumber(end+1) = i;
+                        sessionNumber{end+1} = obj.sessionTaskInfo(i).sessionNumber;
                         dataRecordingNumber(end+1) = j;
                         if isempty(subjectInfo)
                             subjectInfo = obj.sessionTaskInfo(i).subject;
@@ -2908,6 +2898,24 @@ classdef level1Study
             obj.write;
             
         end;
+        
+        function recreateEventInstanceFiles(obj)
+            % re-create event instance files. Only works if the object is
+            % already a proper ESS container
+            if strcmpi(obj.isInEssContainer, 'No')
+                error('To use this function, the object must already be a proper ESS container.');
+            else
+                for sessionTaskNumber = 1:length(obj.sessionTaskInfo)
+                    for dataRecordingNumber=1:length(obj.sessionTaskInfo(sessionTaskNumber).dataRecording)
+                        filePath = [];
+                        outputFileName = obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile;
+                        overwriteFile = true;
+                        obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile);
+                    end;
+                end;
+            end;
+        end;
+        
     end;
     methods (Static)
         
@@ -3226,6 +3234,70 @@ classdef level1Study
                 itIs = ~isempty(inputString) && ~strcmpi(inputString, 'NA') && ~strcmp(inputString, '-');
             end;
         end
-        
+         
+        function modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
+        % modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
+        % 
+        % Creates a modality array, used as part of level 1 RecordingParameterSet from channel
+        % types, labels, etc.
+
+            
+            % for each data recording, create modalities (EEG, Temperature, etc.)
+            [uniqueChannelType ia typeId] = unique(channelType, 'stable');
+            for k=1:length(uniqueChannelType) % each modality, could still have multiple blocks with the same modality so need to search for blocks
+                id = typeId == k;
+                if id(1)
+                    currentBlockNumber = 1;
+                    beforeWasInsideBlock = true;
+                else
+                    currentBlockNumber = 0;
+                    beforeWasInsideBlock = false;
+                end;
+                
+                blockNumber = zeros(length(id), 1);
+                for m = 1:length(id)
+                    if beforeWasInsideBlock && id(m)
+                        blockNumber(m) = currentBlockNumber;
+                    elseif ~beforeWasInsideBlock && id(m)
+                        currentBlockNumber = currentBlockNumber + 1;
+                        blockNumber(m) = currentBlockNumber;
+                    end;
+                    
+                    beforeWasInsideBlock = id(m);
+                end;
+                
+                
+                numberOfBlocks = max(blockNumber);
+                for q = 1:numberOfBlocks
+                    blockId = blockNumber == q;
+                    labelsAsCell = strtrim(strsplit(channelLabel, ','));
+                    modalityChannelLabelCell = labelsAsCell(blockId);
+                    if strcmpi(uniqueChannelType{k}, 'EEG')
+                        nonScalpChannelLabel = strjoin_adjoiner_first(', ', intersect(modalityChannelLabelCell, externalChannelList, 'stable'));
+                        channelLocationType = 'Custom';
+                        referenceLabel = eegReferenceLabel;
+                        referenceLocation = eegReferenceLocation;
+                        name = eegDeviceName;
+                    else
+                        nonScalpChannelLabel = 'NA';
+                        channelLocationType = 'NA';
+                        referenceLabel = 'NA';
+                        referenceLocation = 'NA';
+                        name = 'NA';
+                    end;
+                    
+                    newModality = struct('type', strtrim(uniqueChannelType{k}), 'samplingRate', num2str(samplingRate), 'name', name, ...
+                        'nonScalpChannelLabel' ,  nonScalpChannelLabel,...
+                        'channelLabel', strjoin_adjoiner_first(', ', modalityChannelLabelCell) , 'channelLocationType', channelLocationType, 'startChannel', num2str(find(blockId, 1, 'first')), ...
+                        'endChannel', num2str(find(blockId, 1, 'last')), 'subjectInSessionNumber', {'1'}, 'referenceLabel', referenceLabel, 'referenceLocation', referenceLocation);
+                    
+                    if ~exist('modalityArray')
+                        modalityArray = newModality;
+                    else
+                        modalityArray(end+1) = newModality;
+                    end;
+                end;
+            end;
+        end;
     end;
 end
