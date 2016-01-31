@@ -2188,7 +2188,7 @@ classdef level1Study < levelStudy;
                 subjectInSessionNumberCell = setdiff(unique({obj.recordingParameterSet(id).modality.subjectInSessionNumber}), {'', '-', 'NA'});
                 subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumberCell);
                 
-                % toDo: make this work correctlt for two subjects.
+                % toDo: make this work correctly for two subjects.
                 outputFileName = obj.essConventionFileName('event', obj.studyTitle, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber,...
                     subjectInSessionNumber, obj.sessionTaskInfo(sessionTaskNumber).taskLabel, dataRecordingNumber, getSubjectLabbIdForDataRecording(obj, sessionTaskNumber, dataRecordingNumber), length(obj.sessionTaskInfo(sessionTaskNumber).subject));
             end;
@@ -2501,16 +2501,15 @@ classdef level1Study < levelStudy;
                                 fileNameFromObj = obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile;
                                 namePrefixString = 'event';
                         end;
-                        
-                        
+                                                
                         nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
                         fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
-                        
-                        if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
+                        fileNameFromObjisEmpty = isempty(strtrim(fileNameFromObj));
+                        if ~fileNameFromObjisEmpty && exist(fullEssFilePath, 'file')
                             fileFinalPath = fullEssFilePath;
-                        elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
+                        elseif ~fileNameFromObjisEmpty && exist(nextToXMLFilePath, 'file')
                             fileFinalPath = nextToXMLFilePath;
-                        elseif ~isempty(fileNameFromObj)
+                        elseif ~fileNameFromObjisEmpty
                             fileFinalPath = [];
                             fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
                             fprintf('You might want to run validate() routine.\n');
@@ -2528,7 +2527,7 @@ classdef level1Study < levelStudy;
                         % either the eeg file should exist or an empty
                         % event instance file is specified and needs to be
                         % created from a data recording file.
-                        if ~isempty(fileFinalPath) || (isempty(fileNameFromObj) && strcmpi(typeOfFile{k}, 'event'))
+                        if ~isempty(fileFinalPath) || (isempty(strtrim(fileNameFromObj)) && strcmpi(typeOfFile{k}, 'event'))
                             essConventionfolder = ['session' filesep obj.sessionTaskInfo(i).sessionNumber];
                             
                             switch typeOfFile{k}
@@ -2899,10 +2898,17 @@ classdef level1Study < levelStudy;
             
         end;
         
-        function recreateEventInstanceFiles(obj)
+        function obj = recreateEventInstanceFiles(obj, forceCreate)
+            % obj = recreateEventInstanceFiles(obj, forceCreate)
+            %
             % re-create event instance files. Only works if the object is
-            % already a proper ESS container
-            if strcmpi(obj.isInEssContainer, 'No')
+            % already a proper ESS container unless forceCreate is set to true
+            
+            if nargin < 2
+                forceCreate = false;
+            end;
+            
+            if strcmpi(obj.isInEssContainer, 'No') && ~forceCreate
                 error('To use this function, the object must already be a proper ESS container.');
             else
                 for sessionTaskNumber = 1:length(obj.sessionTaskInfo)
@@ -2920,8 +2926,9 @@ classdef level1Study < levelStudy;
     methods (Static)
         
         function stringForFileName = removeForbiddenWindowsFilenameCharacters(inString)
-            % remove forbidden Windows OS filename characeters
-            forbiddenCharacters = '\/:*?"<>\';
+            % remove forbidden Windows OS filename characeters, plus comma (makes it harder for csv
+            % files)
+            forbiddenCharacters = '\/:*?"<>\,';
             stringForFileName  = inString;
             stringForFileName(ismember(stringForFileName, forbiddenCharacters)) = [];         
         end;
@@ -3274,6 +3281,11 @@ classdef level1Study < levelStudy;
                     modalityChannelLabelCell = labelsAsCell(blockId);
                     if strcmpi(uniqueChannelType{k}, 'EEG')
                         nonScalpChannelLabel = strjoin_adjoiner_first(', ', intersect(modalityChannelLabelCell, externalChannelList, 'stable'));
+                        
+                        if isempty(nonScalpChannelLabel)
+                            nonScalpChannelLabel = 'NA'; % NA =Not Available. Empty woudl mean that it is missing.
+                        end;
+                        
                         channelLocationType = 'Custom';
                         referenceLabel = eegReferenceLabel;
                         referenceLocation = eegReferenceLocation;

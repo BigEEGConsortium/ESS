@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <!-- Start of defining keys for finding distinct values -->
-	<xsl:key name="SubjectGroupValue" match="/studyLevel1/sessions/session/subject" use="group"/>
-	<xsl:key name="ModalityTypeGroupValue" match="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality" use="type" />
- 	maybe could be used later: <xsl:key name="keyRecordingParameterSetLabel" match="/studyLevel1/recordingParameterSets/recordingParameterSet" use="recordingParameterSetLabel" /> -->
+	<xsl:key name="SubjectGroupValue" match="/studyLevel2/studyLevel1/sessions/session/subject" use="group"/>
+	<xsl:key name="ModalityTypeGroupValue" match="/studyLevel2/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality" use="type" />
+ <!-- 	maybe could be used later: <xsl:key name="keyRecordingParameterSetLabel" match="/studyLevel2/studyLevel1/recordingParameterSets/recordingParameterSet" use="recordingParameterSetLabel" /> -->
 <!-- End of definig keys -->
 	<xsl:template match="/">
 		<html>
 			<head>
 				<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 				<title>
-					<xsl:for-each select="studyLevel1">
+					<xsl:for-each select="studyLevel2/studyLevel1">
 						<tr>
 							<td>
 								<xsl:value-of select="title"/>
@@ -48,7 +48,7 @@ font-size= 7pt
 
 </style>
 			<body>
-			<xsl:for-each select="/studyLevel1/organization">
+			<xsl:for-each select="/studyLevel2/studyLevel1/organization">
 			<xsl:if test="logoLink != 'NA'">
 				<img style="" alt="">
 					<xsl:attribute name="src">
@@ -58,7 +58,7 @@ font-size= 7pt
 				</xsl:if>
 				</xsl:for-each>
 				<h2>
-					<xsl:for-each select="studyLevel1">
+					<xsl:for-each select="studyLevel2/studyLevel1">
 						<tr>
 							<h2>
 								<xsl:value-of select="title"/>
@@ -66,9 +66,11 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</h2>
-				<h3>Short Description:</h3>
+				<p>This study is an <a href="http://www.eegstudy.org/#level2">ESS Standard Data Level 2 container</a>. This means that raw EEG data has been processed with <a href="http://vislab.github.io/EEG-Clean-Tools/">PREP pipeline</a>, i.e. re-referenced with a robust average reference. 
+				Data files have been arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.</p>
+				<h3>Short Description</h3>
 				<p>
-					<xsl:for-each select="studyLevel1">
+					<xsl:for-each select="studyLevel2/studyLevel1">
 						<tr>
 							<td>
 								<xsl:value-of select="shortDescription"/>
@@ -76,9 +78,9 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</p>
-				<h3>Full Description:</h3>
+				<h3>Full Description</h3>
 				<p>
-					<xsl:for-each select="studyLevel1">
+					<xsl:for-each select="studyLevel2/studyLevel1">
 						<tr>
 							<td>
 								<xsl:value-of select="description"/>
@@ -86,13 +88,13 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</p>				
-				<h3>Summary:</h3>
+				<h3>Summary</h3>
 			
 				<table>
-					<xsl:for-each select="studyLevel1/summary">
+					<xsl:for-each select="studyLevel2/studyLevel1/summary">
 						<tr>
 							<td>Number of Sessions: 
-							<xsl:for-each select="/studyLevel1/sessions/session/number">
+							<xsl:for-each select="/studyLevel2/studyLevel1/sessions/session/number">
 									<xsl:sort data-type="number" order="descending"/>
 									<xsl:if test="position()=1">
 										<xsl:value-of select="."/>
@@ -103,18 +105,18 @@ font-size= 7pt
 						<tr>
 							<td>Number of Subjects: 
 							<xsl:choose>
-							<xsl:when test="/studyLevel1/sessions/session/subject/labId='NA'">
-									<xsl:value-of select="count(/studyLevel1/sessions/session/subject)"/>
+							<xsl:when test="/studyLevel2/studyLevel1/sessions/session/subject/labId='NA'">
+									<xsl:value-of select="count(/studyLevel2/studyLevel1/sessions/session/subject)"/>
 							</xsl:when>
 							<xsl:otherwise>
-							<xsl:value-of select="count(/studyLevel1/sessions/session/subject/labId[not(following::labId = .)])"/>
+							<xsl:value-of select="count(/studyLevel2/studyLevel1/sessions/session/subject/labId[not(following::labId = .)])"/>
 							</xsl:otherwise>
 							</xsl:choose>
 							</td>
 						</tr>
 						<tr>
 							<td>Type of Subject Groups:
-						<xsl:for-each select="/studyLevel1/sessions/session/subject[generate-id()=generate-id(key('SubjectGroupValue' , group)[1])]">
+						<xsl:for-each select="/studyLevel2/studyLevel1/sessions/session/subject[generate-id()=generate-id(key('SubjectGroupValue' , group)[1])]">
 									<xsl:value-of select="concat(group, '', '')"/>
 									<xsl:if test="position()!=last()">
 										<xsl:text>, </xsl:text>
@@ -123,26 +125,26 @@ font-size= 7pt
 							</td>
 						</tr>
 						<tr>
-							<xsl:for-each select="/studyLevel1/summary">
+							<xsl:for-each select="/studyLevel2/studyLevel1/summary">
 								<td>All subjects are considered healthy and normal: <xsl:value-of select="allSubjectsHealthyAndNormal"/>
 								</td>
 							</xsl:for-each>
 						</tr>						
 						<tr>
-							<xsl:for-each select="/studyLevel1">
+							<xsl:for-each select="/studyLevel2/studyLevel1">
 								<td>Primary source of event information: <xsl:value-of select="eventSpecificiationMethod"/>
 								</td>
 							</xsl:for-each>
 						</tr>
 						<tr>
 							<td>Number of Channels (all modalities, min to max): 
-							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
+							<xsl:for-each select="/studyLevel2/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
 									<xsl:sort data-type="number" order="ascending"/>
 									<xsl:if test="position()=1">
 										<xsl:value-of select="."/>
 									</xsl:if>
 								</xsl:for-each> to
-							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
+							<xsl:for-each select="/studyLevel2/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
 									<xsl:sort data-type="number" order="descending"/>
 									<xsl:if test="position()=1">
 										<xsl:value-of select="."/>
@@ -152,7 +154,7 @@ font-size= 7pt
 						</tr>
 						<tr>
 							<td>Recorded Modalities: 
-							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality[generate-id()=generate-id(key('ModalityTypeGroupValue' , type)[1])]">
+							<xsl:for-each select="/studyLevel2/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality[generate-id()=generate-id(key('ModalityTypeGroupValue' , type)[1])]">
 									<xsl:value-of select="concat(type, '', '')"/>
 									<xsl:if test="position()!=last()">
 										<xsl:text>, </xsl:text>
@@ -169,16 +171,16 @@ font-size= 7pt
 							</td>
 						</tr>
 						<tr>
-							<td>Funding Organization: <xsl:value-of select="/studyLevel1/project/funding/organization"/>
+							<td>Funding Organization: <xsl:value-of select="/studyLevel2/studyLevel1/project/funding/organization"/>
 							</td>
 						</tr>						
 					</xsl:for-each>
 				</table>
 				<xsl:choose>
-				<xsl:when test="studyLevel1/publications/publication/citation != ''">
-				<h3>Publications:</h3>
+				<xsl:when test="studyLevel2/studyLevel1/publications/publication/citation != ''">
+				<h3>Publications</h3>
 				<table>
-					<xsl:for-each select="studyLevel1/publications/publication">
+					<xsl:for-each select="studyLevel2/studyLevel1/publications/publication">
 						<tr>
 							<td>
 								<xsl:value-of select="citation"/>
@@ -209,17 +211,83 @@ font-size= 7pt
 				</table>
 				</xsl:when>
 				</xsl:choose>
-				<h3>Experimenters:</h3>
+				<h3>PREP</h3>
+				<p><a href="summaryReport.html">Full report</a></p>
+				<h3>Experimenters</h3>
 				<table>
-					<xsl:for-each select="studyLevel1/experimenters/experimenter">
+					<xsl:for-each select="studyLevel2/studyLevel1/experimenters/experimenter">
 						<tr>
 							<td>
 								<xsl:value-of select="name"/> (<xsl:value-of select="role"/>)
 							</td>
 						</tr>
 					</xsl:for-each>
+				</table>				
+				
+				
+				
+				
+				<h3>Level 2 Data Recordings</h3>
+				<table width="1300" height="800" border="1" class="tablebody">
+				<thead>
+					<tr>
+						<td rowspan="2" align="center" bgcolor="#CCCCCC">
+							<strong>Filename</strong>
+						</td>
+						<td rowspan="2" width="70" align="center" bgcolor="#CCCCCC">
+							<strong>Data Quality</strong>
+						</td>
+						<td rowspan="2" align="center" bgcolor="#CCCCCC">
+							<strong>Interpolated Channels</strong>
+						</td>
+						<td rowspan="2" align="center" bgcolor="#CCCCCC">
+							<strong>Report Filename</strong>
+						</td>
+					</tr>
+					</thead>
+					<tbody>
+					<xsl:for-each select="studyLevel2/studyLevel2Files/studyLevel2File">
+						<tr height="30">
+							<td>
+								<xsl:value-of select="studyLevel2FileName"/>
+							</td>
+							<td>
+								<xsl:value-of select="dataQuality"/>
+							</td>
+							<td>
+								<xsl:value-of select="interpolatedChannels"/>
+							</td>
+							<td>
+								<xsl:value-of select="reportFileName"/>
+							</td>
+						</tr>
+					</xsl:for-each>
+					</tbody>
 				</table>
-				<h3>Table of Session Information:</h3>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				<h3>Level 1 Session Information:</h3>
 				<table width="1300" height="800" border="1" class="tablebody">
 					<tr>
 						<td rowspan="2" align="center" bgcolor="#CCCCCC">
@@ -273,7 +341,7 @@ font-size= 7pt
 							<strong>Hand</strong>
 						</td>
 					</tr>
-					<xsl:for-each select="studyLevel1/sessions/session">
+					<xsl:for-each select="studyLevel2/studyLevel1/sessions/session">
 						<tr height="30">
 							<td>
 								<xsl:value-of select="number"/>
@@ -337,28 +405,19 @@ font-size= 7pt
 									<xsl:value-of select="note"/>
 					
 										<a target="_blank">
-											<xsl:attribute name="href">
-												<xsl:value-of select="link"/>
-											</xsl:attribute>
 											<xsl:value-of select="linkName"/>
 										</a>								
 								</xsl:for-each>
 							</td>
 							<td>
 								<a target="_blank">
-									<xsl:attribute name="href">
-										session/<xsl:value-of select="number"/>/<xsl:value-of select="dataRecordings/dataRecording/filename"/>
-									</xsl:attribute>
 									<xsl:value-of select="dataRecordings/dataRecording/filename"/>
 								</a>
 							</td>
 							<td>
 									<xsl:for-each select="subject">
 									<p>
-										<a target="_blank">
-											<xsl:attribute name="href">
-												session/<xsl:value-of select="../number"/>/<xsl:value-of select="channelLocations"/>
-											</xsl:attribute>
+										<a target="_blank">											
 											<xsl:value-of select="channelLocations"/>
 										</a>
 									</p>
@@ -375,8 +434,8 @@ font-size= 7pt
 					</xsl:for-each>
 				</table>
 				<xsl:choose>
-				<xsl:when test="studyLevel1/tasks/task/description = ''"></xsl:when>
-				<xsl:when test="studyLevel1/tasks/task/taskLabel = ''">
+				<xsl:when test="studyLevel2/studyLevel1/tasks/task/description = ''"></xsl:when>
+				<xsl:when test="studyLevel2/studyLevel1/tasks/task/taskLabel = ''">
 				<h3>Study Paradigm and Context</h3>
 				<table width="700"  border="1" class="tablebody">
 					<tr>
@@ -387,7 +446,7 @@ font-size= 7pt
 							<strong>Tag</strong>
 						</td>
 					</tr>
-					<xsl:for-each select="studyLevel1/tasks/task">
+					<xsl:for-each select="studyLevel2/studyLevel1/tasks/task">
 						<tr height="35">
 								<td>
 									<xsl:value-of select="description"/>
@@ -400,7 +459,7 @@ font-size= 7pt
 							</xsl:for-each>
 				</table>
 				</xsl:when>
-				<xsl:when test="studyLevel1/tasks/task/taskLabel != ''">
+				<xsl:when test="studyLevel2/studyLevel1/tasks/task/taskLabel != ''">
 				<h3>Study Paradigm and Context</h3>
 				<table width="700"  border="1" class="tablebody">
 					<tr>
@@ -414,7 +473,7 @@ font-size= 7pt
 							<strong>Tag</strong>
 						</td>
 					</tr>
-					<xsl:for-each select="studyLevel1/tasks/task">
+					<xsl:for-each select="studyLevel2/studyLevel1/tasks/task">
 						<tr height="35">
 								<td>
 									<xsl:value-of select="taskLabel"/>
@@ -432,7 +491,7 @@ font-size= 7pt
 				</xsl:when>
 				
 				</xsl:choose>
-				<h3>Table of Event Codes:</h3>
+				<h3>Event Codes</h3>
 				<table width="770"  border="1" class="tablebody">
 					<tr>
 						<td rowspan="2" align="center" bgcolor="#CCCCCC">
@@ -453,7 +512,7 @@ font-size= 7pt
 							<strong>Tag</strong>
 						</td>
 					</tr>
-					<xsl:for-each select="studyLevel1/eventCodes/eventCode">
+					<xsl:for-each select="studyLevel2/studyLevel1/eventCodes/eventCode">
 						<tr height="35">
 							<td>
 							<xsl:choose> 
@@ -475,9 +534,9 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</table>
-				<h3>Contact:</h3>
+				<h3>Contact</h3>
 				<table>
-					<xsl:for-each select="studyLevel1/contact">
+					<xsl:for-each select="studyLevel2/studyLevel1/contact">
 						<tr>
 							<td>
 							<xsl:choose>
@@ -501,29 +560,33 @@ font-size= 7pt
 						</tr>
 					</xsl:for-each>
 				</table>
-				<h3>License Agreement:</h3>
-				<xsl:for-each select="studyLevel1">
+				<h3>License Agreement</h3>
+				<xsl:for-each select="studyLevel2">
 					<tr>
 						<td>
-							<xsl:value-of select="copyright"/>
+							<xsl:value-of select="copyrightInfo"/>
 						</td>
 					</tr>
 				</xsl:for-each>
-				<xsl:for-each select="studyLevel1/summary/license">
+				<xsl:for-each select="/studyLevel2/license">
 					<tr>
 						<td>
 							<xsl:value-of select="text"/>
 						</td>
 					</tr>
-					<p>
-						<a target="_blank">
-							<xsl:attribute name="href">
-								<xsl:value-of select="link"/>
-							</xsl:attribute>License link
-			</a>
+					<p>		
+						<xsl:choose>
+							<xsl:when test="/studyLevel2/license/link != '' and /studyLevel2/license/link != ' ' ">
+								<a target="_blank">
+									<xsl:attribute name="href">
+									<xsl:value-of select="link"/>
+									</xsl:attribute>License link2
+							</a>
+							</xsl:when>
+						</xsl:choose>
 					</p>
 				</xsl:for-each>
-				<xsl:for-each select="studyLevel1">
+				<xsl:for-each select="studyLevel2/studyLevel1">
 					<p>
 						<tr>
 							<td>
@@ -532,7 +595,7 @@ font-size= 7pt
 						</tr>
 					</p>
 				</xsl:for-each>
-				<p>This report is automically generated from an XML file in EEG Study Schema (ESS) version <xsl:for-each select="studyLevel1"><xsl:value-of select="essVersion"/>	</xsl:for-each>. To learn more about ESS and download tools for automated import of ESS-formatted information (e.g. into Matlab) please visit  <a href="http://www.eegstudy.org">eegstudy.org</a>.</p>
+				<p>This report is automically generated from an XML file in EEG Study Schema (ESS) version <xsl:for-each select="studyLevel2/studyLevel1"><xsl:value-of select="essVersion"/>	</xsl:for-each>. To learn more about ESS and download tools for automated import of ESS-formatted information (e.g. into Matlab) please visit  <a href="http://www.eegstudy.org">eegstudy.org</a>.</p>
 			</body>
 		</html>
 	</xsl:template>
