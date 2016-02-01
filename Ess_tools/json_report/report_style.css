@@ -1,0 +1,22 @@
+body {margin:30px;font-family:arial,helvetica,sans-serif; background-color:white
+}
+table {
+border-collapse: collapse;
+}
+.tablebody{
+text-align: center;
+}
+.tablebody
+tr:nth-of-type(odd) {
+  background-color:whitesmoke;
+} 
+.tablebody
+tr:nth-of-type(even) {
+  background-color:#E6E6E6;
+} 
+} 
+license{
+font-family:Arial
+font-size= 7pt
+}
+h1 {text-align: center;}
