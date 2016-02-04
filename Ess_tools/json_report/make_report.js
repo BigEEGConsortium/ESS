@@ -121,12 +121,13 @@ for (var i=0; i < level1Study.sessionTaskInfo.length; i++){
 			'subjectGender': level1Study.sessionTaskInfo[i].subject[0].gender,
 			'subjectYOB': level1Study.sessionTaskInfo[i].subject[0].YOB,
 			'subjectAge': level1Study.sessionTaskInfo[i].subject[0].age,
+			'subjectLabId': level1Study.sessionTaskInfo[i].subject[0].labId,
 			'subjectHandedness': level1Study.sessionTaskInfo[i].subject[0].hand,
 			'filename': level1Study.sessionTaskInfo[i].dataRecording[j].filename,
 			'eventInstanceFile': level1Study.sessionTaskInfo[i].dataRecording[j].eventInstanceFile,
 			'originalFileNameAndPath': level1Study.sessionTaskInfo[i].dataRecording[j].originalFileNameAndPath,
 			'modalitiesAndTheirChannelsText': modalitiesAndTheirChannelsText,
-			'eegSamplingFrequency': channelLocationTypes[channelLocationTypes.length-1];
+			'eegSamplingFrequency': eegSamplingFrequency[channelLocationTypes.length-1]
 		})
 	}
 }
