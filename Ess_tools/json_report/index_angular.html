@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html >
+
+<head>
+  <link rel="stylesheet" type="text/css" href="bootstrap/bootstrap.css">
+  <link rel="stylesheet" type="text/css" href="bootstrap/bootstrap-theme.css">
+  <link rel="stylesheet" type="text/css" href="ag-grid/ag-grid.css">
+  <link rel="stylesheet" type="text/css" href="ag-grid/theme-fresh.css">
+  <link rel="stylesheet" type="text/css" href="report_style.css">
+</head>
+
+<!-- read ESS container data as JSON -->
+<script type="text/javascript" src="manifest.js"></script>
+
+<!-- include dependencies -->
+<script type="text/javascript" src="angular/angular.js"></script>
+<script type="text/javascript" src="ag-grid/ag-grid.js"></script>
+<script type="text/javascript" src="underscore-min.js"></script>
+<script type="text/javascript" src="make_report.js"> </script>
+<body>
+  <div ng-app = "essReportApp" ng-controller="ReportController">
+    <h1>{{title}}</h1>
+    <p id = 'level2Notive'>This study is an <a href="http://www.eegstudy.org/#level2">ESS Standard Data Level 2 container</a>. This means that raw EEG data has been processed with <a href="http://vislab.github.io/EEG-Clean-Tools/">PREP pipeline</a>, i.e. re-referenced with a robust average reference.
+      Data files have been arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.</p>
+      <h3>Short Description</h3>
+      <p>{{shortDescription}}</p>
+      <h3>Full Description</h3>
+      <p>{{fullDescription}}</p>
+      <h3>Summary</h3>
+      <table>
+        <tr>
+          <td>Number of Sessions: {{numberOfSessions}}</td>
+        </tr>
+        <tr>
+          <td>Number of Subjects: {{numberOfSubjects}}</td>
+        </tr>
+        <tr>
+          <td>Subject Groups: {{subjectGroup}}</td>
+        </tr>
+        <tr>
+        </tr>
+        <tr>
+          <td>Primary source of event information: {{eventSpecificiationMethod}}</td>
+        </tr>
+        <tr>
+          <td>Number of EEG Channels: {{numberOfChannels}}</td>
+        </tr>
+        <tr>
+          <td>Recorded Modalities: {{modalities}}</td>
+        </tr>
+        <tr>
+          <td>EEG Channel Location Type(s): {{channelLocationTypes}}</td>
+        </tr>
+        <tr>
+          <td>Total Size: {{totalSize}}</td>
+        </tr>
+        <tr>
+          <td>License Type: {{licenseType}}</td>
+        </tr>
+        <tr>
+          <td>Funding Organization: {{fundingOrganization}}</td>
+        </tr>
+      </table>
+      <div ng-if="showPublications">
+        <h3>Publications</h3>
+        <ul ng-repeat="x in publications">
+          <li><a href="{{x.link}}">{{ x.text }}</a></li>
+        </ul>
+      </div>
+      <div ng-if="showExperimenters">
+        <h3>Experimenters</h3>
+        <ul ng-repeat="x in experimenters">
+          <li>{{ x }}</li>
+        </ul>
+      </div>
+      <h3>Data Recordings</h3>
+      <div ag-grid="gridOptions" class="ag-fresh" style="height: 100%;"></div>
+    </div>
+  </body>
+  </html>
