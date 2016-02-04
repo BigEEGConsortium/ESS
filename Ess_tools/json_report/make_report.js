@@ -194,7 +194,7 @@ for (var i=0; i < level1Study.experimentersInfo.length; i++){
 extracted.showExperimenters = extracted.experimenters.length != 1 || extracted.experimenters[0] != '';
 
 var columnDefs = [
-	{headerName: "Session", field: "sessionNumber", minWidth: 100, width:100, pinned: true, checkboxSelection: true},
+	{headerName: "Session", field: "sessionNumber", minWidth: 100, width:100, pinned: true, checkboxSelection: false},
 	{headerName: "Task", field: "taskLabel", minWidth: 100, width:100, pinned: true},
 	{headerName: "Purpose", field: "purpose", minWidth: 100, width:100},
 	{headerName: "EEG Sampling Rate (Hz)", field: "eegSamplingFrequency", minWidth: 200, width:200},
@@ -237,10 +237,15 @@ extracted.gridOptions = {
 	rowData: rowData,
 	enableColResize: true,
 	enableSorting: true,
-	unSortIcon: true,
+//	unSortIcon: true,
+	enableFilter: true,
 	onReady: whenGridIsReady
 };
 
+
+function onFilterChanged(value) {
+    extracted.gridOptions.api.setQuickFilter(value);
+}
 
 
 angular.module('essReportApp',  ["agGrid"]).controller('ReportController', function($scope) {

@@ -74,6 +74,13 @@
         </ul>
       </div>
       <h3>Data Recordings</h3>
+      <input placeholder="Filter..." type="text"
+          onpaste="onFilterChanged(this.value)"
+          oninput="onFilterChanged(this.value)"
+          onchange="onFilterChanged(this.value)"
+          onchange="onFilterChanged(this.value)"
+          onkeydown="onFilterChanged(this.value)"
+          onkeyup="onFilterChanged(this.value)"/>
       <div ag-grid="gridOptions" class="ag-fresh" style="height: 100%;"></div>
     </div>
   </body>
