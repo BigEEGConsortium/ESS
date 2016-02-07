@@ -59,14 +59,17 @@ for (var k=0; k < level1Study.recordingParameterSet.length; k++){
 }
 
 var extracted = {}; // data extracted from study JSON object and sent to AngularJS (as $Scope)
-extracted.shortDescription = level1Study.studyShortDescription;
-extracted.title = study.title;
-extracted.fullDescription = level1Study.studyDescription;
-extracted.showLevel1Notice = true;
-extracted.showLevel2Notice = false;
-extracted.showLevel3Notice = false;
+extracted.level1 = {};
+extracted.level2 = {};
+extracted.levelDerived = {};
+extracted.level1.shortDescription = level1Study.studyShortDescription;
+extracted.level1.title = study.title;
+extracted.level1.fullDescription = level1Study.studyDescription;
+extracted.level1.showLevel1Notice = true;
+extracted.level1.showLevel2Notice = false;
+extracted.level1.showLevel3Notice = false;
 
-extracted.numberOfSessions = level1Study.sessionTaskInfo.length;
+extracted.level1.numberOfSessions = level1Study.sessionTaskInfo.length;
 
 // count the number of subjects by looking at labIds. LabIds that are not provided,
 //  i.e. are either NA or - are assumed to be unique.
@@ -135,9 +138,9 @@ for (var i=0; i < level1Study.sessionTaskInfo.length; i++){
 	}
 }
 
-extracted.numberOfSubjects = _.uniq(labsIds).length;
-extracted.subjectGroup = _.uniq(groups).toString();
-extracted.eventSpecificiationMethod =  level1Study.eventSpecificiationMethod;
+extracted.level1.numberOfSubjects = _.uniq(labsIds).length;
+extracted.level1.subjectGroup = _.uniq(groups).toString();
+extracted.level1.eventSpecificiationMethod =  level1Study.eventSpecificiationMethod;
 
 // count the number of recordings that the same number of channels
 var result = countArrayValues(numberOfRecordingEEGChannels);
@@ -145,7 +148,7 @@ var uniqueEEGChannelNumbers = result.uniqueValues;
 var numberOfRecordingsWithChannelNumber = result.counts;
 
 // form the string that contains number of EEG channels and the number of data recordings associated with each (in parenthesis)
-extracted.numberOfChannels = textFromItemsAndCounts(uniqueEEGChannelNumbers, numberOfRecordingsWithChannelNumber, ' recordings')
+extracted.level1.numberOfChannels = textFromItemsAndCounts(uniqueEEGChannelNumbers, numberOfRecordingsWithChannelNumber, ' recordings')
 
 // count the number of recordings that the same number of channels
 var result = countArrayValues(modalitiesInDataRecording);
@@ -154,20 +157,20 @@ var numberOfRecordingsWithModality = result.counts;
 
 
 // form the string that contains different modalities and the number of data recordings associated with each (in parenthesis)
-extracted.modalities = textFromItemsAndCounts(uniqueModalities, numberOfRecordingsWithModality, ' recordings')
+extracted.level1.modalities = textFromItemsAndCounts(uniqueModalities, numberOfRecordingsWithModality, ' recordings')
 
 var result = countArrayValues(channelLocationTypes);
-extracted.channelLocationTypes = textFromItemsAndCounts(result.uniqueValues, result.counts, ' recordings');
+extracted.level1.channelLocationTypes = textFromItemsAndCounts(result.uniqueValues, result.counts, ' recordings');
 
-extracted.totalSize = level1Study.summaryInfo.totalSize;
-extracted.licenseType = level1Study.summaryInfo.license.type;
-extracted.fundingOrganization = level1Study.projectInfo.organization;
+extracted.level1.totalSize = level1Study.summaryInfo.totalSize;
+extracted.level1.licenseType = level1Study.summaryInfo.license.type;
+extracted.level1.fundingOrganization = level1Study.projectInfo.organization;
 
 // Publications
 //level1Study.publicationsInfo =[{'citation': 'some citation 1', 'link': 'http://google.com', 'DOI': 'w5745874584854'},{'citation': 'some citation 2', 'link': '', 'DOI': 'gzsgsg'}];
 
 level1Study.publicationsInfo = makeIntoArray(level1Study.publicationsInfo);
-extracted.publications = [];
+extracted.level1.publications = [];
 for (var i=0; i < level1Study.publicationsInfo.length; i++){
 	var text = level1Study.publicationsInfo[i].citation;
 	var link = level1Study.publicationsInfo[i].link;
@@ -177,49 +180,49 @@ for (var i=0; i < level1Study.publicationsInfo.length; i++){
 			link = 'http://dx.doi.org/' + level1Study.publicationsInfo[i].DOI;
 		}
 	}
-	extracted.publications[i]= {'text': text, 'link':link};
+	extracted.level1.publications[i]= {'text': text, 'link':link};
 }
 // hide publications section when informationis not available
-extracted.showPublications = extracted.publications.length != 1 || extracted.publications[0].text != '';
+extracted.level1.showPublications = extracted.level1.publications.length != 1 || extracted.level1.publications[0].text != '';
 
 // experimenters
 level1Study.experimentersInfo = makeIntoArray(level1Study.experimentersInfo);
-extracted.experimenters = [];
+extracted.level1.experimenters = [];
 for (var i=0; i < level1Study.experimentersInfo.length; i++){
 	var text = level1Study.experimentersInfo[i].name;
 	var role = level1Study.experimentersInfo[i].role;
 	if (role != ''){
 		text = role + ': ' + text;
-		extracted.experimenters.push(text);
+		extracted.level1.experimenters.push(text);
 	}
 }
 
 // point of contact
 // show the section if it is specified.
-extracted.showlevel1PointOfContact = level1Study.contactInfo.email != '' || level1Study.contactInfo.email != '-' || level1Study.contactInfo.email != '-';
-extracted.level1PointOfContact = '';
+extracted.level1.showlevel1PointOfContact = level1Study.contactInfo.email != '' || level1Study.contactInfo.email != '-' || level1Study.contactInfo.email != '-';
+extracted.level1.level1PointOfContact = '';
 if (isAvailable(level1Study.contactInfo.name)){
-	extracted.level1PointOfContact = level1Study.contactInfo.name;
+	extracted.level1.level1PointOfContact = level1Study.contactInfo.name;
 }
 
-if (extracted.level1PointOfContact !=''){
-	extracted.level1PointOfContact += ', ';
+if (extracted.level1.level1PointOfContact !=''){
+	extracted.level1.level1PointOfContact += ', ';
 }
-extracted.level1PointOfContact += 'Email: ' + level1Study.contactInfo.email;
+extracted.level1.level1PointOfContact += 'Email: ' + level1Study.contactInfo.email;
 
-if (extracted.level1PointOfContact !=''){
-	extracted.level1PointOfContact += ', ';
+if (extracted.level1.level1PointOfContact !=''){
+	extracted.level1.level1PointOfContact += ', ';
 }
-if (extracted.level1PointOfContact !='' && isAvailable(level1Study.contactInfo.phone)){
-	extracted.level1PointOfContact += 'Phone: ' + level1Study.contactInfo.phone;
+if (extracted.level1.level1PointOfContact !='' && isAvailable(level1Study.contactInfo.phone)){
+	extracted.level1.level1PointOfContact += 'Phone: ' + level1Study.contactInfo.phone;
 }
 
 
 // hide publications section when informationis not available
-extracted.showExperimenters = extracted.experimenters.length != 1 || extracted.experimenters[0] != '';
-extracted.rootURI = level1Study.rootURI;
-if (extracted.rootURI == '.') // make it proper relative link
-	extracted.rootURI = '..';
+extracted.level1.showExperimenters = extracted.level1.experimenters.length != 1 || extracted.level1.experimenters[0] != '';
+extracted.level1.rootURI = level1Study.rootURI;
+if (extracted.level1.rootURI == '.') // make it proper relative link
+	extracted.level1.rootURI = '..';
 
 var level1DataRecordingsColumnDefs = [
 	{headerName: "Session", field: "sessionNumber", minWidth: 100, width:100, pinned: true, checkboxSelection: false},
@@ -229,10 +232,10 @@ var level1DataRecordingsColumnDefs = [
 	{headerName: "Session Lab Id", field: "sessionLabId", minWidth: 150, width:150},
 	{headerName: "Notes", field: "notes", minWidth: 100, width:100},
 	{headerName: "Filename", field: "filename", minWidth: 300, width:300,
-	template: '<a href="' + extracted.rootURI + '/session/{{data.sessionNumber}}/{{data.filename}}""><span ng-bind="data.filename"></span></a>'},
+	template: '<a href="' + extracted.level1.rootURI + '/session/{{data.sessionNumber}}/{{data.filename}}""><span ng-bind="data.filename"></span></a>'},
 	{headerName: "Original Filename", field: "originalFileNameAndPath", minWidth: 100, width:300},
 	{headerName: "Channel Locations", field: "channelLocationsFilename", minWidth: 100, width:300,
-template: '<a href="' + extracted.rootURI + '/session/{{data.sessionNumber}}/{{data.channelLocationsFilename}}""><span ng-bind="data.channelLocationsFilename"></span></a>'},
+template: '<a href="' + extracted.level1.rootURI + '/session/{{data.sessionNumber}}/{{data.channelLocationsFilename}}""><span ng-bind="data.channelLocationsFilename"></span></a>'},
 	{headerName: "Subject", cellStyle:{textAlign: 'center', color: 'red'},  children: [
 		{headerName: "Group", field: "subjectGroup", minWidth: 80, width:80},
 		{headerName: "Gender", field: "subjectGender", minWidth: 100, width:100},
@@ -253,7 +256,7 @@ function autoSizeAllGridColumns() {
 			allColumnIds.push(columnDef.children[i].field);
 		}
 	});
-	extracted.level1DataRecordingsGridOptions.columnApi.autoSizeColumns(allColumnIds);
+	extracted.level1.level1DataRecordingsGridOptions.columnApi.autoSizeColumns(allColumnIds);
 }
 
 function whenLevel1DataRecordingsGridIsReady (event){
@@ -262,7 +265,7 @@ function whenLevel1DataRecordingsGridIsReady (event){
 	setTimeout(autoSizeAllGridColumns, 1000);
 }
 
-extracted.level1DataRecordingsGridOptions = {
+extracted.level1.level1DataRecordingsGridOptions = {
 	columnDefs: level1DataRecordingsColumnDefs,
 	rowData: dataRecording,
 	enableColResize: true,
@@ -274,8 +277,8 @@ extracted.level1DataRecordingsGridOptions = {
 	onReady: whenLevel1DataRecordingsGridIsReady
 };
 // without this if there is only one row it becomes hidden.
-if (extracted.level1DataRecordingsGridOptions.rowData.length == 1){
-	extracted.level1DataRecordingsGridOptions.rowHeight = 50;
+if (extracted.level1.level1DataRecordingsGridOptions.rowData.length == 1){
+	extracted.level1.level1DataRecordingsGridOptions.rowHeight = 50;
 }
 
 
@@ -287,7 +290,7 @@ var lastTimeLevel1DatarecordingsFilterChanged = new Date();
 function filterLevel1DataRecordingsIfNoChange(value) {
 	var thisTime = new Date();
 	if (thisTime.getTime() - lastTimeLevel1DatarecordingsFilterChanged.getTime() > 200){
-		extracted.level1DataRecordingsGridOptions.api.setQuickFilter(value);
+		extracted.level1.level1DataRecordingsGridOptions.api.setQuickFilter(value);
 	}
 }
 
@@ -304,7 +307,7 @@ var level1TasksColumnDefs = [
 ];
 
 
-extracted.level1TasksGridOptions = {
+extracted.level1.level1TasksGridOptions = {
 	columnDefs: level1TasksColumnDefs,
 	rowData:makeIntoArray(level1Study.tasksInfo),
 	enableColResize: true,
@@ -312,8 +315,8 @@ extracted.level1TasksGridOptions = {
 	enableFilter: true,
 };
 // without this if there is only one row it becomes hidden.
-if (extracted.level1TasksGridOptions.rowData.length == 1){
-	extracted.level1TasksGridOptions.rowHeight = 50;
+if (extracted.level1.level1TasksGridOptions.rowData.length == 1){
+	extracted.level1.level1TasksGridOptions.rowHeight = 50;
 }
 
 // Events grid
@@ -344,7 +347,7 @@ var lastTimeLevel1EventsFilterChanged = new Date();
 function filterLevel1EventsIfNoChange(value) {
 	var thisTime = new Date();
 	if (thisTime.getTime() - lastTimeLevel1EventsFilterChanged.getTime() > 200){
-		extracted.level1EventsGridOptions.api.setQuickFilter(value);
+		extracted.level1.level1EventsGridOptions.api.setQuickFilter(value);
 	}
 }
 
@@ -353,7 +356,7 @@ function onLevelEventsFilterChanged(value) {
 	setTimeout(filterLevel1EventsIfNoChange, 300, value);
 }
 
-extracted.level1EventsGridOptions = {
+extracted.level1.level1EventsGridOptions = {
 	columnDefs: level1EventsColumnDefs,
 	rowData:eventData,
 	enableColResize: true,
@@ -364,20 +367,20 @@ extracted.level1EventsGridOptions = {
 };
 
 //license section
-extracted.showLevel1LicensePart = isAvailable(level1Study.summaryInfo.license.link) ||  isAvailable(level1Study.summaryInfo.license.type) ||  isAvailable(level1Study.summaryInfo.license.text);
-extracted.level1LicenseType = level1Study.summaryInfo.license.type;
-extracted.showLevel1LicenseLink = isAvailable(level1Study.summaryInfo.license.link);
-extracted.level1LicenseLink = level1Study.summaryInfo.license.link;
-extracted.showLevel1LicenseText = isAvailable(level1Study.summaryInfo.license.text);
-extracted.level1LicenseText = level1Study.summaryInfo.license.text;
+extracted.level1.showLevel1LicensePart = isAvailable(level1Study.summaryInfo.license.link) ||  isAvailable(level1Study.summaryInfo.license.type) ||  isAvailable(level1Study.summaryInfo.license.text);
+extracted.level1.level1LicenseType = level1Study.summaryInfo.license.type;
+extracted.level1.showLevel1LicenseLink = isAvailable(level1Study.summaryInfo.license.link);
+extracted.level1.level1LicenseLink = level1Study.summaryInfo.license.link;
+extracted.level1.showLevel1LicenseText = isAvailable(level1Study.summaryInfo.license.text);
+extracted.level1.level1LicenseText = level1Study.summaryInfo.license.text;
 
 // IRB section
-extracted.showIRBPart = isAvailable(level1Study.irbInfo);
-extracted.IRBtext = level1Study.irbInfo;
+extracted.level1.showIRBPart = isAvailable(level1Study.irbInfo);
+extracted.level1.IRBtext = level1Study.irbInfo;
 
 // copyright section
-extracted.showLevel1CopyRight = isAvailable(level1Study.copyrightInfo);
-extracted.copyrightText  = level1Study.copyrightInfo;
+extracted.level1.showLevel1CopyRight = isAvailable(level1Study.copyrightInfo);
+extracted.level1.copyrightText  = level1Study.copyrightInfo;
 
 //---------------------- setting up AngularJS ----------------------------------
 
