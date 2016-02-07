@@ -65,9 +65,9 @@ extracted.levelDerived = {};
 extracted.level1.shortDescription = level1Study.studyShortDescription;
 extracted.level1.title = study.title;
 extracted.level1.fullDescription = level1Study.studyDescription;
-extracted.level1.showLevel1Notice = true;
-extracted.level1.showLevel2Notice = false;
-extracted.level1.showLevel3Notice = false;
+extracted.level1.showNotice = true;
+extracted.level2.showNotice = false;
+extracted.levelDerived.showNotice = false;
 
 extracted.level1.numberOfSessions = level1Study.sessionTaskInfo.length;
 
@@ -199,22 +199,22 @@ for (var i=0; i < level1Study.experimentersInfo.length; i++){
 
 // point of contact
 // show the section if it is specified.
-extracted.level1.showlevel1PointOfContact = level1Study.contactInfo.email != '' || level1Study.contactInfo.email != '-' || level1Study.contactInfo.email != '-';
-extracted.level1.level1PointOfContact = '';
+extracted.level1.showPointOfContact = level1Study.contactInfo.email != '' || level1Study.contactInfo.email != '-' || level1Study.contactInfo.email != '-';
+extracted.level1.pointOfContact = '';
 if (isAvailable(level1Study.contactInfo.name)){
-	extracted.level1.level1PointOfContact = level1Study.contactInfo.name;
+	extracted.level1.pointOfContact = level1Study.contactInfo.name;
 }
 
-if (extracted.level1.level1PointOfContact !=''){
-	extracted.level1.level1PointOfContact += ', ';
+if (extracted.level1.pointOfContact !=''){
+	extracted.level1.pointOfContact += ', ';
 }
-extracted.level1.level1PointOfContact += 'Email: ' + level1Study.contactInfo.email;
+extracted.level1.pointOfContact += 'Email: ' + level1Study.contactInfo.email;
 
-if (extracted.level1.level1PointOfContact !=''){
-	extracted.level1.level1PointOfContact += ', ';
+if (extracted.level1.pointOfContact !=''){
+	extracted.level1.pointOfContact += ', ';
 }
-if (extracted.level1.level1PointOfContact !='' && isAvailable(level1Study.contactInfo.phone)){
-	extracted.level1.level1PointOfContact += 'Phone: ' + level1Study.contactInfo.phone;
+if (extracted.level1.pointOfContact !='' && isAvailable(level1Study.contactInfo.phone)){
+	extracted.level1.pointOfContact += 'Phone: ' + level1Study.contactInfo.phone;
 }
 
 
@@ -256,7 +256,7 @@ function autoSizeAllGridColumns() {
 			allColumnIds.push(columnDef.children[i].field);
 		}
 	});
-	extracted.level1.level1DataRecordingsGridOptions.columnApi.autoSizeColumns(allColumnIds);
+	extracted.level1.dataRecordingsGridOptions.columnApi.autoSizeColumns(allColumnIds);
 }
 
 function whenLevel1DataRecordingsGridIsReady (event){
@@ -265,7 +265,7 @@ function whenLevel1DataRecordingsGridIsReady (event){
 	setTimeout(autoSizeAllGridColumns, 1000);
 }
 
-extracted.level1.level1DataRecordingsGridOptions = {
+extracted.level1.dataRecordingsGridOptions = {
 	columnDefs: level1DataRecordingsColumnDefs,
 	rowData: dataRecording,
 	enableColResize: true,
@@ -277,8 +277,8 @@ extracted.level1.level1DataRecordingsGridOptions = {
 	onReady: whenLevel1DataRecordingsGridIsReady
 };
 // without this if there is only one row it becomes hidden.
-if (extracted.level1.level1DataRecordingsGridOptions.rowData.length == 1){
-	extracted.level1.level1DataRecordingsGridOptions.rowHeight = 50;
+if (extracted.level1.dataRecordingsGridOptions.rowData.length == 1){
+	extracted.level1.dataRecordingsGridOptions.rowHeight = 50;
 }
 
 
@@ -290,7 +290,7 @@ var lastTimeLevel1DatarecordingsFilterChanged = new Date();
 function filterLevel1DataRecordingsIfNoChange(value) {
 	var thisTime = new Date();
 	if (thisTime.getTime() - lastTimeLevel1DatarecordingsFilterChanged.getTime() > 200){
-		extracted.level1.level1DataRecordingsGridOptions.api.setQuickFilter(value);
+		extracted.level1.dataRecordingsGridOptions.api.setQuickFilter(value);
 	}
 }
 
@@ -307,7 +307,7 @@ var level1TasksColumnDefs = [
 ];
 
 
-extracted.level1.level1TasksGridOptions = {
+extracted.level1.tasksGridOptions = {
 	columnDefs: level1TasksColumnDefs,
 	rowData:makeIntoArray(level1Study.tasksInfo),
 	enableColResize: true,
@@ -315,8 +315,8 @@ extracted.level1.level1TasksGridOptions = {
 	enableFilter: true,
 };
 // without this if there is only one row it becomes hidden.
-if (extracted.level1.level1TasksGridOptions.rowData.length == 1){
-	extracted.level1.level1TasksGridOptions.rowHeight = 50;
+if (extracted.level1.tasksGridOptions.rowData.length == 1){
+	extracted.level1.tasksGridOptions.rowHeight = 50;
 }
 
 // Events grid
@@ -347,7 +347,7 @@ var lastTimeLevel1EventsFilterChanged = new Date();
 function filterLevel1EventsIfNoChange(value) {
 	var thisTime = new Date();
 	if (thisTime.getTime() - lastTimeLevel1EventsFilterChanged.getTime() > 200){
-		extracted.level1.level1EventsGridOptions.api.setQuickFilter(value);
+		extracted.level1.eventsGridOptions.api.setQuickFilter(value);
 	}
 }
 
@@ -356,7 +356,7 @@ function onLevelEventsFilterChanged(value) {
 	setTimeout(filterLevel1EventsIfNoChange, 300, value);
 }
 
-extracted.level1.level1EventsGridOptions = {
+extracted.level1.eventsGridOptions = {
 	columnDefs: level1EventsColumnDefs,
 	rowData:eventData,
 	enableColResize: true,
@@ -367,19 +367,19 @@ extracted.level1.level1EventsGridOptions = {
 };
 
 //license section
-extracted.level1.showLevel1LicensePart = isAvailable(level1Study.summaryInfo.license.link) ||  isAvailable(level1Study.summaryInfo.license.type) ||  isAvailable(level1Study.summaryInfo.license.text);
-extracted.level1.level1LicenseType = level1Study.summaryInfo.license.type;
-extracted.level1.showLevel1LicenseLink = isAvailable(level1Study.summaryInfo.license.link);
-extracted.level1.level1LicenseLink = level1Study.summaryInfo.license.link;
-extracted.level1.showLevel1LicenseText = isAvailable(level1Study.summaryInfo.license.text);
-extracted.level1.level1LicenseText = level1Study.summaryInfo.license.text;
+extracted.level1.showLicensePart = isAvailable(level1Study.summaryInfo.license.link) ||  isAvailable(level1Study.summaryInfo.license.type) ||  isAvailable(level1Study.summaryInfo.license.text);
+extracted.level1.licenseType = level1Study.summaryInfo.license.type;
+extracted.level1.showLicenseLink = isAvailable(level1Study.summaryInfo.license.link);
+extracted.level1.licenseLink = level1Study.summaryInfo.license.link;
+extracted.level1.showLicenseText = isAvailable(level1Study.summaryInfo.license.text);
+extracted.level1.licenseText = level1Study.summaryInfo.license.text;
 
 // IRB section
 extracted.level1.showIRBPart = isAvailable(level1Study.irbInfo);
 extracted.level1.IRBtext = level1Study.irbInfo;
 
 // copyright section
-extracted.level1.showLevel1CopyRight = isAvailable(level1Study.copyrightInfo);
+extracted.level1.showCopyRight = isAvailable(level1Study.copyrightInfo);
 extracted.level1.copyrightText  = level1Study.copyrightInfo;
 
 //---------------------- setting up AngularJS ----------------------------------

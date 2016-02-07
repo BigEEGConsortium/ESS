@@ -73,18 +73,18 @@
         <td>Funding Organization: {{level1.fundingOrganization}}</td>
       </tr>
     </table>
-    <div ng-if="showPublications">
+    <div ng-if="level1.showPublications">
       <h3>Publications</h3>
       <ul ng-repeat="x in level1.publications">
         <li><a href="{{x.link}}">{{ x.text }}</a></li>
       </ul>
     </div>
-    <div ng-if="showExperimenters">
+    <div ng-if="level1.showExperimenters">
       <h3>Experimenters</h3>
-      <div ng-if="showlevel1PointOfContact">
+      <div ng-if="level1.showPointOfContact">
         <p>Point of Contact:</b> {{ level1.level1PointOfContact }}</p>
       </div>
-      <ul ng-repeat="x in experimenters">
+      <ul ng-repeat="x in level1.experimenters">
         <li>{{ x }}</li>
       </ul>
     </div>
@@ -100,11 +100,11 @@
       onkeyup="onLevel1DataRecordingsFilterChanged(this.value)"/>
     </label>
     <label style="font-weight: normal">
-      <button  style="font-weight: normal"onclick="extracted.level1DataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
+      <button  style="font-weight: normal"onclick="extracted.level1.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
     </label>
-    <div ag-grid="level1DataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    <div ag-grid="level1.dataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
     <h3>Tasks</h3>
-    <div ag-grid="level1TasksGridOptions" class="ag-fresh" style="height: 100%";></div>
+    <div ag-grid="level1.tasksGridOptions" class="ag-fresh" style="height: 100%";></div>
     <h3>Events</h3>
     <label style="font-weight: normal">
       Filter Rows
@@ -117,20 +117,20 @@
       onkeyup="onLevelEventsFilterChanged(this.value)"/>
     </label>
     <label style="font-weight: normal">
-      <button onclick="extracted.level1EventsGridOptions.api.exportDataAsCsv()">Export to CSV</button>
+      <button onclick="extracted.level1.eventsGridOptions.api.exportDataAsCsv()">Export to CSV</button>
     </label>
-    <div ag-grid="level1EventsGridOptions" class="ag-fresh" style="height: 100%;"></div>
-    <div ng-if="showLevel1LicensePart">
+    <div ag-grid="level1.eventsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    <div ng-if="level1.showLicensePart">
       <h3>License Agreement</h3>
-      <div ng-if="showLevel1LicenseText"><p>{{level1LicenseText}}</p></div>
-      <div ng-if="showLevel1LicenseLink"><a href="{{level1LicenseLink}}">License Link</a></div>
+      <div ng-if="level1.showLicenseText"><p>{{level1.licenseText}}</p></div>
+      <div ng-if="level1.showLicenseLink"><a href="{{level1.licenseLink}}">License Link</a></div>
     </div>
-    <div ng-if="showIRBPart">
+    <div ng-if="level1.showIRBPart">
       <h3>Institutional Review Board (IRB)</h3>
-      <p>{{IRBtext}}</p>
+      <p>{{level1.IRBtext}}</p>
     </div>
-    <div ng-if="showLevel1CopyRight" align='center'>
-      <p style="horizon">{{copyrightText}}</p>
+    <div ng-if="level1.shoCopyRight" align='center'>
+      <p style="horizon">{{level1.copyrightText}}</p>
     </div>
   </div>
 </body>
