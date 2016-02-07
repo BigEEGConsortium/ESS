@@ -2924,7 +2924,7 @@ classdef level1Study < levelStudy;
         
         function writeJSON(obj, essFolder)
             % writeJSON(obj, essFolder)
-            % write ESS container manifest data as a JSON object in manifest.js file.
+            % write ESS container manifest data as a JSON object in 
             if nargin < 2
                 essFolder = obj.essFilePath;
             end;
@@ -2935,16 +2935,7 @@ classdef level1Study < levelStudy;
             fclose(fid);
         end;
         
-        function copyJSONReportAssets(obj, essFolder)
-             if nargin < 2
-                essFolder = obj.essFilePath;
-             end;
-             
-             thisClassFilenameAndPath = mfilename('fullpath');
-            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
-            
-            copyfile([essDocumentPathStr filesep 'asset' filesep 'json_report' filesep '*'], [essFolder filesep]);
-        end;
+        function copt
     end;
     methods (Static)
         
