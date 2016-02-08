@@ -42,6 +42,27 @@ function isAvailable(stringValue) {
 	return stringValue != 'NA' || stringValue != '-' || stringValue != ' ';
 }
 
+
+function getLevelHierarchy(studyObj){
+var studyLevelHierarchy = [];
+var studyLevelHierarchyType = [];
+var currentLevel = study;
+for (var i = 0; i < array.length; i++) {
+	studyLevelHierarchy.unshift(currentLevel);
+		if ("parentStudyObj" in currentLevel){
+			studyLevelHierarchyType.unshift('level-derived');
+			currentLevel = currentLevel.parentStudyObj;
+		}
+		else if ("studyLevel1" in currentLevel) {
+			studyLevelHierarchyType.unshift('level2');
+			currentLevel = currentLevel.studyLevel1;
+	} else {
+			studyLevelHierarchyType.unshift('level1');
+	}
+}
+return ({'studyLevelHierarchy': studyLevelHierarchy, 'studyLevelHierarchyType':studyLevelHierarchyType});
+}
+
 // -----------------------------------------------------------------------------
 
 var level1Study = study.parentStudyObj.level1StudyObj;
