@@ -47,7 +47,7 @@ function getLevelHierarchy(studyObj){
 var studyLevelHierarchy = [];
 var studyLevelHierarchyType = [];
 var currentLevel = study;
-for (var i = 0; i < array.length; i++) {
+while (true) {
 	studyLevelHierarchy.unshift(currentLevel);
 		if ("parentStudyObj" in currentLevel){
 			studyLevelHierarchyType.unshift('level-derived');
@@ -56,8 +56,9 @@ for (var i = 0; i < array.length; i++) {
 		else if ("studyLevel1" in currentLevel) {
 			studyLevelHierarchyType.unshift('level2');
 			currentLevel = currentLevel.studyLevel1;
-	} else {
+	} else if ("eventSpecificiationMethod" in currentLevel) {
 			studyLevelHierarchyType.unshift('level1');
+			break;
 	}
 }
 return ({'studyLevelHierarchy': studyLevelHierarchy, 'studyLevelHierarchyType':studyLevelHierarchyType});
@@ -65,18 +66,19 @@ return ({'studyLevelHierarchy': studyLevelHierarchy, 'studyLevelHierarchyType':s
 
 // -----------------------------------------------------------------------------
 
-var level1Study = study.parentStudyObj.level1StudyObj;
+result = getLevelHierarchy(study);
+var level1Study = result.studyLevelHierarchy[0];
 
 // make key variables read from JSON to all be arrays.
-level1Study.sessionTaskInfo = makeIntoArray(level1Study.sessionTaskInfo);
-for (var i=0; i < level1Study.sessionTaskInfo.length; i++) {
-	level1Study.sessionTaskInfo[i].dataRecording  = makeIntoArray(level1Study.sessionTaskInfo[i].dataRecording);
-	level1Study.sessionTaskInfo[i].subject  = makeIntoArray(level1Study.sessionTaskInfo[i].subject);
+level1Study.sessions = makeIntoArray(level1Study.sessions.session[0]);
+for (var i=0; i < level1Study.sessions.length; i++) {
+	level1Study.sessions[i].dataRecording  = makeIntoArray(level1Study.sessions[i].dataRecording);
+	level1Study.sessions[i].subject  = makeIntoArray(level1Study.sessions[i].subject);
 }
 
-level1Study.recordingParameterSet = makeIntoArray(level1Study.recordingParameterSet);
+level1Study.recordingParameterSet = makeIntoArray(level1Study.recordingParameterSets.recordingParameterSet);
 for (var k=0; k < level1Study.recordingParameterSet.length; k++){
-	level1Study.recordingParameterSet[k].modality = makeIntoArray(level1Study.recordingParameterSet[k].modality);
+	level1Study.recordingParameterSet[k].modality = makeIntoArray(level1Study.recordingParameterSet[k].channelType.modality);
 }
 
 var extracted = {}; // data extracted from study JSON object and sent to AngularJS (as $Scope)
@@ -90,20 +92,20 @@ extracted.level1.showNotice = true;
 extracted.level2.showNotice = false;
 extracted.levelDerived.showNotice = false;
 
-extracted.level1.numberOfSessions = level1Study.sessionTaskInfo.length;
+extracted.level1.numberOfSessions = level1Study.sessions.length;
 
 // count the number of subjects by looking at labIds. LabIds that are not provided,
 //  i.e. are either NA or - are assumed to be unique.
 var labsIds = [];
 var groups = [];
-for (var i=0; i < level1Study.sessionTaskInfo.length; i++) {
-	for (var j=0; j < level1Study.sessionTaskInfo[i].subject.length; j++) {
-		var labIdValue = level1Study.sessionTaskInfo[i].subject[j].labId;
+for (var i=0; i < level1Study.sessions.length; i++) {
+	for (var j=0; j < level1Study.sessions[i].subject.length; j++) {
+		var labIdValue = level1Study.sessions[i].subject[j].labId;
 		if (labIdValue == 'NA' || labIdValue == '-'){
 			labIdValue = Math.floor((1 + Math.random()) * 0x1000000000000).toString();
 		}
 		labsIds[i] = labIdValue;
-		groups.push(level1Study.sessionTaskInfo[i].subject[j].group);
+		groups.push(level1Study.sessions[i].subject[j].group);
 	}
 }
 
@@ -113,9 +115,9 @@ var modalitiesInDataRecording = []; // what modalities are in the data recording
 var channelLocationTypes = [];
 var dataRecording = [];
 var eegSamplingFrequency = [];
-for (var i=0; i < level1Study.sessionTaskInfo.length; i++){
-	for (var j=0; j < level1Study.sessionTaskInfo[i].dataRecording.length; j++){
-		var parameterSetLabel = level1Study.sessionTaskInfo[i].dataRecording[j].recordingParameterSetLabel;
+for (var i=0; i < level1Study.sessions.length; i++){
+	for (var j=0; j < level1Study.sessions[i].dataRecording.length; j++){
+		var parameterSetLabel = level1Study.sessions[i].dataRecording[j].recordingParameterSetLabel;
 		for (var k=0; k < level1Study.recordingParameterSet.length; k++){
 			if (level1Study.recordingParameterSet[k].recordingParameterSetLabel == parameterSetLabel){
 				var modalitiesInParamerSet = [];
@@ -140,19 +142,19 @@ for (var i=0; i < level1Study.sessionTaskInfo.length; i++){
 		modalitiesAndTheirChannelsText = textFromItemsAndCounts(modalitiesInParamerSet, modalityNumberOfChannels);
 
 		dataRecording.push({
-			'sessionNumber': level1Study.sessionTaskInfo[i].sessionNumber,
-			'taskLabel': level1Study.sessionTaskInfo[i].taskLabel,
-			'sessionLabId': level1Study.sessionTaskInfo[i].labId,
-			'channelLocationsFilename': level1Study.sessionTaskInfo[i].subject[0].channelLocations,
-			'subjectGroup': level1Study.sessionTaskInfo[i].subject[0].group,
-			'subjectGender': level1Study.sessionTaskInfo[i].subject[0].gender,
-			'subjectYOB': level1Study.sessionTaskInfo[i].subject[0].YOB,
-			'subjectAge': level1Study.sessionTaskInfo[i].subject[0].age,
-			'subjectLabId': level1Study.sessionTaskInfo[i].subject[0].labId,
-			'subjectHandedness': level1Study.sessionTaskInfo[i].subject[0].hand,
-			'filename': level1Study.sessionTaskInfo[i].dataRecording[j].filename,
-			'eventInstanceFile': level1Study.sessionTaskInfo[i].dataRecording[j].eventInstanceFile,
-			'originalFileNameAndPath': level1Study.sessionTaskInfo[i].dataRecording[j].originalFileNameAndPath,
+			'sessionNumber': level1Study.sessions[i].sessionNumber,
+			'taskLabel': level1Study.sessions[i].taskLabel,
+			'sessionLabId': level1Study.sessions[i].labId,
+			'channelLocationsFilename': level1Study.sessions[i].subject[0].channelLocations,
+			'subjectGroup': level1Study.sessions[i].subject[0].group,
+			'subjectGender': level1Study.sessions[i].subject[0].gender,
+			'subjectYOB': level1Study.sessions[i].subject[0].YOB,
+			'subjectAge': level1Study.sessions[i].subject[0].age,
+			'subjectLabId': level1Study.sessions[i].subject[0].labId,
+			'subjectHandedness': level1Study.sessions[i].subject[0].hand,
+			'filename': level1Study.sessions[i].dataRecording[j].filename,
+			'eventInstanceFile': level1Study.sessions[i].dataRecording[j].eventInstanceFile,
+			'originalFileNameAndPath': level1Study.sessions[i].dataRecording[j].originalFileNameAndPath,
 			'modalitiesAndTheirChannelsText': modalitiesAndTheirChannelsText,
 			'eegSamplingFrequency': eegSamplingFrequency[channelLocationTypes.length-1]
 		})

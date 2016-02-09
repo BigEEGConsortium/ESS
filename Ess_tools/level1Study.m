@@ -2928,19 +2928,154 @@ classdef level1Study < levelStudy;
             if nargin < 2
                 essFolder = obj.essFilePath;
             end;
+            
+            tmpFile = [tempname '.xml'];
+            obj.write(tmpFile);
+            
+            Pref.Str2Num = false;
+            Pref.PreserveSpace = true; % keep spaces
+            xmlAsStructure = xml_read(tmpFile, Pref);
+            delete(tmpFile);
+            
+            xmlAsStructure.type = 'essStudyLevel1';
+            xmlAsStructure.dateCreated = '';
+            xmlAsStructure.dateModified = datestr8601(now,'*ymdHMS');
+            xmlAsStructure.id = ['eegstudy.org/id/' xmlAsStructure.uuid];
+            xmlAsStructure = rmfield(xmlAsStructure, 'uuid');
+            
+            for i=1:length(xmlAsStructure.project.funding)
+                xmlAsStructure.projectFunding(i).organization = xmlAsStructure.project.funding(i).organization;
+                xmlAsStructure.projectFunding(i).grantId = xmlAsStructure.project.funding(i).grantId;
+            end;
+            xmlAsStructure.projectFunding.forceArray_____=  true;
+            xmlAsStructure = rmfield(xmlAsStructure, 'project');
+            
+            clear recordingParameterSets;
+            for i=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet)
+                recordingParameterSets(i).recordingParameterSetLabel = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).recordingParameterSetLabel;
+                recordingParameterSets(i).forceArray_____=  true;
+                clear modality;
+                for j=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality)
+                    modality{j} = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality(j);
+                    modality{j}.startChannel = str2double(modality{j}.startChannel);
+                    modality{j}.endChannel = str2double(modality{j}.endChannel);
+                    modality{j}.samplingRate = str2double(modality{j}.samplingRate);
+                end;
+                
+                for j=1:length(modality)
+                    recordingParameterSets(i).modality(j) = modality{j};
+                end;
+                
+                recordingParameterSets(i).modality(1).forceArray_____=  true;
+            end;
+            xmlAsStructure.recordingParameterSets = recordingParameterSets;
+            
+            clear sessions
+            for i=1:length(xmlAsStructure.sessions.session)
+                clear dataRecordings
+                for j=1:length(xmlAsStructure.sessions.session(i).dataRecordings.dataRecording)
+                    dataRecordings(j) = xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j);
+                end;
+                
+                sessions{i} = xmlAsStructure.sessions.session(i);
+                sessions{i}.dataRecordings = dataRecordings;
+                sessions{i}.dataRecordings.forceArray_____=  true;
+                % convert subject age, height and weight to numbers
+                clear subjects
+                for j=1:length(xmlAsStructure.sessions.session(i).subject)
+                    subjects{j} = xmlAsStructure.sessions.session(i).subject(j);
+                    %         subjects{j}.age = str2double(xmlAsStructure.sessions.session(i).subject(j).age);
+                    %         subjects{j}.height = str2double(xmlAsStructure.sessions.session(i).subject(j).height);
+                    %         subjects{j}.weight = str2double(xmlAsStructure.sessions.session(i).subject(j).weight);
+                    subjects{j}.forceArray_____=  true;
+                end;
+                
+                for j=1:length(subjects)
+                    sessions{i}.subjects(j) = subjects{j};
+                end;
+                
+                sessions{i} = rmfield(sessions{i}, 'subject');
+                sessions{i}.forceArray_____=  true;
+                
+            end;
+            
+            xmlAsStructure = rmfield(xmlAsStructure, 'sessions');
+            
+            for i=1:length(sessions)
+                xmlAsStructure.sessions(i) = sessions{i};
+            end;
+            
+            % tasks
+            clear tasks;
+            for i=1:length(xmlAsStructure.tasks.task)
+                tasks{i} = xmlAsStructure.tasks.task(i);
+                tasks{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'tasks');
+            for i=1:length(tasks)
+                xmlAsStructure.tasks(i) = tasks{i};
+            end;
+            
+            
+            % publications
+            clear publications;
+            for i=1:length(xmlAsStructure.publications.publication)
+                publications{i} = xmlAsStructure.publications.publication(i);
+                publications{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'publications');
+            for i=1:length(publications)
+                xmlAsStructure.publications(i) = publications{i};
+            end;
+
+            
+            % experimenters
+            clear experimenters;
+            for i=1:length(xmlAsStructure.experimenters.experimenter)
+                experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
+                experimenters{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
+            for i=1:length(experimenters)
+                xmlAsStructure.experimenters(i) = experimenters{j};
+            end;
+            
+            % event codes
+            clear eventCodes;
+            for i=1:length(xmlAsStructure.eventCodes.eventCode)
+                eventCodes(i).code = xmlAsStructure.eventCodes.eventCode(i).code;
+                eventCodes(i).taskLabel = xmlAsStructure.eventCodes.eventCode(i).taskLabel;
+                eventCodes(i).label = xmlAsStructure.eventCodes.eventCode(i).condition.label;
+                eventCodes(i).description = xmlAsStructure.eventCodes.eventCode(i).condition.description;
+                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
+                eventCodes(i).forceArray_____=  true;
+            end;
+            xmlAsStructure.eventCodes = eventCodes;                       
+            
+            xmlAsStructure.organizations = xmlAsStructure.organization;
+            xmlAsStructure.organizations.forceArray_____=  true;
+            
+            if isempty(xmlAsStructure.copyright)
+                xmlAsStructure.copyright = 'NA';
+            end;          
+            
             opt.ForceRootName = false;
-            json = savejson('', struct(obj));
+            opt.SingletCell = true;  % even single cells are saved as JSON arrays.
+            opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
+            opt.emptyString = '"NA"';
+            json = savejson('', xmlAsStructure, opt);
+            
             fid= fopen([essFolder filesep 'manifest.js'], 'w');
-            fprintf(fid, '%s', ['study = ' json]);
+            fprintf(fid, '%s', ['parseEssDocument(' json ');']);
             fclose(fid);
         end;
         
         function copyJSONReportAssets(obj, essFolder)
-             if nargin < 2
+            if nargin < 2
                 essFolder = obj.essFilePath;
-             end;
-             
-             thisClassFilenameAndPath = mfilename('fullpath');
+            end;
+            
+            thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
             
             copyfile([essDocumentPathStr filesep 'asset' filesep 'json_report' filesep '*'], [essFolder filesep]);
