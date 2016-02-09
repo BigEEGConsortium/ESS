@@ -1,4 +1,8 @@
 // --------------------------------  Functions  --------------------------------------
+var study;
+function parseEssDocument(studyAsJson){
+	study = JSON.parse(studyAsJson);
+}
 function makeIntoArray(variable){
 	if (variable.constructor != Array){
 		return Array(variable);
