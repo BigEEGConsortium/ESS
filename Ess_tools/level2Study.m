@@ -563,8 +563,8 @@ classdef level2Study < levelStudy;
             
         end;
                       
-        function [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber, subjectInfo] = getFilename(obj, varargin)
-		% [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber,  subjectInfo] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber, subjectInfo, level1DataRecording] = getFilename(obj, varargin)
+		% [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber,  subjectInfo, level1DataRecording] = getFilename(obj, varargin)
 		% The output sessionNumber is a cell array of strings. 
         % Obtains [full] filenames and other information for all or a subset of Level 2 data.
 		% You may use the returned values to for example run a function on each of EEG recordings. 
@@ -593,6 +593,7 @@ classdef level2Study < levelStudy;
             sessionNumber = {};
             subjectInfo = [];
             level2DataRecordingNumber = [];
+            clear level1DataRecording;
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
@@ -602,6 +603,7 @@ classdef level2Study < levelStudy;
                     taskLabel{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).taskLabel;
                     
                     sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber;
+                    level1DataRecording(length(sessionNumber)) = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
                     
                     inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)));
                     foundSubjectId = [];
