@@ -1,4 +1,4 @@
-parseEssDocument({
+receiveEssDocument({
 	"essVersion": "2.1",
 	"title": "RSVP Study",
 	"shortDescription": "Rapid Serial Visual Presentation (12Hz) Target (airplane) detection without immediate response",
@@ -128,7 +128,7 @@ parseEssDocument({
 	"IRB": "This data was recorded under the approval of the Institutional Review Board (IRB) of the University of California, San Diego (#071254).",
 	"type": "essStudyLevel1",
 	"dateCreated": "",
-	"dateModified": "2016-02-08T19:32:16",
+	"dateModified": "2016-02-09T18:06:47",
 	"id": "eegstudy.org\/id\/f99f8510-2444-4702-91e9-7ec153254cfc",
 	"projectFunding": [
 		{
@@ -773,16 +773,16 @@ parseEssDocument({
 			"role": "Data Analysis"
 		},
 		{
-			"name": "Nima Bigdely-Shamlo",
+			"name": "Andrey Vankov",
+			"role": "Software Infrastructure"
+		},
+		{
+			"name": "Rey R. Ramirez",
 			"role": "Data Analysis"
 		},
 		{
-			"name": "Nima Bigdely-Shamlo",
-			"role": "Data Analysis"
-		},
-		{
-			"name": "Nima Bigdely-Shamlo",
-			"role": "Data Analysis"
+			"name": "Scott Makeig",
+			"role": "Principal Investigator"
 		}
 	],
 	"organizations": [

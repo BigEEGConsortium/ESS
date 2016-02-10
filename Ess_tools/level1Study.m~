@@ -2922,16 +2922,9 @@ classdef level1Study < levelStudy;
             end;
         end;
         
-        function writeJSON(obj, essFolder)
-            % writeJSON(obj, essFolder)
-            % write ESS container manifest data as a JSON object in manifest.js file.
-            if nargin < 2
-                essFolder = obj.essFilePath;
-            end;
-            
-            tmpFile = [tempname '.xml'];
-            obj.write(tmpFile);
-            
+        function json = getAsJSON(obj)
+            % json = getAsJSON(obj)
+            % get the 
             Pref.Str2Num = false;
             Pref.PreserveSpace = true; % keep spaces
             xmlAsStructure = xml_read(tmpFile, Pref);
@@ -3005,6 +2998,40 @@ classdef level1Study < levelStudy;
                 xmlAsStructure.sessions(i) = sessions{i};
             end;
             
+            % tasks
+            clear tasks;
+            for i=1:length(xmlAsStructure.tasks.task)
+                tasks{i} = xmlAsStructure.tasks.task(i);
+                tasks{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'tasks');
+            for i=1:length(tasks)
+                xmlAsStructure.tasks(i) = tasks{i};
+            end;
+            
+            
+            % publications
+            clear publications;
+            for i=1:length(xmlAsStructure.publications.publication)
+                publications{i} = xmlAsStructure.publications.publication(i);
+                publications{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'publications');
+            for i=1:length(publications)
+                xmlAsStructure.publications(i) = publications{i};
+            end;
+            
+            
+            % experimenters
+            clear experimenters;
+            for i=1:length(xmlAsStructure.experimenters.experimenter)
+                experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
+                experimenters{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
+            for i=1:length(experimenters)
+                xmlAsStructure.experimenters(i) = experimenters{j};
+            end;
             
             % event codes
             clear eventCodes;
@@ -3018,26 +3045,35 @@ classdef level1Study < levelStudy;
             end;
             xmlAsStructure.eventCodes = eventCodes;
             
-            xmlAsStructure.publications.forceArray_____=  true;
-            
-            xmlAsStructure.experimenters.forceArray_____=  true;
-            
             xmlAsStructure.organizations = xmlAsStructure.organization;
             xmlAsStructure.organizations.forceArray_____=  true;
             
             if isempty(xmlAsStructure.copyright)
                 xmlAsStructure.copyright = 'NA';
-            end;          
+            end;
             
             opt.ForceRootName = false;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
-            json = savejson('', xmlAsStructure);
+            opt.emptyString = '"NA"';
+        end;
+        
+        
+        function writeJSONP(obj, essFolder)
+            % writeJSONP(obj, essFolder)
+            % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+            if nargin < 2
+                essFolder = obj.essFilePath;
+            end;
+            
+            tmpFile = [tempname '.xml'];
+            obj.write(tmpFile);
             
             
+            json = savejson('', xmlAsStructure, opt);
             
             fid= fopen([essFolder filesep 'manifest.js'], 'w');
-            fprintf(fid, '%s', ['parseEssDocument(' json ');']);
+            fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
             fclose(fid);
         end;
         

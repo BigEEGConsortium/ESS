@@ -2922,13 +2922,10 @@ classdef level1Study < levelStudy;
             end;
         end;
         
-        function writeJSON(obj, essFolder)
-            % writeJSON(obj, essFolder)
-            % write ESS container manifest data as a JSON object in manifest.js file.
-            if nargin < 2
-                essFolder = obj.essFilePath;
-            end;
-            
+        function json = getAsJSON(obj)
+            % json = getAsJSON(obj)
+            % get the ESS study as a JSON object.
+                        
             tmpFile = [tempname '.xml'];
             obj.write(tmpFile);
             
@@ -3027,7 +3024,7 @@ classdef level1Study < levelStudy;
             for i=1:length(publications)
                 xmlAsStructure.publications(i) = publications{i};
             end;
-
+            
             
             % experimenters
             clear experimenters;
@@ -3037,7 +3034,7 @@ classdef level1Study < levelStudy;
             end;
             xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
             for i=1:length(experimenters)
-                xmlAsStructure.experimenters(i) = experimenters{j};
+                xmlAsStructure.experimenters(i) = experimenters{i};
             end;
             
             % event codes
@@ -3050,23 +3047,34 @@ classdef level1Study < levelStudy;
                 eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
                 eventCodes(i).forceArray_____=  true;
             end;
-            xmlAsStructure.eventCodes = eventCodes;                       
+            xmlAsStructure.eventCodes = eventCodes;
             
             xmlAsStructure.organizations = xmlAsStructure.organization;
             xmlAsStructure.organizations.forceArray_____=  true;
             
             if isempty(xmlAsStructure.copyright)
                 xmlAsStructure.copyright = 'NA';
-            end;          
+            end;
             
             opt.ForceRootName = false;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
             opt.emptyString = '"NA"';
             json = savejson('', xmlAsStructure, opt);
+        end;
+        
+        
+        function writeJSONP(obj, essFolder)
+            % writeJSONP(obj, essFolder)
+            % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+            if nargin < 2
+                essFolder = obj.essFilePath;
+            end;
+                        
+            json = getAsJSON(obj);
             
             fid= fopen([essFolder filesep 'manifest.js'], 'w');
-            fprintf(fid, '%s', ['parseEssDocument(' json ');']);
+            fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
             fclose(fid);
         end;
         

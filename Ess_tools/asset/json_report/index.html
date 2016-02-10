@@ -9,6 +9,9 @@
   <link rel="stylesheet" type="text/css" href="report_style.css">
 </head>
 
+<!-- contains the manifest.js javascript JSONP wrapper function. It executes on JSON content provided in manifest.js -->
+<script type="text/javascript" src="ess_preprocessor.js"></script>
+
 <!-- read ESS container data as JSON -->
 <script type="text/javascript" src="manifest.js"></script>
 
@@ -82,7 +85,7 @@
     <div ng-if="level1.showExperimenters">
       <h3>Experimenters</h3>
       <div ng-if="level1.showPointOfContact">
-        <p>Point of Contact:</b> {{ level1.level1PointOfContact }}</p>
+        <p>Point of Contact:</b> {{ level1.pointOfContact }}</p>
       </div>
       <ul ng-repeat="x in level1.experimenters">
         <li>{{ x }}</li>

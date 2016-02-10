@@ -1,4 +1,4 @@
 var study;
-function parseEssDocument(studyAsJson){
-	study = JSON.parse(studyAsJson);
+function receiveEssDocument(studyAsJson){
+	study = studyAsJson;
 }
