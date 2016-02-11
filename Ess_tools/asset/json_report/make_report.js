@@ -26,12 +26,10 @@ function countArrayValues(arr) { // returns two arrays, one unique values and th
 function textFromItemsAndCounts(itemStrings, itemCounts, quantityString){
 	var text = '';
 	if (arguments.length<3)
-	var quantityString = '';
+		var quantityString = '';
 	for (var n= 0; n < itemStrings.length;n++) {
-		item = itemStrings[n];
-		if (typeof(stringValue) != 'string')
-		item = item.toString();
-		text += item + ' (' + itemCounts[n].toString() + quantityString + ')';
+		//if (typeof(stringValue) != 'string')
+		text +=  itemStrings[n].toString() + ' (' + itemCounts[n].toString() + quantityString + ')';
 		if (n<itemStrings.length - 1)
 		text += ', ';
 	}
@@ -159,7 +157,7 @@ var uniqueEEGChannelNumbers = result.uniqueValues;
 var numberOfRecordingsWithChannelNumber = result.counts;
 
 // form the string that contains number of EEG channels and the number of data recordings associated with each (in parenthesis)
-extracted.level1.numberOfChannels = textFromItemsAndCounts(uniqueEEGChannelNumbers, numberOfRecordingsWithChannelNumber, ' recordings')
+extracted.level1.numberOfChannels = textFromItemsAndCounts(uniqueEEGChannelNumbers, numberOfRecordingsWithChannelNumber, ' recordings');
 
 // count the number of recordings that the same number of channels
 var result = countArrayValues(modalitiesInDataRecording);
@@ -168,7 +166,7 @@ var numberOfRecordingsWithModality = result.counts;
 
 
 // form the string that contains different modalities and the number of data recordings associated with each (in parenthesis)
-extracted.level1.modalities = textFromItemsAndCounts(uniqueModalities, numberOfRecordingsWithModality, ' recordings')
+extracted.level1.modalities = textFromItemsAndCounts(uniqueModalities, numberOfRecordingsWithModality, ' recordings');
 
 var result = countArrayValues(channelLocationTypes);
 extracted.level1.channelLocationTypes = textFromItemsAndCounts(result.uniqueValues, result.counts, ' recordings');
@@ -333,7 +331,7 @@ extracted.level1.tasksGridOptions = {
 };
 // without this if there is only one row it becomes hidden.
 if (extracted.level1.tasksGridOptions.rowData.length == 1){
-	extracted.level1.tasksGridOptions.rowHeight = 50;
+	extracted.level1.tasksGridOptions.rowHeight = 55;
 }
 
 // Events grid
