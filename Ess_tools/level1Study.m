@@ -3024,8 +3024,7 @@ classdef level1Study < levelStudy;
             for i=1:length(publications)
                 xmlAsStructure.publications(i) = publications{i};
             end;
-            
-            
+                        
             % experimenters
             clear experimenters;
             for i=1:length(xmlAsStructure.experimenters.experimenter)
