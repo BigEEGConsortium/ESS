@@ -7,25 +7,26 @@
   <link rel="stylesheet" type="text/css" href="ag-grid/ag-grid.css">
   <link rel="stylesheet" type="text/css" href="ag-grid/theme-fresh.css">
   <link rel="stylesheet" type="text/css" href="report_style.css">
+
+  <!-- contains the manifest.js javascript JSONP wrapper function. It executes on JSON content provided in manifest.js -->
+  <script type="text/javascript" src="ess_preprocessor.js"></script>
+
+  <!-- read ESS container data as JSON -->
+  <script type="text/javascript" src="manifest.js"></script>
+
+  <!-- include dependencies -->
+  <script type="text/javascript" src="angular/angular.js"></script>
+  <script type="text/javascript" src="ag-grid/ag-grid.js"></script>
+  <script type="text/javascript" src="underscore-min.js"></script>
+  <script type="text/javascript" src="make_report.js"> </script>
 </head>
 
-<!-- contains the manifest.js javascript JSONP wrapper function. It executes on JSON content provided in manifest.js -->
-<script type="text/javascript" src="ess_preprocessor.js"></script>
 
-<!-- read ESS container data as JSON -->
-<script type="text/javascript" src="manifest.js"></script>
-
-<!-- include dependencies -->
-<script type="text/javascript" src="angular/angular.js"></script>
-<script type="text/javascript" src="ag-grid/ag-grid.js"></script>
-<script type="text/javascript" src="underscore-min.js"></script>
-<script type="text/javascript" src="make_report.js"> </script>
 <body>
   <div ng-app = "essReportApp" ng-controller="ReportController">
     <h1>{{level1.title}}</h1>
     <div ng-if="level1.showNotice">
       <p>This study is an <a href="http://www.eegstudy.org/#level1">ESS Standard Data Level 1 container</a>. This means that it contains raw, unprocessed EEG data (and possibly other modalities) arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.</p>
-      </p>
     </div>
     <div ng-if="level2.showNotice">
       <p>This study is an <a href="http://www.eegstudy.org/#level2">ESS Standard Data Level 2 container</a>. This means that raw EEG data has been processed with <a href="http://vislab.github.io/EEG-Clean-Tools/">PREP pipeline</a>, i.e. re-referenced with a robust average reference.
@@ -33,7 +34,7 @@
       </p>
     </div>
     <div ng-if="levelDerived.showNotice">
-      <p>This study is an ESS Standard Data Level-Derived container</a>. This means that it contains data after one or more levels of procesing.
+      <p>This study is an ESS Standard Data Level-Derived container. This means that it contains data after one or more levels of procesing.
         Data files have been arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.
       </p>
     </div>
@@ -85,7 +86,7 @@
     <div ng-if="level1.showExperimenters">
       <h3>Experimenters</h3>
       <div ng-if="level1.showPointOfContact">
-        <p>Point of Contact:</b> {{ level1.pointOfContact }}</p>
+        <p>Point of Contact: {{ level1.pointOfContact }}</p>
       </div>
       <ul ng-repeat="x in level1.experimenters">
         <li>{{ x }}</li>
@@ -103,11 +104,11 @@
       onkeyup="onLevel1DataRecordingsFilterChanged(this.value)"/>
     </label>
     <label style="font-weight: normal">
-      <button  style="font-weight: normal"onclick="extracted.level1.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
+      <button  style="font-weight: normal" onclick="extracted.level1.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
     </label>
     <div ag-grid="level1.dataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
     <h3>Tasks</h3>
-    <div ag-grid="level1.tasksGridOptions" class="ag-fresh" style="height: 100%";></div>
+    <div ag-grid="level1.tasksGridOptions" class="ag-fresh" style="height: 100%"></div>
     <h3>Events</h3>
     <label style="font-weight: normal">
       Filter Rows
