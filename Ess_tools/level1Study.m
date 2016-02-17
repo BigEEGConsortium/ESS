@@ -2933,12 +2933,16 @@ classdef level1Study < levelStudy;
             Pref.PreserveSpace = true; % keep spaces
             xmlAsStructure = xml_read(tmpFile, Pref);
             delete(tmpFile);
-            
+                      
+            % add fields that do not exist in XML yet, shoul be here on top to make the JSON
+            % elements to show on top
+            xmlAsStructure.DOI = 'NA';
             xmlAsStructure.type = 'essStudyLevel1';
-            xmlAsStructure.dateCreated = '';
-            xmlAsStructure.dateModified = datestr8601(now,'*ymdHMS');
-            xmlAsStructure.id = ['eegstudy.org/id/' xmlAsStructure.uuid];
-            xmlAsStructure = rmfield(xmlAsStructure, 'uuid');
+            xmlAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
+            xmlAsStructure.dateModified = xmlAsStructure.dateCreated;
+            xmlAsStructure.id = ['eegstudy.org/study/' strrep(obj.studyTitle, ' ', '_') '/' obj.studyUuid];
+            xmlAsStructure = rmfield(xmlAsStructure, 'uuid'); 
+            
             
             for i=1:length(xmlAsStructure.project.funding)
                 xmlAsStructure.projectFunding(i).organization = xmlAsStructure.project.funding(i).organization;
@@ -2957,6 +2961,20 @@ classdef level1Study < levelStudy;
                     modality{j}.startChannel = str2double(modality{j}.startChannel);
                     modality{j}.endChannel = str2double(modality{j}.endChannel);
                     modality{j}.samplingRate = str2double(modality{j}.samplingRate);
+                    modality{j} = renameField(modality{j}, 'channelLabel','channelLabels');
+                    modality{j} = renameField(modality{j}, 'nonScalpChannelLabel','nonScalpChannelLabels');
+                    
+                    if isempty(modality{j}.channelLabels)
+                        modality{j}.channelLabels = {'NA'};
+                    else
+                        modality{j}.channelLabels = strtrim(strsplit(modality{j}.channelLabels, ','));
+                    end;
+                    
+                    if isempty(modality{j}.nonScalpChannelLabels)
+                        modality{j}.nonScalpChannelLabels = {'NA'};
+                    else
+                        modality{j}.nonScalpChannelLabels = strtrim(strsplit(modality{j}.nonScalpChannelLabels, ','));
+                    end;
                 end;
                 
                 for j=1:length(modality)
@@ -2965,6 +2983,7 @@ classdef level1Study < levelStudy;
                 
                 recordingParameterSets(i).modality(1).forceArray_____=  true;
             end;
+            recordingParameterSets = renameField(recordingParameterSets, 'modality', 'modalities');
             xmlAsStructure.recordingParameterSets = recordingParameterSets;
             
             clear sessions
@@ -2972,8 +2991,10 @@ classdef level1Study < levelStudy;
                 clear dataRecordings
                 for j=1:length(xmlAsStructure.sessions.session(i).dataRecordings.dataRecording)
                     dataRecordings(j) = xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j);
+                    dataRecordings(j).dataRecordingId = ['eegstudy.org/recording/' xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j).dataRecordingUuid];
                 end;
                 
+                dataRecordings = rmfield(dataRecordings, 'dataRecordingUuid');
                 sessions{i} = xmlAsStructure.sessions.session(i);
                 sessions{i}.dataRecordings = dataRecordings;
                 sessions{i}.dataRecordings.forceArray_____=  true;
@@ -2984,6 +3005,7 @@ classdef level1Study < levelStudy;
                     %         subjects{j}.age = str2double(xmlAsStructure.sessions.session(i).subject(j).age);
                     %         subjects{j}.height = str2double(xmlAsStructure.sessions.session(i).subject(j).height);
                     %         subjects{j}.weight = str2double(xmlAsStructure.sessions.session(i).subject(j).weight);
+                    subjects{j} = renameField(subjects{j}, 'channelLocations', 'channelLocationFile');
                     subjects{j}.forceArray_____=  true;
                 end;
                 
@@ -3029,12 +3051,17 @@ classdef level1Study < levelStudy;
             clear experimenters;
             for i=1:length(xmlAsStructure.experimenters.experimenter)
                 experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
+                [experimenters{i}.givenName, experimenters{i}.familyName, experimenters{i}.additionalName] = splitName(experimenters{i}.name);
+                experimenters{i} = rmfield(experimenters{i}, 'name');
                 experimenters{i}.forceArray_____=  true;
             end;
             xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
             for i=1:length(experimenters)
                 xmlAsStructure.experimenters(i) = experimenters{i};
             end;
+            
+            [xmlAsStructure.contact.givenName, xmlAsStructure.contact.familyName, xmlAsStructure.contact.additionalName] = splitName(xmlAsStructure.contact.name);
+            xmlAsStructure.contact = rmfield(xmlAsStructure.contact, 'name');
             
             % event codes
             clear eventCodes;
@@ -3055,6 +3082,7 @@ classdef level1Study < levelStudy;
                 xmlAsStructure.copyright = 'NA';
             end;
             
+           
             opt.ForceRootName = false;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
