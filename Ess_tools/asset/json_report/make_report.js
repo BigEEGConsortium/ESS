@@ -26,7 +26,7 @@ function countArrayValues(arr) { // returns two arrays, one unique values and th
 function textFromItemsAndCounts(itemStrings, itemCounts, quantityString){
 	var text = '';
 	if (arguments.length<3)
-		var quantityString = '';
+	var quantityString = '';
 	for (var n= 0; n < itemStrings.length;n++) {
 		//if (typeof(stringValue) != 'string')
 		text +=  itemStrings[n].toString() + ' (' + itemCounts[n].toString() + quantityString + ')';
@@ -79,6 +79,7 @@ extracted.level2.showNotice = false;
 extracted.levelDerived.showNotice = false;
 
 extracted.level1.numberOfSessions = level1Study.sessions.length;
+extracted.level1.id = level1Study.id;
 
 // count the number of subjects by looking at labIds. LabIds that are not provided,
 //  i.e. are either NA or - are assumed to be unique.
@@ -108,15 +109,15 @@ for (var i=0; i < level1Study.sessions.length; i++){
 			if (level1Study.recordingParameterSets[k].recordingParameterSetLabel == parameterSetLabel){
 				var modalitiesInParamerSet = [];
 				var  modalityNumberOfChannels = [];
-				for (var m=0; m < level1Study.recordingParameterSets[k].modality.length; m++){
-					modalitiesInParamerSet.push(level1Study.recordingParameterSets[k].modality[m].type);
-					var numberOfChannels = 1 + parseInt(level1Study.recordingParameterSets[k].modality[m].endChannel) - parseInt(level1Study.recordingParameterSets[k].modality[m].startChannel);
+				for (var m=0; m < level1Study.recordingParameterSets[k].modalities.length; m++){
+					modalitiesInParamerSet.push(level1Study.recordingParameterSets[k].modalities[m].type);
+					var numberOfChannels = 1 + parseInt(level1Study.recordingParameterSets[k].modalities[m].endChannel) - parseInt(level1Study.recordingParameterSets[k].modalities[m].startChannel);
 					modalityNumberOfChannels.push(numberOfChannels);
-					if (level1Study.recordingParameterSets[k].modality[m].type.toUpperCase() == 'EEG'){
+					if (level1Study.recordingParameterSets[k].modalities[m].type.toUpperCase() == 'EEG'){
 						numberOfRecordingEEGChannels.push (numberOfChannels);
 						// using th length of dataRecording as a proxy for the numberof data recordings so far
-						eegSamplingFrequency[dataRecording.length] = level1Study.recordingParameterSets[k].modality[m].samplingRate;
-						channelLocationTypes[dataRecording.length] = level1Study.recordingParameterSets[k].modality[m].channelLocationType;
+						eegSamplingFrequency[dataRecording.length] = level1Study.recordingParameterSets[k].modalities[m].samplingRate;
+						channelLocationTypes[dataRecording.length] = level1Study.recordingParameterSets[k].modalities[m].channelLocationType;
 					}
 				}
 				modalitiesInDataRecording = modalitiesInDataRecording.concat(_.uniq(modalitiesInParamerSet));
@@ -204,7 +205,15 @@ extracted.level1.showPublications = level1Study.publications[0].citation != 'NA'
 // experimenters
 extracted.level1.experimenters = [];
 for (var i=0; i < level1Study.experimenters.length; i++){
-	var text = level1Study.experimenters[i].name;
+	if (isAvailable(level1Study.experimenters[i].givenName) || isAvailable(level1Study.experimenters[i].familyName)){
+		if (isAvailable(level1Study.experimenters[i].additionalName))
+		var middleNameSpace = ' ';
+		else
+		var middleNameSpace = '';
+
+		var text = level1Study.experimenters[i].givenName + middleNameSpace + level1Study.experimenters[i].additionalName + ' ' + level1Study.experimenters[i].familyName;
+	} else var text = '';
+
 	var role = level1Study.experimenters[i].role;
 	if (role != ''){
 		text = role + ': ' + text;
@@ -216,8 +225,12 @@ for (var i=0; i < level1Study.experimenters.length; i++){
 // show the section if it is specified.
 extracted.level1.showPointOfContact = level1Study.contact.email != '' || level1Study.contact.email != '-' || level1Study.contact.email != '-';
 extracted.level1.pointOfContact = '';
-if (isAvailable(level1Study.contact.name)){
-	extracted.level1.pointOfContact = level1Study.contact.name;
+if (isAvailable(level1Study.contact.givenName) || isAvailable(level1Study.contact.familyName)){
+	if (isAvailable(level1Study.contact.additionalName))
+	var middleNameSpace = ' ';
+	else
+	var middleNameSpace = '';
+	extracted.level1.pointOfContact = level1Study.contact.givenName + middleNameSpace + level1Study.contact.additionalName + ' ' + level1Study.contact.familyName;
 }
 
 if (extracted.level1.pointOfContact !=''){
