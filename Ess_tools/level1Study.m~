@@ -2963,6 +2963,18 @@ classdef level1Study < levelStudy;
                     modality{j}.samplingRate = str2double(modality{j}.samplingRate);
                     modality{j} = renameField(modality{j}, 'channelLabel','channelLabels');
                     modality{j} = renameField(modality{j}, 'nonScalpChannelLabel','nonScalpChannelLabels');
+                    
+                    if isempty(modality{j}.channelLabels)
+                        modality{j}.channelLabels = {'NA'};
+                    else
+                        modality{j}.channelLabels = strtrim(strsplit(modality{j}.channelLabels, ','));
+                    end;
+                    
+                    if isempty(modality{j}.nonScalpChannelLabels)
+                        modality{j}.nonScalpChannelLabels = {'NA'};
+                    else
+                        modality{j}.nonScalpChannelLabels = strtrim(strsplit(modality{j}.nonScalpChannelLabels, ','));
+                    end;
                 end;
                 
                 for j=1:length(modality)
@@ -3039,17 +3051,17 @@ classdef level1Study < levelStudy;
             clear experimenters;
             for i=1:length(xmlAsStructure.experimenters.experimenter)
                 experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
-                splitName = strsplit(xperimenters{i}.name);
-                if length(splitName) == 2 % only 
-                experimenters{i}.givenName = splitName{1};
-                experimenters{i}.familyName = splitName{2};
-                
+                [experimenters{i}.givenName, experimenters{i}.familyName, experimenters{i}.additionalName] = splitName(experimenters{i}.name);
+                experimenters{i} = rmfield(experimenters{i}, 'name');
                 experimenters{i}.forceArray_____=  true;
             end;
             xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
             for i=1:length(experimenters)
                 xmlAsStructure.experimenters(i) = experimenters{i};
             end;
+            
+            [xmlAsStructure.contact.givenName, xmlAsStructure.contact.familyName, xmlAsStructure.contact.additionalName] = splitName(xmlAsStructure.contact.name);
+            xmlAsStructure.contact = rmfield(xmlAsStructure.contact, 'name');
             
             % event codes
             clear eventCodes;
@@ -3063,14 +3075,22 @@ classdef level1Study < levelStudy;
             end;
             xmlAsStructure.eventCodes = eventCodes;
             
-            xmlAsStructure.organizations = xmlAsStructure.organization;
+            xmlAsStructure = renameField xmlAsStructure.organization;
             xmlAsStructure.organizations.forceArray_____=  true;
             
             if isempty(xmlAsStructure.copyright)
                 xmlAsStructure.copyright = 'NA';
             end;
             
-           
+            
+            % sort field names so important ones, e.g type and id end up on the top
+            fieldNames = fieldnames(xmlAsStructure);
+            topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'description', 'rootURI', 'projectFunding',...
+                'tasks', 'license', 'publications', 'experimenters'};
+            
+            xmlAsStructure = orderfields(xmlAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
+            
             opt.ForceRootName = false;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.

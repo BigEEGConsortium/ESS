@@ -3075,14 +3075,22 @@ classdef level1Study < levelStudy;
             end;
             xmlAsStructure.eventCodes = eventCodes;
             
-            xmlAsStructure.organizations = xmlAsStructure.organization;
+            xmlAsStructure = renameField(xmlAsStructure, 'organization', 'organizations');
             xmlAsStructure.organizations.forceArray_____=  true;
             
             if isempty(xmlAsStructure.copyright)
                 xmlAsStructure.copyright = 'NA';
             end;
             
-           
+            
+            % sort field names so important ones, e.g type and id end up on the top
+            fieldNames = fieldnames(xmlAsStructure);
+            topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'description', 'rootURI','summary', 'projectFunding',...
+                'tasks', 'publications', 'experimenters'};
+            
+            xmlAsStructure = orderfields(xmlAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
+            
             opt.ForceRootName = false;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.

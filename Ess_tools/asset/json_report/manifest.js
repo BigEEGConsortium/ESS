@@ -1,9 +1,76 @@
 receiveEssDocument({
-	"essVersion": "2.1",
 	"title": "RSVP Study",
+	"type": "essStudyLevel1",
+	"essVersion": "2.1",
 	"shortDescription": "Rapid Serial Visual Presentation (12Hz) Target (airplane) detection without immediate response",
+	"dateCreated": "2016-02-17T12:46:23",
+	"dateModified": "2016-02-17T12:46:23",
+	"id": "eegstudy.org\/study\/RSVP_Study\/f99f8510-2444-4702-91e9-7ec153254cfc",
+	"DOI": "NA",
+	"contact": {
+		"phone": "858-822-7538",
+		"email": "[use FIRSTNAME from above]@sccn.ucsd.edu",
+		"givenName": "Nima",
+		"familyName": "Bigdely-Shamlo",
+		"additionalName": ""
+	},
 	"description": "The purpose of this study was to explore the neural basis of target detection in human brain and to compare the performance of brain-computer interface (BCI) methods in classification of target vs. non-target images. The data was acquired during a rapid serial visual presentation task which was composed of a sequential presentation of image clips in rapid succession (12\/s) in 4.1-s bursts, to which subjects were to indicate whether or not the satellite image clips of London presented included a small target airplane image by making one of two button presses. To indicate that they did see the target airplane feature, subjects pressed the right button and to indicate that they did not see the target airplane feature, subjects pressed the left button. During the training sessions, feedback ('correct' or 'incorrect') was given based on the subject's response, but this feedback was omitted during the testing sessions.",
 	"rootURI": ".",
+	"summary": {
+		"totalSize": "930.8 MB",
+		"allSubjectsHealthyAndNormal": "Yes",
+		"license": {
+			"type": "CC0",
+			"text": "The person who associated a work with this deed has dedicated the work to the public domain by waiving all of his or her rights to the work worldwide under copyright law, including all related and neighboring rights, to the extent allowed by law. You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission. \n        In no way are the patent or trademark rights of any person affected by CC0, nor are the rights that other persons may have in the work or in how the work is used, such as publicity or privacy rights.\n        Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work, and disclaims liability for all uses of the work, to the fullest extent permitted by applicable law.\n        When using or citing the work, you should not imply endorsement by the author or the affirmer.",
+			"link": "License.txt"
+		}
+	},
+	"projectFunding": [
+		{
+			"organization": "Swartz Center for Computational Neuroscience, UCSD",
+			"grantId": "NA"
+		}
+	],
+	"tasks": [
+		{
+			"taskLabel": "main",
+			"tag": "Experiment context\/Sitting,Experiment context\/Indoors\/ Dim room, Paradigm\/Oddball discrimination paradigm\/Visual oddball paradigm\/Rapid Serial Visual Presentation",
+			"description": "There is only one task, RSVP target detecttion, in this study"
+		}
+	],
+	"publications": [
+		{
+			"citation": "NA",
+			"DOI": "NA",
+			"link": "NA"
+		}
+	],
+	"experimenters": [
+		{
+			"role": "Data Analysis",
+			"givenName": "Nima",
+			"familyName": "Bigdely-Shamlo",
+			"additionalName": ""
+		},
+		{
+			"role": "Software Infrastructure",
+			"givenName": "Andrey",
+			"familyName": "Vankov",
+			"additionalName": ""
+		},
+		{
+			"role": "Data Analysis",
+			"givenName": "Rey",
+			"familyName": "Ramirez",
+			"additionalName": "R."
+		},
+		{
+			"role": "Principal Investigator",
+			"givenName": "Scott",
+			"familyName": "Makeig",
+			"additionalName": ""
+		}
+	],
 	"eventSpecificiationMethod": "Codes",
 	"isInEssContainer": "Yes",
 	"recordingParameterSets": [
@@ -409,39 +476,8 @@ receiveEssDocument({
 			"tag": "Event\/Label\/Non-target image, Event\/Description\/A non-target image is displayed for about 8 milliseconds, Event\/Category\/Experimental stimulus, (Item\/Natural scene\/Arial\/Satellite, Participant\/Effect\/Cognitive\/Non-target, Sensory presentation\/Visual\/Rendering type\/Screen\/2D), Attribute\/Onset"
 		}
 	],
-	"summary": {
-		"totalSize": "930.8 MB",
-		"allSubjectsHealthyAndNormal": "Yes",
-		"license": {
-			"type": "CC0",
-			"text": "The person who associated a work with this deed has dedicated the work to the public domain by waiving all of his or her rights to the work worldwide under copyright law, including all related and neighboring rights, to the extent allowed by law. You can copy, modify, distribute and perform the work, even for commercial purposes, all without asking permission. \n        In no way are the patent or trademark rights of any person affected by CC0, nor are the rights that other persons may have in the work or in how the work is used, such as publicity or privacy rights.\n        Unless expressly stated otherwise, the person who associated a work with this deed makes no warranties about the work, and disclaims liability for all uses of the work, to the fullest extent permitted by applicable law.\n        When using or citing the work, you should not imply endorsement by the author or the affirmer.",
-			"link": "License.txt"
-		}
-	},
-	"contact": {
-		"phone": "858-822-7538",
-		"email": "[use FIRSTNAME from above]@sccn.ucsd.edu",
-		"givenName": "Nima",
-		"familyName": "Bigdely-Shamlo",
-		"additionalName": ""
-	},
-	"organization": {
-		"name": "Swartz Center of Computational Neuroscience, INC, UCSD",
-		"logoLink": "SCCN.jpg"
-	},
 	"copyright": "NA",
 	"IRB": "This data was recorded under the approval of the Institutional Review Board (IRB) of the University of California, San Diego (#071254).",
-	"DOI": "NA",
-	"type": "essStudyLevel1",
-	"dateCreated": "2016-02-16T18:24:39",
-	"dateModified": "2016-02-16T18:24:39",
-	"id": "eegstudy.org\/study\/RSVP_Study\/f99f8510-2444-4702-91e9-7ec153254cfc",
-	"projectFunding": [
-		{
-			"organization": "Swartz Center for Computational Neuroscience, UCSD",
-			"grantId": "NA"
-		}
-	],
 	"sessions": [
 		{
 			"number": "1",
@@ -1057,46 +1093,6 @@ receiveEssDocument({
 					"channelLocationFile": "channel_locations_RSVP_Study_session_15_task_main_subjectLabId_21__1_Qev_recording_1.elp"
 				}
 			]
-		}
-	],
-	"tasks": [
-		{
-			"taskLabel": "main",
-			"tag": "Experiment context\/Sitting,Experiment context\/Indoors\/ Dim room, Paradigm\/Oddball discrimination paradigm\/Visual oddball paradigm\/Rapid Serial Visual Presentation",
-			"description": "There is only one task, RSVP target detecttion, in this study"
-		}
-	],
-	"publications": [
-		{
-			"citation": "NA",
-			"DOI": "NA",
-			"link": "NA"
-		}
-	],
-	"experimenters": [
-		{
-			"role": "Data Analysis",
-			"givenName": "Nima",
-			"familyName": "Bigdely-Shamlo",
-			"additionalName": ""
-		},
-		{
-			"role": "Software Infrastructure",
-			"givenName": "Andrey",
-			"familyName": "Vankov",
-			"additionalName": ""
-		},
-		{
-			"role": "Data Analysis",
-			"givenName": "Rey",
-			"familyName": "Ramirez",
-			"additionalName": "R."
-		},
-		{
-			"role": "Principal Investigator",
-			"givenName": "Scott",
-			"familyName": "Makeig",
-			"additionalName": ""
 		}
 	],
 	"organizations": [
