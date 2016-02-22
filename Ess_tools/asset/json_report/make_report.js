@@ -47,17 +47,21 @@ function getLevelHierarchy(studyObj){
 var studyLevelHierarchy = [];
 var studyLevelHierarchyType = [];
 var currentLevel = study;
-for (var i = 0; i < array.length; i++) {
-	studyLevelHierarchy.unshift(currentLevel);
+while (true) {
+
 		if ("parentStudyObj" in currentLevel){
-			studyLevelHierarchyType.unshift('level-derived');
+			studyLevelHierarchyType.push('level-derived');
+			studyLevelHierarchy.push(currentLevel);
 			currentLevel = currentLevel.parentStudyObj;
 		}
 		else if ("studyLevel1" in currentLevel) {
-			studyLevelHierarchyType.unshift('level2');
+			studyLevelHierarchyType.push('level2');
+			studyLevelHierarchy.push(currentLevel);
 			currentLevel = currentLevel.studyLevel1;
 	} else {
-			studyLevelHierarchyType.unshift('level1');
+			studyLevelHierarchyType.push('level1');
+			studyLevelHierarchy.push(currentLevel);
+			break;
 	}
 }
 return ({'studyLevelHierarchy': studyLevelHierarchy, 'studyLevelHierarchyType':studyLevelHierarchyType});
