@@ -2922,20 +2922,207 @@ classdef level1Study < levelStudy;
             end;
         end;
         
-        function writeJSON(obj, essFolder)
-            % writeJSON(obj, essFolder)
-            % write ESS container manifest data as a JSON object in 
+        function json = getAsJSON(obj)
+            % json = getAsJSON(obj)
+            % get the ESS study as a JSON object.
+                        
+            tmpFile = [tempname '.xml'];
+            obj.write(tmpFile);
+            
+            Pref.Str2Num = false;
+            Pref.PreserveSpace = true; % keep spaces
+            xmlAsStructure = xml_read(tmpFile, Pref);
+            delete(tmpFile);
+                      
+            % add fields that do not exist in XML yet, shoul be here on top to make the JSON
+            % elements to show on top
+            xmlAsStructure.DOI = 'NA';
+            xmlAsStructure.type = 'essStudyLevel1';
+            xmlAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
+            xmlAsStructure.dateModified = xmlAsStructure.dateCreated;
+            xmlAsStructure.id = ['eegstudy.org/study/' strrep(obj.studyTitle, ' ', '_') '/' obj.studyUuid];
+            xmlAsStructure = rmfield(xmlAsStructure, 'uuid'); 
+            
+            
+            for i=1:length(xmlAsStructure.project.funding)
+                xmlAsStructure.projectFunding(i).organization = xmlAsStructure.project.funding(i).organization;
+                xmlAsStructure.projectFunding(i).grantId = xmlAsStructure.project.funding(i).grantId;
+            end;
+            xmlAsStructure.projectFunding.forceArray_____=  true;
+            xmlAsStructure = rmfield(xmlAsStructure, 'project');
+            
+            clear recordingParameterSets;
+            for i=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet)
+                recordingParameterSets(i).recordingParameterSetLabel = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).recordingParameterSetLabel;
+                recordingParameterSets(i).forceArray_____=  true;
+                clear modality;
+                for j=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality)
+                    modality{j} = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality(j);
+                    modality{j}.startChannel = str2double(modality{j}.startChannel);
+                    modality{j}.endChannel = str2double(modality{j}.endChannel);
+                    modality{j}.samplingRate = str2double(modality{j}.samplingRate);
+                    modality{j} = renameField(modality{j}, 'channelLabel','channelLabels');
+                    modality{j} = renameField(modality{j}, 'nonScalpChannelLabel','nonScalpChannelLabels');
+                    
+                    if isempty(modality{j}.channelLabels)
+                        modality{j}.channelLabels = {'NA'};
+                    else
+                        modality{j}.channelLabels = strtrim(strsplit(modality{j}.channelLabels, ','));
+                    end;
+                    
+                    if isempty(modality{j}.nonScalpChannelLabels)
+                        modality{j}.nonScalpChannelLabels = {'NA'};
+                    else
+                        modality{j}.nonScalpChannelLabels = strtrim(strsplit(modality{j}.nonScalpChannelLabels, ','));
+                    end;
+                end;
+                
+                for j=1:length(modality)
+                    recordingParameterSets(i).modality(j) = modality{j};
+                end;
+                
+                recordingParameterSets(i).modality(1).forceArray_____=  true;
+            end;
+            recordingParameterSets = renameField(recordingParameterSets, 'modality', 'modalities');
+            xmlAsStructure.recordingParameterSets = recordingParameterSets;
+            
+            clear sessions
+            for i=1:length(xmlAsStructure.sessions.session)
+                clear dataRecordings
+                for j=1:length(xmlAsStructure.sessions.session(i).dataRecordings.dataRecording)
+                    dataRecordings(j) = xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j);
+                    dataRecordings(j).dataRecordingId = ['eegstudy.org/recording/' xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j).dataRecordingUuid];
+                end;
+                
+                dataRecordings = rmfield(dataRecordings, 'dataRecordingUuid');
+                sessions{i} = xmlAsStructure.sessions.session(i);
+                sessions{i}.dataRecordings = dataRecordings;
+                sessions{i}.dataRecordings.forceArray_____=  true;
+                % convert subject age, height and weight to numbers
+                clear subjects
+                for j=1:length(xmlAsStructure.sessions.session(i).subject)
+                    subjects{j} = xmlAsStructure.sessions.session(i).subject(j);
+                    %         subjects{j}.age = str2double(xmlAsStructure.sessions.session(i).subject(j).age);
+                    %         subjects{j}.height = str2double(xmlAsStructure.sessions.session(i).subject(j).height);
+                    %         subjects{j}.weight = str2double(xmlAsStructure.sessions.session(i).subject(j).weight);
+                    subjects{j} = renameField(subjects{j}, 'channelLocations', 'channelLocationFile');
+                    subjects{j}.forceArray_____=  true;
+                end;
+                
+                for j=1:length(subjects)
+                    sessions{i}.subjects(j) = subjects{j};
+                end;
+                
+                sessions{i} = rmfield(sessions{i}, 'subject');
+                sessions{i}.forceArray_____=  true;
+                
+            end;
+            
+            xmlAsStructure = rmfield(xmlAsStructure, 'sessions');
+            
+            for i=1:length(sessions)
+                xmlAsStructure.sessions(i) = sessions{i};
+            end;
+            
+            % tasks
+            clear tasks;
+            for i=1:length(xmlAsStructure.tasks.task)
+                tasks{i} = xmlAsStructure.tasks.task(i);
+                tasks{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'tasks');
+            for i=1:length(tasks)
+                xmlAsStructure.tasks(i) = tasks{i};
+            end;
+            
+            
+            % publications
+            clear publications;
+            for i=1:length(xmlAsStructure.publications.publication)
+                publications{i} = xmlAsStructure.publications.publication(i);
+                publications{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'publications');
+            for i=1:length(publications)
+                xmlAsStructure.publications(i) = publications{i};
+            end;
+                        
+            % experimenters
+            clear experimenters;
+            for i=1:length(xmlAsStructure.experimenters.experimenter)
+                experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
+                [experimenters{i}.givenName, experimenters{i}.familyName, experimenters{i}.additionalName] = splitName(experimenters{i}.name);
+                experimenters{i} = rmfield(experimenters{i}, 'name');
+                experimenters{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
+            for i=1:length(experimenters)
+                xmlAsStructure.experimenters(i) = experimenters{i};
+            end;
+            
+            [xmlAsStructure.contact.givenName, xmlAsStructure.contact.familyName, xmlAsStructure.contact.additionalName] = splitName(xmlAsStructure.contact.name);
+            xmlAsStructure.contact = rmfield(xmlAsStructure.contact, 'name');
+            
+            % event codes
+            clear eventCodes;
+            for i=1:length(xmlAsStructure.eventCodes.eventCode)
+                eventCodes(i).code = xmlAsStructure.eventCodes.eventCode(i).code;
+                eventCodes(i).taskLabel = xmlAsStructure.eventCodes.eventCode(i).taskLabel;
+                eventCodes(i).label = xmlAsStructure.eventCodes.eventCode(i).condition.label;
+                eventCodes(i).description = xmlAsStructure.eventCodes.eventCode(i).condition.description;
+                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
+                eventCodes(i).forceArray_____=  true;
+            end;
+            xmlAsStructure.eventCodes = eventCodes;
+            
+            xmlAsStructure = renameField xmlAsStructure.organization;
+            xmlAsStructure.organizations.forceArray_____=  true;
+            
+            if isempty(xmlAsStructure.copyright)
+                xmlAsStructure.copyright = 'NA';
+            end;
+            
+            
+            % sort field names so important ones, e.g type and id end up on the top
+            fieldNames = fieldnames(xmlAsStructure);
+            topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'description', 'rootURI', 'projectFunding',...
+                'tasks', 'license', 'publications', 'experimenters'};
+            
+            xmlAsStructure = orderfields(xmlAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
+            
+            opt.ForceRootName = false;
+            opt.SingletCell = true;  % even single cells are saved as JSON arrays.
+            opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
+            opt.emptyString = '"NA"';
+            json = savejson('', xmlAsStructure, opt);
+        end;
+        
+        
+        function writeJSONP(obj, essFolder)
+            % writeJSONP(obj, essFolder)
+            % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
             if nargin < 2
                 essFolder = obj.essFilePath;
             end;
-            opt.ForceRootName = false;
-            json = savejson('', struct(obj));
+                        
+            json = getAsJSON(obj);
+            
             fid= fopen([essFolder filesep 'manifest.js'], 'w');
-            fprintf(fid, '%s', ['study = ' json]);
+            fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
             fclose(fid);
         end;
         
-        function copt
+        function copyJSONReportAssets(obj, essFolder)
+            if nargin < 2
+                essFolder = obj.essFilePath;
+            end;
+            
+            thisClassFilenameAndPath = mfilename('fullpath');
+            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+            
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'json_report' filesep '*'], [essFolder filesep]);
+        end;
     end;
     methods (Static)
         
