@@ -243,6 +243,9 @@ if(ndims(squeeze(item))>2) % for 3D or higher dimensions, flatten to 2D for now
     dim=size(item);
 end
 len=numel(item);
+if isfield('forceArray_____', item)
+    forcearray = true;
+    item = rmfield(
 forcearray= (len>1 || (jsonopt('SingletArray',0,varargin{:})==1 && level>0));
 ws=struct('tab',sprintf('\t'),'newline',sprintf('\n'));
 ws=jsonopt('whitespaces_',ws,varargin{:});

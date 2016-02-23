@@ -3130,7 +3130,7 @@ classdef level1Study < levelStudy;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
             opt.emptyString = '"NA"';
-            json = savejson('', xmlAsStructure, opt);
+            json = essJsonlab.savejson('', xmlAsStructure, opt);
         end;
         
         
