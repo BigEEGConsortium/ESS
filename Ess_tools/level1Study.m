@@ -1098,10 +1098,14 @@ classdef level1Study < levelStudy;
             
         end;
         
-        function obj = write(obj, essFilePath)
-            % obj = write(essFilePath)
+        function obj = write(obj, essFilePath, alsoWriteJson)
+            % obj = write(essFilePath, alsoWriteJson)
             %
             % Writes the information into an ESS-formatted XML file.
+            
+            if nargin < 3
+                alsoWriteJson = true;
+            end;                       
             
             if nargin < 2 && isempty(obj.essFilePath)
                 error('Please provide the name of the output file in the first input argument');
@@ -1109,6 +1113,10 @@ classdef level1Study < levelStudy;
             
             if nargin >=2
                 obj.essFilePath = essFilePath;
+            end;
+            
+            if alsoWriteJson
+                obj.writeJSONP; % since this function has an internal call to obj.write, this prevents cicular references
             end;
             
             docNode = com.mathworks.xml.XMLUtils.createDocument('studyLevel1');
@@ -2095,6 +2103,33 @@ classdef level1Study < levelStudy;
                 end;
             end;
             
+            if strcmpi(obj.isInEssContainer, 'Yes')
+                essPath = fileparts(obj.essFilePath);
+                if ~exist([essPath filesep 'manifest.js'], 'file')
+                    issue(end+1).description = 'manifest.js file was missing.';
+                    if fixIssues                        
+                        obj.copyJSONReportAssets;
+                        obj.writeJSONP;
+                        issue(end).howItWasFixed = 'manifest.js file created.';
+                    end;
+                end;
+            end
+            
+            % validate event HED tags
+            w = which('validateCellTags.m');
+            if isempty(w)
+                fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');
+            end;
+            
+            for i=1:length(obj.eventCodesInfo)
+                errors = validateCellTags({obj.eventCodesInfo(i).condition.tag});
+                if ~isempty(errors)
+                    errors{1} = strrep(errors{1}, 'Errors in cell 1:', '');
+                    issue(end+1).description = [sprintf('HED tag error in event code "%s" of task "%s" (record %d): ', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel, i) errors{1}];
+                end;
+            end;
+            
+            % end of validation test, now showing the potential issues.
             if isempty(issue)
                 fprintf('There are no issues. Great!\n');
             else
@@ -2677,7 +2712,7 @@ classdef level1Study < levelStudy;
                             elseif exist([fullEssFolder filesep basefilename], 'file')
                                 filename{end+1} = [fullEssFolder filesep basefilename];
                             else
-                                error('File %s of session %d, data recording %d cannot be found.', basefilename, i, j);
+                                warning('File %s of session %d, data recording %d cannot be found.', basefilename, i, j);
                             end;
                         else
                             filename{end+1} = basefilename;
@@ -2927,7 +2962,7 @@ classdef level1Study < levelStudy;
             % get the ESS study as a JSON object.
                         
             tmpFile = [tempname '.xml'];
-            obj.write(tmpFile);
+            obj.write(tmpFile, false);
             
             Pref.Str2Num = false;
             Pref.PreserveSpace = true; % keep spaces
@@ -3103,7 +3138,7 @@ classdef level1Study < levelStudy;
             % writeJSONP(obj, essFolder)
             % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
             if nargin < 2
-                essFolder = obj.essFilePath;
+                essFolder = fileparts(obj.essFilePath);
             end;
                         
             json = getAsJSON(obj);
@@ -3115,13 +3150,16 @@ classdef level1Study < levelStudy;
         
         function copyJSONReportAssets(obj, essFolder)
             if nargin < 2
-                essFolder = obj.essFilePath;
+                essFolder = fileparts(obj.essFilePath);
             end;
             
             thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+            % copy index.html
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
             
-            copyfile([essDocumentPathStr filesep 'asset' filesep 'json_report' filesep '*'], [essFolder filesep]);
+            % copy javascript and CSS used in index.html
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
         end;
     end;
     methods (Static)
