@@ -106,7 +106,7 @@ classdef level1Study < levelStudy;
             % create a instance of the object. If essFilePath is provided (optional) it also read the
             % XML file. If the file does not exists, it will be created on
             % obj.write();
-            % 
+            %
             % Example:
             %
             % obj = level1Study(xmlFile); % read an existing file
@@ -114,7 +114,7 @@ classdef level1Study < levelStudy;
             % obj = level1Study(newXmlFile, 'createNewFile', true); % create a new XML file
             %
             % Options:
-            %   Key                                     Value   
+            %   Key                                     Value
             %
             %   essFilePath                             : String, ESS Standard Level 1 XML Filename or Container folder. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.
             %   numberOfSessions                        : Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.
@@ -148,7 +148,7 @@ classdef level1Study < levelStudy;
                     obj.essFilePath = [obj.essFilePath filesep 'study_description.xml'];
                 end;
                 
-                [path, name, ext] = fileparts(obj.essFilePath); 
+                [path, name, ext] = fileparts(obj.essFilePath);
                 if ~inputOptions.createNewFile && exist(obj.essFilePath, 'file') && ~strcmpi(ext, '.xml')
                     error('The input file %s needs to be an XML file with .xml extension', obj.essFilePath);
                 end;
@@ -248,13 +248,13 @@ classdef level1Study < levelStudy;
             thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
             
-            schemaFile = [essDocumentPathStr filesep 'asset' filesep 'ESS_STDL 1_schema.xsd'];
-            [isValid, errorMessage] = validate_schema(essFilePath, schemaFile);
-            if ~isValid
-                fprintf('The input XML failed to be validated against ESS Schema provided in %s.\n',  schemaFile);
-                error(errorMessage);
-            end;
-            
+            %             schemaFile = [essDocumentPathStr filesep 'asset' filesep 'ESS_STDL 1_schema.xsd'];
+            %             [isValid, errorMessage] = validate_schema(essFilePath, schemaFile);
+            %             if ~isValid
+            %                 fprintf('The input XML failed to be validated against ESS Schema provided in %s.\n',  schemaFile);
+            %                 error(errorMessage);
+            %             end;
+            %
             xmlDocument = xmlread(essFilePath);
             potentialStudyNodeArray = xmlDocument.getElementsByTagName('studyLevel1');
             
@@ -367,7 +367,7 @@ classdef level1Study < levelStudy;
                     
                     for taskCounter = 0:(potentialTaskNodeArray.getLength-1)
                         currentNode = potentialTaskNodeArray.item(taskCounter); % select a session and make it the current node.
-                       
+                        
                         potentialTaskLabelNodeArray = currentNode.getElementsByTagName('taskLabel');
                         if potentialTaskLabelNodeArray.getLength > 0
                             obj.tasksInfo(taskCounter+1).taskLabel = readStringFromNode(potentialTaskLabelNodeArray.item(0));
@@ -986,7 +986,7 @@ classdef level1Study < levelStudy;
                     
                     for experimenterCounter = 0:(potentialExperimenterNodeArray.getLength-1)
                         currentNode = potentialExperimenterNodeArray.item(experimenterCounter); % select a session and make it the current node.
-
+                        
                         %name is not showing up
                         potentialExperimenterNameNodeArray = currentNode.getElementsByTagName('name');
                         if potentialExperimenterNameNodeArray.getLength > 0
@@ -1098,10 +1098,14 @@ classdef level1Study < levelStudy;
             
         end;
         
-        function obj = write(obj, essFilePath)
-            % obj = write(essFilePath)
+        function obj = write(obj, essFilePath, alsoWriteJson)
+            % obj = write(essFilePath, alsoWriteJson)
             %
             % Writes the information into an ESS-formatted XML file.
+            
+            if nargin < 3
+                alsoWriteJson = true;
+            end;                       
             
             if nargin < 2 && isempty(obj.essFilePath)
                 error('Please provide the name of the output file in the first input argument');
@@ -1109,6 +1113,10 @@ classdef level1Study < levelStudy;
             
             if nargin >=2
                 obj.essFilePath = essFilePath;
+            end;
+            
+            if alsoWriteJson
+                obj.writeJSONP; % since this function has an internal call to obj.write, this prevents cicular references
             end;
             
             docNode = com.mathworks.xml.XMLUtils.createDocument('studyLevel1');
@@ -1399,7 +1407,7 @@ classdef level1Study < levelStudy;
                     dataRecordingOriginalFileNameAndPathElement = docNode.createElement('originalFileNameAndPath');
                     dataRecordingOriginalFileNameAndPathElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).originalFileNameAndPath));
                     dataRecordingElement.appendChild(dataRecordingOriginalFileNameAndPathElement);
-               
+                    
                     
                     dataRecordingsRootNode.appendChild(dataRecordingElement);
                 end;
@@ -1562,7 +1570,7 @@ classdef level1Study < levelStudy;
             xmlwrite(obj.essFilePath, docNode);
         end;
         
-        function [obj, issue]= validate(obj, fixIssues)            
+        function [obj, issue]= validate(obj, fixIssues)
             
             function itIs = isProperNumber(inputString, mustBeInteger, minValue, allowedUnits)
                 % check to see if the input value is a valid number. It can
@@ -1799,10 +1807,10 @@ classdef level1Study < levelStudy;
                             channelsForWhichAModalityIsDefined = cat(2, channelsForWhichAModalityIsDefined, startChannelForModalityNumber{j}:endChannelForModalityNumber{j});
                         end;
                         channelsWithNoModality = setdiff(1:max(channelsForWhichAModalityIsDefined), channelsForWhichAModalityIsDefined);
-                        if ~isempty(channelsWithNoModality)                            
+                        if ~isempty(channelsWithNoModality)
                             issue(end+1).description = sprintf('No modality is defined for channels (%s) in recording parameter set %d.', num2str(channelsWithNoModality), i);
                         end;
-                                               
+                        
                         % write code to detect overlapping channel
                         % modalities
                         for j=1:length(startChannelForModalityNumber)
@@ -1919,8 +1927,8 @@ classdef level1Study < levelStudy;
                             
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
                                 issue(end+1).description = [sprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
-                                issue(end).issueType = 'missing file';                                                               
-
+                                issue(end).issueType = 'missing file';
+                                
                             else % if file exists, check if its adheres to ESS naming convention
                                 subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.sessionTaskInfo(i).dataRecording(j));
                                 [dataRecordingModalities, dataRecordingModalityString]= obj.getModalitiesForDataRecording(i, j); %#ok<ASGLU>
@@ -1941,7 +1949,7 @@ classdef level1Study < levelStudy;
                         
                         % check eventInstanceFile (only if in ESS
                         % Container and EEG type)
-                        dataRecordingModalities = lower(obj.getModalitiesForDataRecording(i,j));                        
+                        dataRecordingModalities = lower(obj.getModalitiesForDataRecording(i,j));
                         if ismember('eeg', dataRecordingModalities) && ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile)
                             if strcmpi(strtrim(obj.isInEssContainer), 'yes')
                                 issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
@@ -2095,6 +2103,33 @@ classdef level1Study < levelStudy;
                 end;
             end;
             
+            if strcmpi(obj.isInEssContainer, 'Yes')
+                essPath = fileparts(obj.essFilePath);
+                if ~exist([essPath filesep 'manifest.js'], 'file')
+                    issue(end+1).description = 'manifest.js file was missing.';
+                    if fixIssues                        
+                        obj.copyJSONReportAssets;
+                        obj.writeJSONP;
+                        issue(end).howItWasFixed = 'manifest.js file created.';
+                    end;
+                end;
+            end
+            
+            % validate event HED tags
+            w = which('validateCellTags.m');
+            if isempty(w)
+                fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');
+            end;
+            
+            for i=1:length(obj.eventCodesInfo)
+                errors = validateCellTags({obj.eventCodesInfo(i).condition.tag});
+                if ~isempty(errors)
+                    errors{1} = strrep(errors{1}, 'Errors in cell 1:', '');
+                    issue(end+1).description = [sprintf('HED tag error in event code "%s" of task "%s" (record %d): ', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel, i) errors{1}];
+                end;
+            end;
+            
+            % end of validation test, now showing the potential issues.
             if isempty(issue)
                 fprintf('There are no issues. Great!\n');
             else
@@ -2163,7 +2198,7 @@ classdef level1Study < levelStudy;
                 [dummy, ord] = sort(serialDateNumber, 'ascend'); %#ok<ASGLU>
                 obj.sessionTaskInfo(i).dataRecording = obj.sessionTaskInfo(i).dataRecording(ord);
             end;
-        end;       
+        end;
         
         function obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, outputFileName, overwriteFile)
             % obj = writeEventInstanceFile(obj, sessionTaskNumber, dataRecordingNumber, filePath, fileName, overwriteFile)
@@ -2171,7 +2206,7 @@ classdef level1Study < levelStudy;
             if nargin < 6
                 overwriteFile = false;
             end;
-             
+            
             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, obj.sessionTaskInfo(sessionTaskNumber).sessionNumber); %#ok<ASGLU>
             
             if nargin < 4 || isempty(filePath) % use the ESS convention folder location if none is provided.
@@ -2198,7 +2233,7 @@ classdef level1Study < levelStudy;
             if exist(fullFilePath, 'file') && ~overwriteFile
                 fprintf('Skipped writing event instance file %s since it already exists.\n'); %#ok<CTPCT>
             else
-                   
+                
                 EEG = [];
                 for i=1:length(allSearchFolders)
                     if isempty(EEG)
@@ -2212,13 +2247,13 @@ classdef level1Study < levelStudy;
                 end;
                 
                 
-               if isempty(EEG)
-                   error('EEG file for data recording %d of session task %d cannot be found.', dataRecordingNumber, sessionTaskNumber);
-               end;
+                if isempty(EEG)
+                    error('EEG file for data recording %d of session task %d cannot be found.', dataRecordingNumber, sessionTaskNumber);
+                end;
                 
-               % we do not need the data, so lets free up its memory
-               EEG.data = [];
-               
+                % we do not need the data, so lets free up its memory
+                EEG.data = [];
+                
                 studyEventCode = {obj.eventCodesInfo.code};
                 studyEventCodeTaskLabel = {obj.eventCodesInfo.taskLabel};
                 
@@ -2317,7 +2352,7 @@ classdef level1Study < levelStudy;
             
             for i=1:length(allSearchFolders)
                 for performSanitization = 0:1
-     
+                    
                     if performSanitization
                         eventFilename = strrep(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).eventInstanceFile, ':', '%3A');
                     else
@@ -2366,7 +2401,7 @@ classdef level1Study < levelStudy;
                 rootFolder = essFileFolder;
             elseif obj.rootURI(1) == '.'
                 rootFolder = [essFileFolder filesep obj.rootURI(2:end)];
-            else % the path is not relative, i.e. does not start with .,  but is absolute 
+            else % the path is not relative, i.e. does not start with .,  but is absolute
                 rootFolder = obj.rootURI;
             end;
             
@@ -2424,7 +2459,7 @@ classdef level1Study < levelStudy;
             end;
             
             obj = sortDataRecordingsByStartTime(obj);
-                        
+            
             for i = 1:length(obj.sessionTaskInfo)
                 fprintf('\nCopying files for session-task %d of %d (%d percent done).\n',i, length(obj.sessionTaskInfo), round(100*i/length(obj.sessionTaskInfo)));
                 
@@ -2463,9 +2498,9 @@ classdef level1Study < levelStudy;
                                 filenameInEss = obj.essConventionFileName('channel_locations', obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                     subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject), name, extension);
                             end;
-                                                        
+                            
                             if exist(fileFinalPath, 'file')
-                                destinationFile = [essFolder filesep essConventionfolder filesep filenameInEss];                            
+                                destinationFile = [essFolder filesep essConventionfolder filesep filenameInEss];
                                 copyfile(fileFinalPath, destinationFile)
                                 obj.sessionTaskInfo(i).subject(j).channelLocations = filenameInEss;
                             else
@@ -2501,7 +2536,7 @@ classdef level1Study < levelStudy;
                                 fileNameFromObj = obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile;
                                 namePrefixString = 'event';
                         end;
-                                                
+                        
                         nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
                         fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
                         fileNameFromObjisEmpty = isempty(strtrim(fileNameFromObj));
@@ -2538,7 +2573,7 @@ classdef level1Study < levelStudy;
                             end;
                             
                             % form subjectInSessionNumber
-                            subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.sessionTaskInfo(i).dataRecording(j));                                                                                   
+                            subjectInSessionNumber = obj.getInSessionNumberForDataRecording(obj.sessionTaskInfo(i).dataRecording(j));
                             
                             % copy the data recording file
                             
@@ -2582,8 +2617,8 @@ classdef level1Study < levelStudy;
                                     end;
                                 else
                                     fprintf('Skipped copying file %s to %s as it already exists.\n', fileFinalPath, destinationFile);
-                                end;                            
-
+                                end;
+                                
                                 if strcmp(typeOfFile{k}, 'recording')
                                     obj.sessionTaskInfo(i).dataRecording(j).filename = filenameInEss;
                                     if length(fileFinalPath) > length(rootFolder) && strcmp(fileFinalPath(1:length(rootFolder)), rootFolder)
@@ -2591,7 +2626,7 @@ classdef level1Study < levelStudy;
                                     else
                                         originalFileNameForXML = fileFinalPath;
                                     end;
-                                     
+                                    
                                     obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath = originalFileNameForXML;
                                 elseif strcmp(typeOfFile{k}, 'event')
                                     obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile = filenameInEss;
@@ -2671,14 +2706,14 @@ classdef level1Study < levelStudy;
                         end;
                         
                         if inputOptions.includeFolder
-                        [allSearchFolders, nextToXMLFolder, fullEssFolder] = obj.getSessionFileSearchFolders(obj.sessionTaskInfo(i).sessionNumber); %#ok<ASGLU>
-                        if exist([nextToXMLFolder filesep basefilename], 'file')
-                            filename{end+1} = [nextToXMLFolder filesep basefilename];
-                        elseif exist([fullEssFolder filesep basefilename], 'file')
-                            filename{end+1} = [fullEssFolder filesep basefilename];
-                        else
-                            error('File %s of session %d, data recording %d cannot be found.', basefilename, i, j);
-                        end;
+                            [allSearchFolders, nextToXMLFolder, fullEssFolder] = obj.getSessionFileSearchFolders(obj.sessionTaskInfo(i).sessionNumber); %#ok<ASGLU>
+                            if exist([nextToXMLFolder filesep basefilename], 'file')
+                                filename{end+1} = [nextToXMLFolder filesep basefilename];
+                            elseif exist([fullEssFolder filesep basefilename], 'file')
+                                filename{end+1} = [fullEssFolder filesep basefilename];
+                            else
+                                warning('File %s of session %d, data recording %d cannot be found.', basefilename, i, j);
+                            end;
                         else
                             filename{end+1} = basefilename;
                         end;
@@ -2703,7 +2738,7 @@ classdef level1Study < levelStudy;
             % [filename, outputDataRecordingUuid, taskLabel, sessionTaskNumber, moreInfo] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
             % Returns information about valid data recording UUIDs. For
             % example Level 1 EEG or event files.
-                        % key, value pairs:
+            % key, value pairs:
             %
             % includeFolder:   true ot false. Whether to return full file
             % path.
@@ -2714,11 +2749,11 @@ classdef level1Study < levelStudy;
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
                 arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Return EEG or event files.', 'type', 'char')...
                 );
-
+            
             if ischar(inputDataRecordingUuid)
                 inputDataRecordingUuid = {inputDataRecordingUuid};
             end;
-
+            
             moreInfo = struct;
             moreInfo.sessionNumber = {};
             moreInfo.dataRecordingNumber = [];
@@ -2776,12 +2811,12 @@ classdef level1Study < levelStudy;
                 end;
             end;
             
-            subjectInSessionNumber = unique(subjectInSessionNumber);                        
+            subjectInSessionNumber = unique(subjectInSessionNumber);
             subjectInSessionNumber = setdiff(unique(subjectInSessionNumber), {'', '-', 'NA'});
             
             % join different number by _
             subjectInSessionNumber = strjoin_adjoiner_first('_', subjectInSessionNumber);
-
+            
         end;
         
         function [dataRecordingModalities, dataRecordingModalityString]= getModalitiesForDataRecording(obj, sessionTaskNumber, dataRecordingNumber)
@@ -2793,7 +2828,7 @@ classdef level1Study < levelStudy;
             % dataRecordingModalityString   : string to be used in the
             %                                 beginning of ESS convention
             %                                 file name. made from
-            %                                 concatenation of lower case modalities. except if EEG is one of the modalities, then this string will inly be 'eeg' 
+            %                                 concatenation of lower case modalities. except if EEG is one of the modalities, then this string will inly be 'eeg'
             
             setLabels = {obj.recordingParameterSet.recordingParameterSetLabel};
             setId = strcmp(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).recordingParameterSetLabel, setLabels);
@@ -2844,7 +2879,7 @@ classdef level1Study < levelStudy;
             
             % fields of obj.sessionTaskInfo.dataRecording that require
             % name change
-            fieldName = {'filename', 'eventInstanceFile'}; 
+            fieldName = {'filename', 'eventInstanceFile'};
             
             % go over study sessions and rename files
             for i=1:length(newObj.sessionTaskInfo)
@@ -2868,7 +2903,7 @@ classdef level1Study < levelStudy;
                         movefile([newContainerFolder filesep 'session' filesep num2str(i) filesep obj.sessionTaskInfo(i).dataRecording(j).(fieldName{k})], [newContainerFolder filesep 'session' filesep num2str(i) filesep filenameInEss]);
                         
                         newObj.sessionTaskInfo(i).dataRecording(j).(fieldName{k}) = filenameInEss;
-                    end;                                                            
+                    end;
                 end;
                 
                 if level1Study.isAvailable(newObj.sessionTaskInfo(i).subject.channelLocations)
@@ -2922,6 +2957,210 @@ classdef level1Study < levelStudy;
             end;
         end;
         
+        function json = getAsJSON(obj)
+            % json = getAsJSON(obj)
+            % get the ESS study as a JSON object.
+                        
+            tmpFile = [tempname '.xml'];
+            obj.write(tmpFile, false);
+            
+            Pref.Str2Num = false;
+            Pref.PreserveSpace = true; % keep spaces
+            xmlAsStructure = xml_read(tmpFile, Pref);
+            delete(tmpFile);
+                      
+            % add fields that do not exist in XML yet, shoul be here on top to make the JSON
+            % elements to show on top
+            xmlAsStructure.DOI = 'NA';
+            xmlAsStructure.type = 'essStudyLevel1';
+            xmlAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
+            xmlAsStructure.dateModified = xmlAsStructure.dateCreated;
+            xmlAsStructure.id = ['eegstudy.org/study/' strrep(obj.studyTitle, ' ', '_') '/' obj.studyUuid];
+            xmlAsStructure = rmfield(xmlAsStructure, 'uuid'); 
+            
+            
+            for i=1:length(xmlAsStructure.project.funding)
+                xmlAsStructure.projectFunding(i).organization = xmlAsStructure.project.funding(i).organization;
+                xmlAsStructure.projectFunding(i).grantId = xmlAsStructure.project.funding(i).grantId;
+            end;
+            xmlAsStructure.projectFunding.forceArray_____=  true;
+            xmlAsStructure = rmfield(xmlAsStructure, 'project');
+            
+            clear recordingParameterSets;
+            for i=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet)
+                recordingParameterSets(i).recordingParameterSetLabel = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).recordingParameterSetLabel;
+                recordingParameterSets(i).forceArray_____=  true;
+                clear modality;
+                for j=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality)
+                    modality{j} = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality(j);
+                    modality{j}.startChannel = str2double(modality{j}.startChannel);
+                    modality{j}.endChannel = str2double(modality{j}.endChannel);
+                    modality{j}.samplingRate = str2double(modality{j}.samplingRate);
+                    modality{j} = renameField(modality{j}, 'channelLabel','channelLabels');
+                    modality{j} = renameField(modality{j}, 'nonScalpChannelLabel','nonScalpChannelLabels');
+                    
+                    if isempty(modality{j}.channelLabels)
+                        modality{j}.channelLabels = {'NA'};
+                    else
+                        modality{j}.channelLabels = strtrim(strsplit(modality{j}.channelLabels, ','));
+                    end;
+                    
+                    if isempty(modality{j}.nonScalpChannelLabels)
+                        modality{j}.nonScalpChannelLabels = {'NA'};
+                    else
+                        modality{j}.nonScalpChannelLabels = strtrim(strsplit(modality{j}.nonScalpChannelLabels, ','));
+                    end;
+                end;
+                
+                for j=1:length(modality)
+                    recordingParameterSets(i).modality(j) = modality{j};
+                end;
+                
+                recordingParameterSets(i).modality(1).forceArray_____=  true;
+            end;
+            recordingParameterSets = renameField(recordingParameterSets, 'modality', 'modalities');
+            xmlAsStructure.recordingParameterSets = recordingParameterSets;
+            
+            clear sessions
+            for i=1:length(xmlAsStructure.sessions.session)
+                clear dataRecordings
+                for j=1:length(xmlAsStructure.sessions.session(i).dataRecordings.dataRecording)
+                    dataRecordings(j) = xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j);
+                    dataRecordings(j).dataRecordingId = ['eegstudy.org/recording/' xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j).dataRecordingUuid];
+                end;
+                
+                dataRecordings = rmfield(dataRecordings, 'dataRecordingUuid');
+                sessions{i} = xmlAsStructure.sessions.session(i);
+                sessions{i}.dataRecordings = dataRecordings;
+                sessions{i}.dataRecordings.forceArray_____=  true;
+                % convert subject age, height and weight to numbers
+                clear subjects
+                for j=1:length(xmlAsStructure.sessions.session(i).subject)
+                    subjects{j} = xmlAsStructure.sessions.session(i).subject(j);
+                    %         subjects{j}.age = str2double(xmlAsStructure.sessions.session(i).subject(j).age);
+                    %         subjects{j}.height = str2double(xmlAsStructure.sessions.session(i).subject(j).height);
+                    %         subjects{j}.weight = str2double(xmlAsStructure.sessions.session(i).subject(j).weight);
+                    subjects{j} = renameField(subjects{j}, 'channelLocations', 'channelLocationFile');
+                    subjects{j}.forceArray_____=  true;
+                end;
+                
+                for j=1:length(subjects)
+                    sessions{i}.subjects(j) = subjects{j};
+                end;
+                
+                sessions{i} = rmfield(sessions{i}, 'subject');
+                sessions{i}.forceArray_____=  true;
+                
+            end;
+            
+            xmlAsStructure = rmfield(xmlAsStructure, 'sessions');
+            
+            for i=1:length(sessions)
+                xmlAsStructure.sessions(i) = sessions{i};
+            end;
+            
+            % tasks
+            clear tasks;
+            for i=1:length(xmlAsStructure.tasks.task)
+                tasks{i} = xmlAsStructure.tasks.task(i);
+                tasks{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'tasks');
+            for i=1:length(tasks)
+                xmlAsStructure.tasks(i) = tasks{i};
+            end;
+            
+            
+            % publications
+            clear publications;
+            for i=1:length(xmlAsStructure.publications.publication)
+                publications{i} = xmlAsStructure.publications.publication(i);
+                publications{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'publications');
+            for i=1:length(publications)
+                xmlAsStructure.publications(i) = publications{i};
+            end;
+                        
+            % experimenters
+            clear experimenters;
+            for i=1:length(xmlAsStructure.experimenters.experimenter)
+                experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
+                [experimenters{i}.givenName, experimenters{i}.familyName, experimenters{i}.additionalName] = splitName(experimenters{i}.name);
+                experimenters{i} = rmfield(experimenters{i}, 'name');
+                experimenters{i}.forceArray_____=  true;
+            end;
+            xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
+            for i=1:length(experimenters)
+                xmlAsStructure.experimenters(i) = experimenters{i};
+            end;
+            
+            [xmlAsStructure.contact.givenName, xmlAsStructure.contact.familyName, xmlAsStructure.contact.additionalName] = splitName(xmlAsStructure.contact.name);
+            xmlAsStructure.contact = rmfield(xmlAsStructure.contact, 'name');
+            
+            % event codes
+            clear eventCodes;
+            for i=1:length(xmlAsStructure.eventCodes.eventCode)
+                eventCodes(i).code = xmlAsStructure.eventCodes.eventCode(i).code;
+                eventCodes(i).taskLabel = xmlAsStructure.eventCodes.eventCode(i).taskLabel;
+                eventCodes(i).label = xmlAsStructure.eventCodes.eventCode(i).condition.label;
+                eventCodes(i).description = xmlAsStructure.eventCodes.eventCode(i).condition.description;
+                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
+                eventCodes(i).forceArray_____=  true;
+            end;
+            xmlAsStructure.eventCodes = eventCodes;
+            
+            xmlAsStructure = renameField(xmlAsStructure, 'organization', 'organizations');
+            xmlAsStructure.organizations.forceArray_____=  true;
+            
+            if isempty(xmlAsStructure.copyright)
+                xmlAsStructure.copyright = 'NA';
+            end;
+            
+            
+            % sort field names so important ones, e.g type and id end up on the top
+            fieldNames = fieldnames(xmlAsStructure);
+            topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'description', 'rootURI','summary', 'projectFunding',...
+                'tasks', 'publications', 'experimenters'};
+            
+            xmlAsStructure = orderfields(xmlAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
+            
+            opt.ForceRootName = false;
+            opt.SingletCell = true;  % even single cells are saved as JSON arrays.
+            opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
+            opt.emptyString = '"NA"';
+            json = essJsonlab.savejson('', xmlAsStructure, opt);
+        end;
+        
+        
+        function writeJSONP(obj, essFolder)
+            % writeJSONP(obj, essFolder)
+            % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+            if nargin < 2
+                essFolder = fileparts(obj.essFilePath);
+            end;
+                        
+            json = getAsJSON(obj);
+            
+            fid= fopen([essFolder filesep 'manifest.js'], 'w');
+            fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
+            fclose(fid);
+        end;
+        
+        function copyJSONReportAssets(obj, essFolder)
+            if nargin < 2
+                essFolder = fileparts(obj.essFilePath);
+            end;
+            
+            thisClassFilenameAndPath = mfilename('fullpath');
+            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+            % copy index.html
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
+            
+            % copy javascript and CSS used in index.html
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
+        end;
     end;
     methods (Static)
         
@@ -2930,21 +3169,21 @@ classdef level1Study < levelStudy;
             % files)
             forbiddenCharacters = '\/:*?"<>\,';
             stringForFileName  = inString;
-            stringForFileName(ismember(stringForFileName, forbiddenCharacters)) = [];         
+            stringForFileName(ismember(stringForFileName, forbiddenCharacters)) = [];
         end;
         
         function [name, part1, part2]= essConventionFileName(fileTypeIdentifier, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, subjectLabId, numberOfSubjectsInSession, freePart, extension)
             % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
             %    subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
-                     
+            
             % create a hash string to prevent (make very unlikely) name
             % clashes in case of string truncation
             needHashString = false;
             hashString = DataHash([studyTitle taskLabel freePart], struct('Method', 'SHA-512', 'Format',  'base64'));
             hashString(hashString == '/') = [];
             hashString(hashString == '+') = [];
-            hashString = hashString(1:3);          
+            hashString = hashString(1:3);
             
             % if it is a cell, e.g. has two numbers, join them by _, like
             % 1_2
@@ -3012,10 +3251,10 @@ classdef level1Study < levelStudy;
             taskLabel(taskLabel == ' ') = '_';
             freePart(freePart == ' ') = '_';
             subjectLabId(subjectLabId == ' ') = '_';
-                        
+            
             if ~ischar(sessionNumber)
                 sessionNumber = num2str(sessionNumber);
-            end;            
+            end;
             
             % always use tsv extension for event file
             fileTypeIdentifier = lower(fileTypeIdentifier);
@@ -3052,18 +3291,18 @@ classdef level1Study < levelStudy;
             end;
         end;
         
-         function [name, part1, part2]= essConventionFileName_legacy(fileTypeIdentifier, studyTitle, sessionNumber,...
+        function [name, part1, part2]= essConventionFileName_legacy(fileTypeIdentifier, studyTitle, sessionNumber,...
                 subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
             % [name, part1, part2]= essConventionFileName(eegOrEvent, studyTitle, sessionNumber,...
             %    subjectInSessionNumber, taskLabel, recordingNumber, freePart, extension)
-                     
+            
             % create a hash string to prevent (make very unlikely) name
             % clashes in case of string truncation
             needHashString = false;
             hashString = DataHash([studyTitle taskLabel freePart], struct('Method', 'SHA-512', 'Format',  'base64'));
             hashString(hashString == '/') = [];
             hashString(hashString == '+') = [];
-            hashString = hashString(1:3);          
+            hashString = hashString(1:3);
             
             
             % remove forbidden Windows OS filename characeters
@@ -3096,7 +3335,7 @@ classdef level1Study < levelStudy;
             if needHashString
                 freePart = [freePart '_' hashString];
             end;
-
+            
             
             % replace spaces in study title, freePart and task label with underlines
             studyTitle(studyTitle == ' ') = '_';
@@ -3241,13 +3480,13 @@ classdef level1Study < levelStudy;
                 itIs = ~isempty(inputString) && ~strcmpi(inputString, 'NA') && ~strcmp(inputString, '-');
             end;
         end
-         
+        
         function modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
-        % modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
-        % 
-        % Creates a modality array, used as part of level 1 RecordingParameterSet from channel
-        % types, labels, etc.
-
+            % modalityArray = modalityArrayFromChannelType(channelType, channelLabel, samplingRate, externalChannelList, eegDeviceName, eegReferenceLabel, eegReferenceLocation)
+            %
+            % Creates a modality array, used as part of level 1 RecordingParameterSet from channel
+            % types, labels, etc.
+            
             
             % for each data recording, create modalities (EEG, Temperature, etc.)
             [uniqueChannelType ia typeId] = unique(channelType, 'stable');
