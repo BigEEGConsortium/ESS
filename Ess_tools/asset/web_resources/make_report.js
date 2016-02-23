@@ -40,7 +40,6 @@ function isAvailable(stringValue) {
 	return stringValue != 'NA' || stringValue != '-' || stringValue != ' ';
 }
 
-
 function getLevelHierarchy(studyObj){
 	var studyLevelHierarchy = [];
 	var studyLevelHierarchyType = [];
