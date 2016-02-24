@@ -11,6 +11,8 @@ function json=savejson(rootname,obj,varargin)
 % author: Qianqian Fang (fangq<at> nmr.mgh.harvard.edu)
 % created on 2011/09/09
 %
+% edited by Nima bigdely-Shamlo and added forceArray___ directive.
+%
 % $Id$
 %
 % input:

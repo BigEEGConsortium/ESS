@@ -86,6 +86,9 @@ function DOMnode = xml_write(filename, tree, RootName, Pref)
 
 %% Check Matlab Version
 v = ver('MATLAB');
+if length(v) > 1
+    v = v(1); % added by Nima
+end;
 v = str2double(regexp(v.Version, '\d.\d','match','once'));
 if (v<7)
   error('Your MATLAB version is too old. You need version 7.0 or newer.');

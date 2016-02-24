@@ -467,8 +467,11 @@ classdef levelStudy
                 allFilters = cat(1, allFilters,  partObj(i).filters.filter);
             end;
             
-            % ToDo: order sessions
-            
+            % order sessions            
+            [filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subjectInfo] = getFilename(combinedObj);
+            [dummy ord] = sort(str2double(sessionNumber), 'ascend');
+            combinedObj.studyLevelDerivedFiles.studyLevelDerivedFile = combinedObj.studyLevelDerivedFiles.studyLevelDerivedFile(ord);
+                        
             finalFilters = uniqe_struct(allFilters);
             combinedObj.filters.filter = finalFilters;
             
