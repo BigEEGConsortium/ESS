@@ -12,6 +12,7 @@ classdef level1Study < levelStudy;
     properties
         % Version of ESS schema used.
         essVersion = ' ';
+        hedVersion = ' ';
         
         % The title of the study.
         studyTitle = ' ';
@@ -69,7 +70,7 @@ classdef level1Study < levelStudy;
         % Information about event codes (i.e. triggers, event numbers).
         % Notive, we do not have a separate 'event' node inside the
         % eventCodesInfo. This is a slightly different mapping from XML.
-        eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'condition', struct(...
+        eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'numberOfInstances', ' ', 'condition', struct(...
             'label', ' ', 'description', ' ', 'tag', ' '));
         
         % Summary of study information.
@@ -165,7 +166,7 @@ classdef level1Study < levelStudy;
                     
                     % prepare the object based on input values.
                     % assigns a random UUID.
-                    obj.essVersion = '2.1';
+                    obj.essVersion = '2.2';
                     obj.studyUuid = char(java.util.UUID.randomUUID);
                     
                     % if data recodring parameter set if assigned, use it
@@ -270,6 +271,11 @@ classdef level1Study < levelStudy;
             currentNode = studyNode;
             potentialEssVersionNodeArray = currentNode.getElementsByTagName('essVersion');
             obj.essVersion = readStringFromNode(potentialEssVersionNodeArray.item(0));
+            
+            % read HED version.
+            currentNode = studyNode;
+            potentialHedVersionNodeArray = currentNode.getElementsByTagName('hedVersion');
+            obj.hedVersion = readStringFromNode(potentialHedVersionNodeArray.item(0));
             
             % if the file is in ESS 1.0 create an EEG modality with the
             % correct number for sampling rate.
@@ -849,6 +855,13 @@ classdef level1Study < levelStudy;
                             obj.eventCodesInfo(eventCodeCounter+1).taskLabel = '';
                         end;
                         
+                        potentialCodeNumberOfInstancesNodeArray = currentNode.getElementsByTagName('numberOfInstances');
+                        if potentialCodeNumberOfInstancesNodeArray.getLength > 0
+                            obj.eventCodesInfo(eventCodeCounter+1).numberOfInstances = readStringFromNode(potentialCodeNumberOfInstancesNodeArray.item(0));
+                        else
+                            obj.eventCodesInfo(eventCodeCounter+1).numberOfInstances = '';
+                        end;
+                        
                         potentialCodeConditionNodeArray = singleEventCodeNode.getElementsByTagName('condition');
                         if potentialCodeConditionNodeArray.getLength > 0
                             for codeConditionCounter = 0:(potentialCodeConditionNodeArray.getLength-1)
@@ -1126,6 +1139,10 @@ classdef level1Study < levelStudy;
             essVersionElement.appendChild(docNode.createTextNode(obj.essVersion));
             docRootNode.appendChild(essVersionElement);
             
+            hedVersionElement = docNode.createElement('hedVersion');
+            hedVersionElement.appendChild(docNode.createTextNode(obj.hedVersion));
+            docRootNode.appendChild(hedVersionElement);
+            
             titleElement = docNode.createElement('title');
             titleElement.appendChild(docNode.createTextNode(obj.studyTitle));
             docRootNode.appendChild(titleElement);
@@ -1275,7 +1292,7 @@ classdef level1Study < levelStudy;
                 
                 sessionTaskLabelElement = docNode.createElement('taskLabel');
                 sessionTaskLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).taskLabel));
-                sessionRootNode.appendChild(sessionTaskLabelElement);
+                sessionRootNode.appendChild(sessionTaskLabelElement);                      
                 
                 purposeElement = docNode.createElement('purpose');
                 purposeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).purpose));
@@ -1447,6 +1464,10 @@ classdef level1Study < levelStudy;
                 eventCodeTaskLabelElement = docNode.createElement('taskLabel');
                 eventCodeTaskLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).taskLabel));
                 eventCodeRootNode.appendChild(eventCodeTaskLabelElement);
+                
+                eventCodeNumberOfInstancesElement = docNode.createElement('numberOfInstances');
+                eventCodeNumberOfInstancesElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).numberOfInstances));
+                eventCodeRootNode.appendChild(eventCodeNumberOfInstancesElement);
                 
                 for p= 1:length(obj.eventCodesInfo(n).condition)
                     eventCodeConditionElement = docNode.createElement('condition');
