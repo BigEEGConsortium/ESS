@@ -106,7 +106,7 @@ string hedVersion;
 array [
   object {
     string code;
-    integer {-1,} numberOfInstances;
+    integer {0,} numberOfInstances;
     string taskLabel;
     string description;
     string label;

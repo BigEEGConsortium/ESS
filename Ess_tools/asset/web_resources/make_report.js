@@ -348,13 +348,19 @@ if (extracted.level1.tasksGridOptions.rowData.length == 1){
 
 // Events grid
 var level1EventsColumnDefs = [
-	{headerName: "Event Code", field: "code", minWidth: 200, width:200, pinned: true},
+	{headerName: "Event Code", field: "code", minWidth: 150, width:150, pinned: true},
+	{headerName: "Task", field: "taskLabel", minWidth: 200, width:200},
+	{headerName: "Number of Instances", field: "numberOfInstances", minWidth: 200, width:200},
 	{headerName: "Label", field: "label", minWidth: 400, width:400},
 	{headerName: "Description", field: "description", minWidth: 200, width:500, cellStyle: {'white-space': 'pre-wrap'}},
 	{headerName: "HED Tags", field: "tag", minWidth:2300, width:600,cellStyle: {'white-space': 'pre-wrap'}}
 ];
 
 eventData = level1Study.eventCodes;
+for (var i = 0; i < eventData.length; i++) {
+	eventData[i].numberOfInstances = eventData[i].numberOfInstances.toLocaleString()
+}
+
 
 var lastTimeLevel1EventsFilterChanged = new Date();
 
