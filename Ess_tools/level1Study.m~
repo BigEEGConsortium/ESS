@@ -2089,18 +2089,16 @@ classdef level1Study < levelStudy;
                         end;
                         
                         if level1Study.isAvailable(obj.eventCodesInfo(i).taskLabel) && ~ismember(lower(obj.eventCodesInfo(i).taskLabel), lower(taskLabels))
-                            issue(end+1).description = sprintf('Task label %s defined for event code ''%s'' in record %d does not have any corresponding task definition.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code, i);
+                            issue(end+1).description = sprintf('Task label %s defined for event code %s in record %d does not have any corresponding task definition.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code, i);
                         end;
                         
                         % event instance count missing
                         if ~level1Study.isAvailable(obj.eventCodesInfo(i).numberOfInstances)
-                            issue(end+1).description = sprintf('Number of event instances for Task label ''%s'', Event ''%s'' was missing.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code);
-                            obj = obj.updateEventNumberOfInstances;
-                            issue(end).howItWasFixed = sprintf('All event insatnce counts recomputed.');
+                            issue(end+1).description = sprintf('Number of event instance for Task label %s, Event %s was missing  defined for event code %s in record %d does not have any corresponding task definition.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code, i);
                         end;
                         
                         if isempty(obj.eventCodesInfo(i).condition)
-                            issue(end+1).description = sprintf('Condition information is missing for event code ''%s'' in record %d.', obj.eventCodesInfo(i).code, i);
+                            issue(end+1).description = sprintf('Condition information is missing for event code %s in record %d.', obj.eventCodesInfo(i).code, i);
                         else
                             for j=1:length(obj.eventCodesInfo(i).condition)
                                 if ~(level1Study.isAvailable(obj.eventCodesInfo(i).condition(j).label) || level1Study.isAvailable(obj.eventCodesInfo(i).condition(j).description) || level1Study.isAvailable(obj.eventCodesInfo(i).condition(j).tag))
@@ -3148,12 +3146,7 @@ classdef level1Study < levelStudy;
                 eventCodes(i).taskLabel = xmlAsStructure.eventCodes.eventCode(i).taskLabel;
                 eventCodes(i).label = xmlAsStructure.eventCodes.eventCode(i).condition.label;
                 eventCodes(i).description = xmlAsStructure.eventCodes.eventCode(i).condition.description;
-                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;s
-                try
-                eventCodes(i).numberOfInstances = str2double(xmlAsStructure.eventCodes.eventCode(i).numberOfInstances);
-                catch e
-                    eventCodes(i).numberOfInstances = -1;
-                end;
+                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
                 eventCodes(i).forceArray_____=  true;
             end;
             xmlAsStructure.eventCodes = eventCodes;
@@ -3245,7 +3238,7 @@ classdef level1Study < levelStudy;
             
             for i=1:length(obj.eventCodesInfo)
                 keyString = ['task: '  obj.eventCodesInfo(i).taskLabel  ', eventCode: '  obj.eventCodesInfo(i).code];
-                obj.eventCodesInfo(i).numberOfInstances = num2str(eventCodeCountMap(keyString));
+                obj.eventCodesInfo(i).numberOfInstances = eventCodeCountMap(keyString);
             end;
             
         end;
