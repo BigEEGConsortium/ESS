@@ -62,7 +62,7 @@ function json=savejson(rootname,obj,varargin)
 %                         1e999 to represent Inf, they can set opt.Inf to '$11e999'
 %        opt.NaN ['"_NaN_"'|string]: a customized regular expression pattern
 %                         to represent NaN
-%        opt.emptyString  the string to use instead of null for empty values;
+
 %        opt.JSONP [''|string]: to generate a JSONP output (JSON with padding),
 %                         for example, if opt.JSONP='foo', the JSON data is
 %                         wrapped inside a function call as 'foo(...);'
@@ -474,7 +474,7 @@ else
 end
 
 if(isempty(mat))
-    txt=jsonopt('emptyString','null',varargin{:});
+    txt='null';
     return;
 end
 floatformat=jsonopt('FloatFormat','%.10g',varargin{:});

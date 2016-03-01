@@ -3148,7 +3148,7 @@ classdef level1Study < levelStudy;
                 eventCodes(i).taskLabel = xmlAsStructure.eventCodes.eventCode(i).taskLabel;
                 eventCodes(i).label = xmlAsStructure.eventCodes.eventCode(i).condition.label;
                 eventCodes(i).description = xmlAsStructure.eventCodes.eventCode(i).condition.description;
-                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;s
+                eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
                 try
                 eventCodes(i).numberOfInstances = str2double(xmlAsStructure.eventCodes.eventCode(i).numberOfInstances);
                 catch e
