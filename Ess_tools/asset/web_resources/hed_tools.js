@@ -17,12 +17,15 @@ function hedStringToTags(hedString){
 	hedString = hedString.replace(/~/g, ",");
 	hedString = hedString.replace(/\\/g, "/");
 	var hedTags = hedString.split(',');
+	for (var i = 0; i < hedTags.length; i++) {
+		hedTags[i] = standardizedHedTag(hedTags[i]);
+	}
 	return hedTags;
 }
 
-function trimHedTag(hedTag){
+function standardizedHedTag(hedTag){
 	var trimmedTag = hedTag.trim();
-	trimmedTag = trimmedTag.replace("\\", "/");
+	trimmedTag = trimmedTag.replace(/\\/g, "/");
 	// remove the trailing /
 	if (trimmedTag.indexOf('/', 0) == 0){
 		trimmedTag = trimmedTag.slice(1, trimmedTag.length-1);
@@ -37,7 +40,7 @@ function trimHedTag(hedTag){
 function makeAllParentHedTags(hedTag)
 {
 	var parentTags = [];
-	hedTag = trimHedTag(hedTag); // leading and trailing /s can mess this algorithm up.
+	hedTag = standardizedHedTag(hedTag); // leading and trailing /s can mess this algorithm up.
 	parentTags[0] = hedTag;
 	var startSearchIndex = 0;
 	var i = 0;
@@ -53,16 +56,30 @@ function makeAllParentHedTags(hedTag)
 
 function eventCodeNumberOfInstancesToTagCount (eventArray, ignoreTagArray){ // assumes event object has 'numberOfInstances' and 'tag' fields.
 // ignoreTagArray contains tags that are not to be counted and are fully removed.
-var ignoreTagArray = typeof ignoreTagArray !== 'undefined' ?  ignoreTagArray :['Event/Label', 'Event/Description'];
+var ignoreTagArray = typeof ignoreTagArray !== 'undefined' ?  ignoreTagArray :['Attribute/Onset', 'Attribute/Offset', 'Event/Label', 'Event/Description', 'Sensory presentation/Visual/Rendering type/Screen/2D'];
 var tagAndCount = [];
 for (var i = 0; i < eventArray.length; i++) {
 	var parentHedTags = [];
 	var eventHedTags = hedStringToTags(eventArray[i].tag);
 
 	// remove all the tags to be ignored
+	var cleanedEventHedTags = [];
 	for (var j = 0; j < eventHedTags.length; j++) {
-		//eventHedTags[j]
+		var shouldBeIgnored = false;
+		for (var k = 0; k < ignoreTagArray.length; k++) {
+			if (isTagChild(ignoreTagArray[k], eventHedTags[j], true)){
+				shouldBeIgnored = true;
+
+
+					console.log(eventHedTags[j]);
+				//console.log(isTagChild('Attribute/Onset', 'Attribute/Onset', true));
+				break;
+			}
+		}
+		if (!shouldBeIgnored)
+		cleanedEventHedTags.push(eventHedTags[j]);
 	}
+	eventHedTags = cleanedEventHedTags;
 
 	for (var j = 0; j < eventHedTags.length; j++) {
 		parentHedTags = parentHedTags.concat(makeAllParentHedTags(eventHedTags[j]));
@@ -87,16 +104,16 @@ for (var i = 0; i < eventArray.length; i++) {
 return tagAndCount;
 }
 
-function isTagChild(parentTag, potentialChild){
+function isTagChild(parentTag, potentialChild, selfIsChild){
 	// self is defined here as NOT a child
 	if (parentTag == potentialChild){
-		return false;
+		return selfIsChild;
 	}
 	return potentialChild.indexOf(parentTag + '/') > -1;
 }
 
 function isTagImmediateChild(parentTag, potentialImmediateChild){ // returns true only if the potential child only is  only level HED level lower
-	if (isTagChild(parentTag, potentialImmediateChild))
+	if (isTagChild(parentTag, potentialImmediateChild, false))
 	{
 		var difference = potentialImmediateChild.slice(parentTag.length+1, potentialImmediateChild.length);
 		return  difference.indexOf('/') == -1; // there are / s left so there is no other level in between
@@ -117,7 +134,6 @@ function getChildD3Hierarchy(currentTag, tagCount, useLogCount){
 	var useLogCount = typeof useLogCount !== 'undefined' ?  useLogCount : Math.max.apply(null, countArray) > 10 * median(countArray);
 
 	var currentTagHierarchy = {};
-	console.log(useLogCount);
 	currentTagHierarchy.name = currentTag + ' (' + tagCount[currentTag].count + ')';
 	if (useLogCount){
 		currentTagHierarchy.size = tagCount[currentTag].logCount;
@@ -152,7 +168,7 @@ function convertToD3Hierarchy(tagCount, useLogCount){
 			tagHasAnyParent[tag1] = false;
 			for (var tag2 in tagCount) {
 				if (tagCount.hasOwnProperty(tag2)){
-					tagHasAnyParent[tag1] = tagHasAnyParent[tag1] | isTagChild(tag2, tag1);
+					tagHasAnyParent[tag1] = tagHasAnyParent[tag1] | isTagChild(tag2, tag1, false);
 				}
 			}
 		}
