@@ -41,3 +41,15 @@ h1 {text-align: center;}
   width:1%; /* 70% of the parent*/
   text-align: center;
 }
+
+/* for threemap hed count    */
+
+.treemapNode {
+  border: solid 1px white;
+  font: 10px sans-serif;
+  font-weight:bold;
+  line-height: 12px;
+  overflow: hidden;
+  position: absolute;
+  text-indent: 2px;
+}

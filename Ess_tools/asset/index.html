@@ -18,6 +18,8 @@
   <script type="text/javascript" src="web_resources/angular/angular.js"></script>
   <script type="text/javascript" src="web_resources/ag-grid/ag-grid.js"></script>
   <script type="text/javascript" src="web_resources/underscore-min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script type="text/javascript" src="web_resources/hed_tools.js"> </script>
   <script type="text/javascript" src="web_resources/make_report.js"> </script>
 </head>
 
@@ -127,6 +129,12 @@
       <button onclick="extracted.level1.eventsGridOptions.api.exportDataAsCsv()">Export to CSV</button>
     </label>
     <div ag-grid="level1.eventsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    <div style="width:100%;" >
+      <h3>Event HED Tag Count</h3>
+      <p style="margin-top: 100 px;">Total number of events that match each HED tag (exclucing labels and descriptions).</p>
+      <div name='treemap' id='treemap' align="center" style="margin-left: 3%; margin- 5%;"/>
+    </div>
+
     <div ng-if="level1.showLicensePart">
       <h3>License Agreement</h3>
       <div ng-if="level1.showLicenseText"><p>{{level1.licenseText}}</p></div>

@@ -1,6 +1,9 @@
 function [givenName, familyName, additionalName] = splitName(name)
 % [familyName, givenName, additionalName] = splitName(name)
 % split a person name to parts adhering to schema.org/Person schema
+if isempty(name)
+    name = '';
+end;
 
 splitName = strsplit(name);
 switch length(splitName)

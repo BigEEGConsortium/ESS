@@ -1,5 +1,9 @@
-var _ = require("underscore");
-var fs = require('fs');
+var isNode=new Function("try {return this===global;}catch(e){return false;}");
+
+if (isNode()){
+	var _ = require("underscore");
+	var fs = require('fs');
+}
 
 function median(values) {
 	values.sort( function(a,b) {return a - b;} );
@@ -69,10 +73,6 @@ for (var i = 0; i < eventArray.length; i++) {
 		for (var k = 0; k < ignoreTagArray.length; k++) {
 			if (isTagChild(ignoreTagArray[k], eventHedTags[j], true)){
 				shouldBeIgnored = true;
-
-
-					console.log(eventHedTags[j]);
-				//console.log(isTagChild('Attribute/Onset', 'Attribute/Onset', true));
 				break;
 			}
 		}
@@ -100,7 +100,7 @@ for (var i = 0; i < eventArray.length; i++) {
 		}
 	}
 }
-
+console.log(tagAndCount);
 return tagAndCount;
 }
 
@@ -190,98 +190,20 @@ function convertToD3Hierarchy(tagCount, useLogCount){
 //var eventArray = [{numberOfInstances:5, tag:'/Participant/Effect/Cognitive/Target/'},
 //{numberOfInstances:10, tag:'Event/Categorty/Stimulus'},{numberOfInstances:10, tag:'Event/Categorty/Check, Event/Categorty'}];
 
-var eventArray =
-[
-	{
-		"code": "1",
-		"taskLabel": "main",
-		"label": "non-target",
-		"description": "satellite image of London without the white airplane target",
-		"tag": "Event\/Label\/Non-target image, Event\/Description\/A non-target image is displayed for about 8 milliseconds, Event\/Category\/Experimental stimulus, (Item\/Natural scene\/Arial\/Satellite, Participant\/Effect\/Cognitive\/Expected\/Non-target, Sensory presentation\/Visual\/Rendering type\/Screen\/2D), Attribute\/Onset",
-		"numberOfInstances": 333917
-	},
-	{
-		"code": "2",
-		"taskLabel": "main",
-		"label": "target frames",
-		"description": "satellite image of London with the white airplane target",
-		"tag": "Event\/Label\/Target image, Event\/Description\/A white airplane as the RSVP target superimposed on a satellite image is displayed., Event\/Category\/Experimental stimulus, (Item\/Object\/Vehicle\/Aircraft\/Airplane, Participant\/Effect\/Cognitive\/Target, Sensory presentation\/Visual\/Rendering type\/Screen\/2D), (Item\/Natural scene\/Arial\/Satellite, Sensory presentation\/Visual\/Rendering type\/Screen\/2D)",
-		"numberOfInstances": 3976
-	},
-	{
-		"code": "4",
-		"taskLabel": "main",
-		"label": "no targets response",
-		"description": "no targets response indicated by pressing left button using dominant hand",
-		"tag": "Event\/Label\/NoTrgt BttnPress,  Event\/Description\/No-targets response indicated by pressing left button using dominant hand , Event\/Category\/Participant response, (Participant ~ Action\/Button press\/Keyboard ~ Participant\/Effect\/Body part\/Arm\/Hand\/Finger, Attribute\/Object side\/Left)",
-		"numberOfInstances": 5010
-	},
-	{
-		"code": "5",
-		"taskLabel": "main",
-		"label": "one target response",
-		"description": "one target response indicated by pressing right button using dominant hand",
-		"tag": "Event\/Label\/OneTrgt BttnPress,  Event\/Description\/One target response indicated by pressing right button using dominant hand, Event\/Category\/Participant response, (Participant ~ Action\/Button press\/Keyboard ~ Participant\/Effect\/Body part\/Arm\/Hand\/Finger, Attribute\/Object side\/Right)",
-		"numberOfInstances": 4454
-	},
-	{
-		"code": "6",
-		"taskLabel": "main",
-		"label": "block start",
-		"description": "trials are organized into blocks, this marks the beginning of a new block of trials",
-		"tag": "Event\/Label\/Block start, Event\/Description\/Trials are organized into blocks and this marks the beginning of a new block of trials, Event\/Category\/Experiment control\/Sequence\/Block, Attribute\/Onset",
-		"numberOfInstances": 1224
-	},
-	{
-		"code": "16",
-		"taskLabel": "main",
-		"label": "start of trial",
-		"description": "fixation cross appears to indicated the start of a new trial followed by a burst of image clips",
-		"tag": "Event\/Label\/Trial start, Event\/Description\/Fixation cross appears to indicated the start of a new trial followed by a burst of image clips, Event\/Category\/Experiment control\/Sequence\/Trial, Attribute\/Onset, Event\/Category\/Experimental stimulus\/Instruction\/Fixate, Event\/Category\/Experimental stimulus\/Instruction\/Detect, (Item\/2D shape\/Cross, Attribute\/Visual\/Color\/Gray, Attribute\/Visual\/Fixation point, Participant\/Effect\/Visual, Sensory presentation\/Visual\/Rendering type\/Screen\/2D), Attribute\/Onset",
-		"numberOfInstances": 6912
-	},
-	{
-		"code": "32",
-		"taskLabel": "main",
-		"label": "'correct' feedback\" description",
-		"description": "visual feedback 'correct' indicating that the response was correct",
-		"tag": "Event\/Label\/Feedback correct, Event\/Description\/Visual feedback with the word Correct indicating that the response was correct, Event\/Category\/Experimental stimulus, Attribute\/Onset, Item\/Symbolic\/Character\/Letter, Attribute\/Visual\/Color\/White, Attribute\/Language\/Unit\/Word\/Adjective, Attribute\/Language\/Unit\/Word\/Correct, Participant\/Effect\/Visual, Sensory presentation\/Visual\/Rendering type\/Screen\/2D, Participant\/Effect\/Cognitive\/Feedback\/Correct, Participant\/Effect\/Cognitive\/Feedback\/Deterministic",
-		"numberOfInstances": 3550
-	},
-	{
-		"code": "64",
-		"taskLabel": "main",
-		"label": "'wrong' feedback",
-		"description": "visual feedback 'wrong' indicating that the response was incorrect",
-		"tag": "Event\/Label\/Feedback incorrect, Event\/Description\/Visual feedback with the word Wrong indicating that the response was incorrect, Event\/Category\/Experimental stimulus, Attribute\/Onset, Item\/Symbolic\/Character\/Letter, Attribute\/Visual\/Color\/White, Attribute\/Language\/Unit\/Word\/Adjective, Attribute\/Language\/Unit\/Word\/Wrong, Participant\/Effect\/Visual, Sensory presentation\/Visual\/Rendering type\/Screen\/2D, Participant\/Effect\/Cognitive\/Feedback\/Incorrect, Participant\/Effect\/Cognitive\/Feedback\/Deterministic",
-		"numberOfInstances": 259
-	},
-	{
-		"code": "129",
-		"taskLabel": "main",
-		"label": "burst start",
-		"description": "the first image of a series of images that are presented in rapid succession",
-		"tag": "Event\/Label\/Non-target image, Event\/Description\/A non-target image is displayed for about 8 milliseconds, Event\/Category\/Experimental stimulus, (Item\/Natural scene\/Arial\/Satellite, Participant\/Effect\/Cognitive\/Expected\/Non-target, Sensory presentation\/Visual\/Rendering type\/Screen\/2D), Attribute\/Onset",
-		"numberOfInstances": 6906
-	}
-];
-
-for (var i = 0; i < eventArray.length; i++) {
-	//	eventArray[i].numberOfInstances = Math.log(eventArray[i].numberOfInstances) ;
-}
-
 //console.log(isTagImmediateChild('Participant/Effect', 'Participant/Effect/Cognitive'));
-var tagCount = eventCodeNumberOfInstancesToTagCount(eventArray);
+//var tagCount = eventCodeNumberOfInstancesToTagCount(eventArray);
 //console.log(tagCount);
 
 //console.log(hedStringToTags('Event/Categorty/check, Event/Categorty'));
 //console.log(makeAllParentHedTags('/Participant/Effect/Cognitive/Target/'));
-var d3hierarchyJson = JSON.stringify(convertToD3Hierarchy(tagCount));
+//var d3hierarchyJson = JSON.stringify(convertToD3Hierarchy(tagCount));
 //console.log(d3hierarchyJson);
-fs.writeFile("/home/nima/Documents/mycode/matlab/ESS_scripts/treemap/hedcount.json", d3hierarchyJson, function(err) {
-	if(err) {
-		return console.log(err);
-	}
 
-	console.log("The file was saved!");
-});
+if (isNode()){
+	fs.writeFile("/home/nima/Documents/mycode/matlab/ESS_scripts/treemap/hedcount.json", d3hierarchyJson, function(err) {
+		if(err) {
+			return console.log(err);
+		}
+		console.log("The file was saved!");
+	});
+}
