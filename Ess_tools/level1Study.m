@@ -3245,7 +3245,11 @@ classdef level1Study < levelStudy;
             
             for i=1:length(obj.eventCodesInfo)
                 keyString = ['task: '  obj.eventCodesInfo(i).taskLabel  ', eventCode: '  obj.eventCodesInfo(i).code];
+                if eventCodeCountMap.isKey(keyString)
                 obj.eventCodesInfo(i).numberOfInstances = num2str(eventCodeCountMap(keyString));
+                else
+                    warning('Event % in task %s does not have any instances and should probably removed from the list of events for this task.', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel);
+                end;
             end;
             
         end;

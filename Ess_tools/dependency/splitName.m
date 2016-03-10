@@ -6,6 +6,12 @@ if isempty(name)
 end;
 
 splitName = strsplit(name);
+
+if length(splitName) > 3
+    warning('The name %s does not seem to follow a (name family) or (name middle family) pattern and it will be likely parsed incorrectly.', name);
+    splitName = splitName(1:3);
+end;
+
 switch length(splitName)
     case 1
         % name just hs one part, asume it is family name
