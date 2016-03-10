@@ -200,6 +200,11 @@ function convertToD3Hierarchy(tagCount, useLogCount){
 //console.log(d3hierarchyJson);
 
 if (isNode()){
+    var eventArray = [{numberOfInstances:5, tag:'/Participant/Effect/Cognitive/Target/'},
+        {numberOfInstances:10, tag:'Event/Categorty/Stimulus'},{numberOfInstances:10, tag:'Event/Categorty/Check, Event/Categorty'}];
+    
+    var tagCount = eventCodeNumberOfInstancesToTagCount(eventArray);
+    var d3hierarchyJson = JSON.stringify(convertToD3Hierarchy(tagCount));
 	fs.writeFile("/home/nima/Documents/mycode/matlab/ESS_scripts/treemap/hedcount.json", d3hierarchyJson, function(err) {
 		if(err) {
 			return console.log(err);
