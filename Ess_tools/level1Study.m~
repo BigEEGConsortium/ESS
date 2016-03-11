@@ -2226,7 +2226,7 @@ classdef level1Study < levelStudy;
         function obj = sortDataRecordingsByStartTime(obj)
             % sort data recordings according to their startDateTime
             for i = 1:length(obj.sessionTaskInfo)
-                serialDateNumber = [];
+                
                 for j=1:length(obj.sessionTaskInfo(i).dataRecording)
                     serialDateNumberForRecording = datenum8601(obj.sessionTaskInfo(i).dataRecording(j).startDateTime);
                     if isempty(serialDateNumberForRecording)
@@ -2284,13 +2284,7 @@ classdef level1Study < levelStudy;
                             fileFound = fileFound | exist(combinedPathAndName, 'file');
                             EEG = exp_eval(io_loadset(combinedPathAndName));
                         catch
-                            
-                            if fileFound && strcmpi(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename((end-3):end), '.set')
-                                try
-                                    EEG = pop_loadset(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, allSearchFolders{i});
-                                catch
-                                end;
-                            end;
+                            if fileFound && 
                         end;
                     end;
                 end;
