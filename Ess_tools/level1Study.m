@@ -1981,7 +1981,7 @@ classdef level1Study < levelStudy;
                             if strcmpi(strtrim(obj.isInEssContainer), 'yes')
                                 issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                                 obj = obj.recreateEventInstanceFiles(false, i);
-                                issue(end).howItWasFixed = 'Event insatnce file created.';
+                                issue(end).howItWasFixed = 'Event instance file created.';
                             end;
                         else % file has to be found according to ESS convention
                             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
@@ -2100,7 +2100,7 @@ classdef level1Study < levelStudy;
                         if ~level1Study.isAvailable(obj.eventCodesInfo(i).numberOfInstances)
                             issue(end+1).description = sprintf('Number of event instances for Task label ''%s'', Event ''%s'' was missing.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code);
                             obj = obj.updateEventNumberOfInstances;
-                            issue(end).howItWasFixed = sprintf('All event insatnce counts recomputed.');
+                            issue(end).howItWasFixed = sprintf('All event instance counts recomputed.');
                         end;
                         
                         if isempty(obj.eventCodesInfo(i).condition)
@@ -3272,7 +3272,7 @@ classdef level1Study < levelStudy;
                 if eventCodeCountMap.isKey(keyString)
                 obj.eventCodesInfo(i).numberOfInstances = num2str(eventCodeCountMap(keyString));
                 else
-                    warning('Event % in task %s does not have any instances and should probably removed from the list of events for this task.', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel);
+                    warning('Event % in task %s does not have any instances and should probably be removed from the list of events for this task.', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel);
                 end;
             end;
             
