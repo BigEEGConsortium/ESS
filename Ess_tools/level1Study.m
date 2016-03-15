@@ -2161,7 +2161,11 @@ classdef level1Study < levelStudy;
                 
                 
                 for i=1:length(obj.eventCodesInfo)
+                    try
                     errors = validateCellTags({obj.eventCodesInfo(i).condition.tag});
+                    catch err
+                    fprintf('Encountered error \n%s\n while trying to validate the HED tag %s.\n', err.message, obj.eventCodesInfo(i).condition.tag);
+                    end;
                     if ~isempty(errors)
                         errors{1} = strrep(errors{1}, 'Errors in cell 1:', '');
                         issue(end+1).description = [sprintf('HED tag error in event code "%s" of task "%s" (record %d): ', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel, i) errors{1}];
@@ -3273,6 +3277,7 @@ classdef level1Study < levelStudy;
                 obj.eventCodesInfo(i).numberOfInstances = num2str(eventCodeCountMap(keyString));
                 else
                     warning('Event % in task %s does not have any instances and should probably be removed from the list of events for this task.', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel);
+                    obj.eventCodesInfo(i).numberOfInstances = '0';
                 end;
             end;
             
