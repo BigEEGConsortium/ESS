@@ -3253,6 +3253,13 @@ classdef level1Study < levelStudy;
                     filename = [fullEssFolder filesep outputFileName];
                     delimiter = '\t';
                     formatSpec = '%s%s%s%[^\n\r]';
+                    
+                    % get out of this function if an event instance file is missing 
+                    if ~exist(filename, 'file')
+                        warning('Event instance file %s (session task %d, recording number %d) is missing, aborting the calculation of event number of instances.', filename, sessionTaskNumber, dataRecordingNumber);
+                        return ;
+                    end;
+                    
                     fileID = fopen(filename,'r');
                     dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter,  'ReturnOnError', false);
                     fclose(fileID);
