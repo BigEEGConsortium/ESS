@@ -90,12 +90,19 @@ for (var i = 0; i < eventArray.length; i++) {
 	for (var k = 0; k < parentHedTags.length; k++) {
 		if (parentHedTags[k] in tagAndCount){
 			tagAndCount[parentHedTags[k]].count = tagAndCount[parentHedTags[k]].count + eventArray[i].numberOfInstances;
-			tagAndCount[parentHedTags[k]].logCount = tagAndCount[parentHedTags[k]].logCount + Math.log(eventArray[i].numberOfInstances);
+            if (eventArray[i].numberOfInstances>0){
+			     tagAndCount[parentHedTags[k]].logCount = tagAndCount[parentHedTags[k]].logCount + Math.log(eventArray[i].numberOfInstances);
+            }
 		}
 		else {
 			tagAndCount[parentHedTags[k]] = {};
 			tagAndCount[parentHedTags[k]].count = eventArray[i].numberOfInstances;
-			tagAndCount[parentHedTags[k]].logCount = Math.log(eventArray[i].numberOfInstances);
+            if (eventArray[i].numberOfInstances > 0){
+			     tagAndCount[parentHedTags[k]].logCount = Math.log(eventArray[i].numberOfInstances);
+            } else
+            {
+                tagAndCount[parentHedTags[k]].logCount = 0;
+            }
 
 		}
 	}
@@ -149,7 +156,7 @@ function getChildD3Hierarchy(currentTag, tagCount, useLogCount){
 					currentTagHierarchy.children = [];
 				}
 
-				currentTagHierarchy.children.push(getChildD3Hierarchy(tag, tagCount));
+				currentTagHierarchy.children.push(getChildD3Hierarchy(tag, tagCount, useLogCount));
 			}
 		}
 	}

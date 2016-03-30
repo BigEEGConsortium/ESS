@@ -563,8 +563,8 @@ classdef level2Study < levelStudy;
             
         end;
                       
-        function [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber, subjectInfo, level1DataRecording] = getFilename(obj, varargin)
-		% [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber,  subjectInfo, level1DataRecording] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber, subjectInfo, level1DataRecording, originalFileNameAndPath] = getFilename(obj, varargin)
+		% [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber,  subjectInfo, level1DataRecording, originalFileNameAndPath] = getFilename(obj, varargin)
 		% The output sessionNumber is a cell array of strings. 
         % Obtains [full] filenames and other information for all or a subset of Level 2 data.
 		% You may use the returned values to for example run a function on each of EEG recordings. 
@@ -580,7 +580,7 @@ classdef level2Study < levelStudy;
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
                 arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event''. Specifies which file types should be returned.', 'type', 'char'),...
-                arg('dataQuality', {},[],'Acceptable data quality values. I.e. whether to include Suspect datta or not.', 'type', 'cellstr') ...
+                arg('dataQuality', {},[],'Acceptable data quality values. I.e. whether to include Suspect data or not.', 'type', 'cellstr') ...
                 );
             
             % get the UUids from level 1
@@ -593,6 +593,7 @@ classdef level2Study < levelStudy;
             sessionNumber = {};
             subjectInfo = [];
             level2DataRecordingNumber = [];
+            originalFileNameAndPath = {};
             clear level1DataRecording;
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
                 [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
@@ -604,6 +605,7 @@ classdef level2Study < levelStudy;
                     
                     sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber;
                     level1DataRecording(length(sessionNumber)) = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
+                    originalFileNameAndPath{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
                     
                     inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)));
                     foundSubjectId = [];

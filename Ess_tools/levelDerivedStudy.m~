@@ -464,15 +464,7 @@ classdef levelDerivedStudy  < levelStudy;
             obj.write(obj.levelDerivedXmlFilePath);                        
         end;                      
         
-        function level1Obj = getLevel1(obj)
-            if isprop(obj.parentStudyObj, 'level1StudyObj') % the parent is was level 2
-                level1Obj = obj.parentStudyObj.level1StudyObj;
-            elseif isprop(obj.parentStudyObj, 'parentStudyObj') % the parent is level-derived
-                level1Obj = getLevel1(obj.parentStudyObj); % go recursively into the hierarchy
-            else
-                level1Obj = obj.parentStudyObj;
-            end;
-        end;
+        function getLevel1
         
         function [filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subjectInfo, level1DataRecording, originalFileNameAndPath] = getFilename(obj, varargin)
         %		[filename, dataRecordingUuid, taskLabel, sessionNumber, levelDerivedDataRecordingNumber, subjectInfo, level1DataRecording, originalFileNameAndPath] = getFilename(obj, varargin)
@@ -494,10 +486,12 @@ classdef levelDerivedStudy  < levelStudy;
                 arg('dataQuality', {},[],'Acceptable data quality values. I.e. whether to include Suspect datta or not.', 'type', 'cellstr') ...
                 );
             
-            level1Obj = getLevel1(obj);
+            if isfield(obj.parentStudyObj, 'level1StudyObj')
+                level1Obj = obj.parentStudyObj.level1StudyObj;
+            elseif isfield(obj.parentStudyObj, 'level1StudyObj')
             
             % get the UUids from level 1
-            [dummy, selectedDataRecordingUuid, taskLabelFromParent, selectedSessionNumber, dataRecordingNumber, selectedSubjectInfo, sessionTaskNumber] = level1Obj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
+            [dummy, selectedDataRecordingUuid, taskLabelFromParent, selectedSessionNumber, dataRecordingNumber, selectedSubjectInfo, sessionTaskNumber] = obj.parentStudyObj.getFilename('taskLabel',inputOptions.taskLabel, 'filetype',inputOptions.filetype, 'includeFolder', false); %#ok<ASGLU>
             
             % go over level-derived records and match by dataRecordingUuid
             dataRecordingUuid = {};
@@ -506,8 +500,6 @@ classdef levelDerivedStudy  < levelStudy;
             sessionNumber = {};
             subjectInfo = [];
             levelDerivedDataRecordingNumber = [];
-            originalFileNameAndPath = {};
-            clear level1DataRecording;
             for i=1:length(obj.studyLevelDerivedFiles.studyLevelDerivedFile)
                 [match, id] = ismember(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, selectedDataRecordingUuid);
                 if match
@@ -518,8 +510,8 @@ classdef levelDerivedStudy  < levelStudy;
                     
                     sessionNumber{end+1} = selectedSessionNumber{id};
                     
-                    level1DataRecording(length(sessionNumber)) = level1Obj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
-                    originalFileNameAndPath{end+1} = level1Obj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
+                    level1DataRecording(length(sessionNumber)) = obj.parentStudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
+                    originalFileNameAndPath{end+1} = obj.parentStudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
                     
                     
                     if isempty(subjectInfo)
@@ -565,9 +557,7 @@ classdef levelDerivedStudy  < levelStudy;
                 arg('filetype', 'eeg',{'eeg' , 'event', 'noiseDetection' , 'report'},'Return EEG or event files.', 'type', 'char')...
                 );
             
-            level1Obj = getLevel1(obj);
-            
-            [dummy1, level1dataRecordingUuid, level1TaskLabel, sessionTaskNumber, parentLevelMoreInfo] = level1Obj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>           
+            [dummy1, level1dataRecordingUuid, level1TaskLabel, parentLevelMoreInfo, sessionTaskNumber] = obj.parentStudyObj.infoFromDataRecordingUuid(inputDataRecordingUuid, 'includeFolder', false); %#ok<ASGLU>
             
             taskLabel = {};
             filename = {};

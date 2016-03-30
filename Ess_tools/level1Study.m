@@ -2726,8 +2726,8 @@ classdef level1Study < levelStudy;
             
         end;
         
-        function [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber] = getFilename(obj, varargin)
-            % [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber] = getFilename(obj, varargin)
+        function [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber, originalFileNameAndPath] = getFilename(obj, varargin)
+            % [filename, dataRecordingUuid, taskLabel, sessionNumber, dataRecordingNumber, subjectInfo, sessionTaskNumber originalFileNameAndPath] = getFilename(obj, varargin)
             % obtain file names based on a selection criteria, such as task
             % label(s).
             % The output sessionNumber is of type Integer.
@@ -2736,7 +2736,7 @@ classdef level1Study < levelStudy;
             % taskLabel:       a cell array with label(s) for session tasks. Only
             %                  these files will be returned.
             %
-            % includeFolder:   true ot false. Whether to return full file
+            % includeFolder:   true or false. Whether to return full file
             %                  path.
             %
             % filetype:        one of {'eeg' , 'event'}
@@ -2754,6 +2754,7 @@ classdef level1Study < levelStudy;
             dataRecordingNumber = [];
             subjectInfo = [];
             sessionNumber = {};
+            originalFileNameAndPath = {};
             for i=1:length(obj.sessionTaskInfo)
                 if isempty(inputOptions.taskLabel) || ismember(obj.sessionTaskInfo(i).taskLabel, inputOptions.taskLabel)
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
@@ -2781,6 +2782,7 @@ classdef level1Study < levelStudy;
                         sessionTaskNumber(end+1) = i;
                         sessionNumber{end+1} = obj.sessionTaskInfo(i).sessionNumber;
                         dataRecordingNumber(end+1) = j;
+                        originalFileNameAndPath{end+1} = obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath;
                         if isempty(subjectInfo)
                             subjectInfo = obj.sessionTaskInfo(i).subject;
                         else
