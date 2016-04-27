@@ -1764,7 +1764,7 @@ classdef level1Study < levelStudy;
                                         unknownLabel = setdiff(scalpLabel, lower(listof10_20_labels));
                                         
                                         if ~isempty(unknownLabel)
-                                            issue(end+1).description = sprintf('Invalid channel labels (%s) is specified for EEG with 10-20 montage (modality %d) in recording parameter set %d.', strjoin_adjoiner_first(',', unknownLabel), j, i);
+                                            fprintf('Channel labels (%s) \n specified for EEG with 10-20 montage (modality %d) in recording parameter set %d \ do not follow conventional 10-20 montage names.', strjoin_adjoiner_first(',', unknownLabel), j, i);
                                         end;
                                     end;
                                     
@@ -1999,7 +1999,7 @@ classdef level1Study < levelStudy;
                         
                         % check startDateTime to be in ISO 8601 format
                         dateTime = strtrim(obj.sessionTaskInfo(i).dataRecording(j).startDateTime);
-                        if isempty(datenum8601(dateTime))
+                        if isempty(dateTime) || (level1Study.isAvailable(dateTime) && isempty(datenum8601(dateTime))) s
                             issue(end+1).description =  sprintf('startDateTime specified in data recoding %d of sesion number %s does not have a valid ISO 8601 Date String.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                             
                             dateTimeIso8601 = [];
@@ -3256,7 +3256,7 @@ classdef level1Study < levelStudy;
                     
                     % get out of this function if an event instance file is missing 
                     if ~exist(filename, 'file')
-                        warning('Event instance file %s (session task %d, recording number %d) is missing, aborting the calculation of event number of instances.', filename, sessionTaskNumber, dataRecordingNumber);
+                        fprintf('Event instance file %s (session task %d, recording number %d) is missing, aborting the calculation of event number of instances.', filename, sessionTaskNumber, dataRecordingNumber);
                         return ;
                     end;
                     
