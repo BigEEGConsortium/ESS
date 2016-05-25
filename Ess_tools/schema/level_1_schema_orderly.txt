@@ -1,17 +1,18 @@
 // description of ESS Level 1 JSON Schema in Orderly format: http://orderly-json.org
+
 object {
+string title;
 string type ["essStudyLevel1"]; // added to XML
 string essVersion;
-string dateCreated; // added to XML, based on PROV ontology
-string dateModified; // added to XML, based on PROV ontology
-string DOI; // many new repositories give you a DOI for your study
-string title;
+
 string {1, 120}  shortDescription;
 
+string dateCreated; // added to XML, based on PROV ontology
+string dateModified; // added to XML, based on PROV ontology
+string {32, } id; // added to XML, replaced uuid. Should start with eegstudy.org/study/[study title with spaces replaced by _]/ and then some unique uuid. 
+string DOI; // many new repositories give you a DOI for your study
+
 string description;
-
-string {32, } id; // added to XML, replaced uuid. Should start with eegstudy.org/study/[study title with spaces replaced by _]/ and then some unique uuid.
-
 string rootURI;
 
 array [
@@ -37,7 +38,7 @@ array [
                 string referenceLabel;
                 string channelLocationType;
                 array [
-string
+string		
     ] channelLabels;
                 array [
 		string
@@ -51,7 +52,6 @@ string
 array [
     object{
         string "number";
-        string taskLabel;
         string labId;
         array [
           object {
@@ -73,7 +73,8 @@ array [
             string channelLocationFile;
           }*
         ] subjects; // name changed from subject to subjects since it is an array.
-        object {
+        
+	object {
           string text;
           string linkLabel;
           string link;
@@ -81,6 +82,9 @@ array [
 
         array[
           object{
+            array [
+              string
+            ] taskLabels;
             string filename;
             string dataRecordingId; // should be eegstudy.org/recording/ and then a uniuqe uuid
             string startDateTime;
@@ -106,7 +110,7 @@ string hedVersion;
 array [
   object {
     string code;
-    integer {-1,} numberOfInstances;
+    integer {-1,} numberOfInstances; // -1 means that the value is unavailable.
     string taskLabel;
     string description;
     string label;

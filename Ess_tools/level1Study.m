@@ -3039,7 +3039,7 @@ classdef level1Study < levelStudy;
             delete(tmpFile);
                       
             % add fields that do not exist in XML yet, shoul be here on top to make the JSON
-            % elements to show on top
+            % elements to show on topobj.ge
             xmlAsStructure.DOI = 'NA';
             xmlAsStructure.type = 'essStudyLevel1';
             xmlAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
@@ -3103,6 +3103,7 @@ classdef level1Study < levelStudy;
                 end;
                 
                 dataRecordings = rmfield(dataRecordings, 'dataRecordingUuid');
+                dataRecordings.taskLabels = {xmlAsStructure.sessions.session(i).taskLabel}; % make cell array so it always becomes a JSON array. 
                 sessions{i} = xmlAsStructure.sessions.session(i);
                 sessions{i}.dataRecordings = dataRecordings;
                 sessions{i}.dataRecordings(1).forceArray_____=  true;
@@ -3126,10 +3127,40 @@ classdef level1Study < levelStudy;
                 
             end;
             
+            
+            % convert the sessions varoable from being interpreted as
+            % the (XML-style) sessiontask into the new (JSON-style)
+            % session concepts with each data recording having its own task label.
+            sessionCombinedAcrossTasks = {};
+            alreadyCombinedSessionNumber = {};
+            for i=1:length(sessions)
+                sessions{i} = rmfield(sessions{i}, 'taskLabel'); % this interepatron of session now can have data recordngs of multiple tasks.
+                if ~ismember(sessions{i}.number, alreadyCombinedSessionNumber)
+                    currentSessionNumber = sessions{i}.number;
+                    if isempty(alreadyCombinedSessionNumber)
+                        alreadyCombinedSessionNumber{1} = currentSessionNumber;
+                    else
+                        alreadyCombinedSessionNumber{end+1} = currentSessionNumber;
+                    end;
+                    currentSessionI = length(alreadyCombinedSessionNumber);
+                    sessionCombinedAcrossTasks{currentSessionI} = {};
+                    for j=1:length(sessions)
+                        if strcmp(sessions{j}.number, currentSessionNumber)                            
+                            if isempty(sessionCombinedAcrossTasks{currentSessionI})
+                                sessionCombinedAcrossTasks{currentSessionI} = sessions{j};
+                            else
+                                sessionCombinedAcrossTasks{currentSessionI}.dataRecordings = concat(sessionCombinedAcrossTasks{currentSessionI}.dataRecordings, sessions{j}.dataRecordings);
+                            end;
+                        end;
+                    end;
+                end;
+            end
+            
+            
             xmlAsStructure = rmfield(xmlAsStructure, 'sessions');
             
-            for i=1:length(sessions)
-                xmlAsStructure.sessions(i) = sessions{i};
+            for i=1:length(sessionCombinedAcrossTasks)
+                xmlAsStructure.sessions(i) = sessionCombinedAcrossTasks{i};
             end;
             
             % tasks
@@ -3179,10 +3210,15 @@ classdef level1Study < levelStudy;
                 eventCodes(i).label = xmlAsStructure.eventCodes.eventCode(i).condition.label;
                 eventCodes(i).description = xmlAsStructure.eventCodes.eventCode(i).condition.description;
                 eventCodes(i).tag = xmlAsStructure.eventCodes.eventCode(i).condition.tag;
-                try
-                eventCodes(i).numberOfInstances = str2double(xmlAsStructure.eventCodes.eventCode(i).numberOfInstances);
-                catch e
+                
+                if isempty(xmlAsStructure.eventCodes.eventCode(i).numberOfInstances)
                     eventCodes(i).numberOfInstances = -1;
+                else
+                    try
+                        eventCodes(i).numberOfInstances = str2double(xmlAsStructure.eventCodes.eventCode(i).numberOfInstances);
+                    catch e
+                        eventCodes(i).numberOfInstances = -1;
+                    end;
                 end;
                 eventCodes(i).forceArray_____=  true;
             end;
@@ -3217,7 +3253,11 @@ classdef level1Study < levelStudy;
             if nargin < 2
                 essFolder = fileparts(obj.essFilePath);
             end;
-                        
+            
+            if ~exist(essFolder, 'dir')
+                mkdir(essFolder);
+            end;
+            
             json = getAsJSON(obj);
             
             fid= fopen([essFolder filesep 'manifest.js'], 'w');
