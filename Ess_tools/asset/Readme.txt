@@ -1,4 +1,4 @@
-This folder has been arranges according to EEG Study Schema (ESS) Level 1 convention. You may find more information about ESS and find Matlab tools to import ESS at http://eegstudy.org .
+This folder has been arranged according to EEG Study Schema (ESS) Level 1 convention. You may find more information about ESS and find Matlab tools to import ESS at http://eegstudy.org .
 
 In this folder you will find the following:
 
