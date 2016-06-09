@@ -2,7 +2,7 @@
 
 object {
 string title;
-string type ["essStudyLevel1"]; // added to XML
+string type ["EssStudyLevel1"]; // added to XML
 string essVersion;
 
 string {1, 120}  shortDescription;

@@ -893,59 +893,56 @@ classdef level2Study < levelStudy;
             publishPrepReport(EEG, summary, session, 1, true);
         end;
         
-%         function json = getAsJSON(obj)
-%             % json = getAsJSON(obj)
-%             % get the ESS study as a JSON object.
-%             
-%             propertiesToExcludeFromXMLIO = findAttrValue(obj, 'AbortSet', true);
-%             % remove fields that are flagged for not being saved to the XML
-%             % file.
-%             warning('off', 'MATLAB:structOnObject');
-%             objAsStructure = rmfield(struct(obj), propertiesToExcludeFromXMLIO);
-%             warning('on', 'MATLAB:structOnObject');
-%             
-%             % add fields that do not exist in XML yet, should be here on top to make the JSON
-%             % elements to show on top
-%             objAsStructure.DOI = 'NA';
-%             objAsStructure.type = 'EssStudyLevel2';
-%             objAsStructure.studyLevel2SchemaVersion = '1.1.0';
-%             objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
-%             objAsStructure.dateModified = objAsStructure.dateCreated;
-%             objAsStructure.id = ['eegstudy.org/study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
-%             objAsStructure = rmfield(objAsStructure, 'uuid');
-%                         
-%             
-%             % add filters and recrdong fils here
-%             
-%             for i=1:length(objAsStructure.project)
-%                 objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
-%                 objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
-%             end;
-%             objAsStructure.projectFunding.forceArray_____=  true;
-%             objAsStructure = rmfield(objAsStructure, 'project');                                                        
-%             
-%             objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
-%             objAsStructure.organizations.forceArray_____=  true;
-%             
-%             if isempty(objAsStructure.copyright)
-%                 objAsStructure.copyright = 'NA';
-%             end;
-%             
-%             
-%             % sort field names so important ones, e.g type and id end up on the top
-%             fieldNames = fieldnames(objAsStructure);
-%             topFields = {'title', 'type', 'studyLevel2SchemaVersion', 'dateCreated', ...
-%                 'dateModified', 'id', 'DOI', 'contact', 'rootURI', 'projectFunding'};
-%             
-%             objAsStructure = orderfields(objAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
-%             
-%             opt.ForceRootName = false;
-%             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
-%             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
-%             opt.emptyString = '"NA"';
-%             json = savejson_for_ess('', objAsStructure, opt);
-%         end;
-%    end;
+        function json = getAsJSON(obj)
+            % json = getAsJSON(obj)
+            % get the ESS study as a JSON object.
+            
+            propertiesToExcludeFromXMLIO = findAttrValue(obj, 'AbortSet', true);
+            % remove fields that are flagged for not being saved to the XML
+            % file.
+            warning('off', 'MATLAB:structOnObject');
+            objAsStructure = rmfield(struct(obj), propertiesToExcludeFromXMLIO);
+            warning('on', 'MATLAB:structOnObject');
+            
+            % add fields that do not exist in XML yet, should be here on top to make the JSON
+            % elements to show on top
+            objAsStructure.DOI = 'NA';
+            objAsStructure.type = 'EssStudyLevel2';
+            objAsStructure.studyLevel2SchemaVersion = 
+            objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
+            objAsStructure.dateModified = objAsStructure.dateCreated;
+            objAsStructure.id = ['eegstudy.org/study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
+            objAsStructure = rmfield(objAsStructure, 'uuid');
+                        
+            for i=1:length(objAsStructure.project)
+                objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
+                objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
+            end;
+            objAsStructure.projectFunding.forceArray_____=  true;
+            objAsStructure = rmfield(objAsStructure, 'project');                                                        
+            
+            objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
+            objAsStructure.organizations.forceArray_____=  true;
+            
+            if isempty(objAsStructure.copyright)
+                objAsStructure.copyright = 'NA';
+            end;
+            
+            
+            % sort field names so important ones, e.g type and id end up on the top
+            fieldNames = fieldnames(objAsStructure);
+            topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'rootURI', 'projectFunding'};
+            
+            objAsStructure = orderfields(objAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
+            
+            opt.ForceRootName = false;
+            opt.SingletCell = true;  % even single cells are saved as JSON arrays.
+            opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
+            opt.emptyString = '"NA"';
+            json = savejson_for_ess('', objAsStructure, opt);
+        end;
+    end;
     
     
 end

@@ -3103,10 +3103,7 @@ classdef level1Study < levelStudy;
                 end;
                 
                 dataRecordings = rmfield(dataRecordings, 'dataRecordingUuid');
-                for j=1:length(dataRecordings)
-                    dataRecordings(j).taskLabels = {xmlAsStructure.sessions.session(i).taskLabel}; % make cell array so it always becomes a JSON array.
-                end;
-                
+                dataRecordings.taskLabels = {xmlAsStructure.sessions.session(i).taskLabel}; % make cell array so it always becomes a JSON array. 
                 sessions{i} = xmlAsStructure.sessions.session(i);
                 sessions{i}.dataRecordings = dataRecordings;
                 sessions{i}.dataRecordings(1).forceArray_____=  true;
