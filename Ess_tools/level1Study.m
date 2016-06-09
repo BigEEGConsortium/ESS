@@ -3026,8 +3026,8 @@ classdef level1Study < levelStudy;
             end;
         end;
         
-        function json = getAsJSON(obj)
-            % json = getAsJSON(obj)
+        function [json, xmlAsStructure]= getAsJSON(obj)
+            % [json, jsonAsStructure] = getAsJSON(obj)
             % get the ESS study as a JSON object.
                         
             tmpFile = [tempname '.xml'];

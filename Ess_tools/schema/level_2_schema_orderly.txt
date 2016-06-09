@@ -21,13 +21,14 @@ array [
           ] executionOrder;
 
         string softwareEnvironment;
+        string softwarePackage;
         string functionName;
         string codeHash; // MDF5 hash of the function code
         array [
-            object {
-	  		   string name;
-	           string value;
-            }
+          object {
+            string name;
+            any value;
+          }
         ] parameters;
         string recordingParameterSetLabel;
 	  }

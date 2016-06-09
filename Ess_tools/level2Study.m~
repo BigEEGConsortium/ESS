@@ -51,7 +51,7 @@ classdef level2Study < levelStudy;
         % in the order specified in executionOrder (multiple numbers here mean multiple filter
         % runs.
         filters = struct('filter', struct('filterLabel', ' ', 'executionOrder', ' ', ...
-            'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ',...
+            'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ', 'codeHash', ' ',...
             'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
         % files containing EEGLAB datasets, each recording gets its own studyLevel2 file
@@ -908,31 +908,84 @@ classdef level2Study < levelStudy;
             % elements to show on top
             objAsStructure.DOI = 'NA';
             objAsStructure.type = 'EssStudyLevel2';
-            objAsStructure.studyLevel2SchemaVersion = 
+            objAsStructure.studyLevel2SchemaVersion = '1.1.0';
             objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
             objAsStructure.dateModified = objAsStructure.dateCreated;
             objAsStructure.id = ['eegstudy.org/study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
             objAsStructure = rmfield(objAsStructure, 'uuid');
+            
+            clear jsonfilters;
+            for i=1:length(objAsStructure.filters.filter)
+                tempvar = objAsStructure.filters.filter(i);              
+                tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
+                tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
+                
+                params = tempvar.parameters.parameter;
+                tempvar.parameters = params;
+                tempvar = rename_field_to_force_array(tempvar, 'parameters');
+                
+                if i>1
+                    tempVar = orderfields(tempvar, jsonfilters(1));
+                end;
+                jsonfilters(i) = tempvar;
+            end;
+            
+            objAsStructure.filters = jsonfilters;
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'filters');
+            
+            clear files;
+            for i=1:length(objAsStructure.studyLevel2Files.studyLevel2File)
+                tempvar = objAsStructure.studyLevel2Files.studyLevel2File(i);
+                
+                if ~isempty(objAsStructure.studyLevel2Files.studyLevel2File(i).averageReferenceChannels)
+                    tempvar.averageReferenceChannels = str2double(strtrim(strsplit(objAsStructure.studyLevel2Files.studyLevel2File(i).averageReferenceChannels, ',')));
+                end;
+                tempvar = rename_field_to_force_array(tempvar, 'averageReferenceChannels');
+                
+                tempvar.id = tempvar.uuid;
+                tempvar = rmfield(tempvar, 'uuid');
+                
+                if ~isempty(objAsStructure.studyLevel2Files.studyLevel2File(i).rereferencedChannels)
+                    tempvar.rereferencedChannels = str2double(strtrim(strsplit(objAsStructure.studyLevel2Files.studyLevel2File(i).rereferencedChannels, ',')));
+                end;
+                tempvar = rename_field_to_force_array(tempvar, 'rereferencedChannels');
+                
+                if ~isempty(objAsStructure.studyLevel2Files.studyLevel2File(i).interpolatedChannels)
+                    tempvar.interpolatedChannels = str2double(strtrim(strsplit(objAsStructure.studyLevel2Files.studyLevel2File(i).interpolatedChannels, ',')));
+                end;
+                tempvar = rename_field_to_force_array(tempvar, 'interpolatedChannels');
+                
+                if i>1
+                    tempVar = orderfields(tempvar, files(1));
+                end;
+                files(i) = tempvar;
+            end;
                         
+            objAsStructure.studyLevel2Files = files;
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
+            
             for i=1:length(objAsStructure.project)
                 objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
                 objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
-            end;
-            objAsStructure.projectFunding.forceArray_____=  true;
+            end;       
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'projectFunding');
             objAsStructure = rmfield(objAsStructure, 'project');                                                        
             
             objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
-            objAsStructure.organizations.forceArray_____=  true;
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'organizations');
+
             
             if isempty(objAsStructure.copyright)
                 objAsStructure.copyright = 'NA';
             end;
             
+            [objAsStructure.contact.givenName, objAsStructure.contact.familyName, objAsStructure.contact.additionalName] = splitName(objAsStructure.contact.name);
+            objAsStructure.contact = rmfield(objAsStructure.contact, 'name');
             
             % sort field names so important ones, e.g type and id end up on the top
             fieldNames = fieldnames(objAsStructure);
-            topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
-                'dateModified', 'id', 'DOI', 'contact', 'rootURI', 'projectFunding'};
+            topFields = {'title', 'type', 'studyLevel2SchemaVersion', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'rootURI'};
             
             objAsStructure = orderfields(objAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
             
@@ -940,7 +993,10 @@ classdef level2Study < levelStudy;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
             opt.emptyString = '"NA"';
-            json = savejson_for_ess('', objAsStructure, opt);
+            json = savejson_for_ess2('', objAsStructure, opt);
+            
+            json(strrep "interpolatedChannels": "NA"
+            
         end;
     end;
     
