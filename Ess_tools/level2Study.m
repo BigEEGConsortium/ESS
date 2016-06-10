@@ -988,7 +988,7 @@ classdef level2Study < levelStudy;
             % sort field names so important ones, e.g type and id end up on the top
             fieldNames = fieldnames(objAsStructure);
             topFields = {'title', 'type', 'studyLevel2SchemaVersion', 'dateCreated', ...
-                'dateModified', 'id', 'DOI', 'contact', 'rootURI'};
+                'dateModified', 'id', 'DOI', 'contact', 'rootURI', 'projectFunding___Array___'};
             
             objAsStructure = orderfields(objAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
             
@@ -996,7 +996,7 @@ classdef level2Study < levelStudy;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
             opt.emptyString = '"NA"';
-            json = savejson_for_ess2('', objAsStructure, opt);
+            json = savejson_for_ess('', objAsStructure, opt);
             
             % be default empty arrays are converted to NA but json is numerical and cannot be 'NA'
             json = strrep(json, '"interpolatedChannels": "NA"', '"interpolatedChannels": []');

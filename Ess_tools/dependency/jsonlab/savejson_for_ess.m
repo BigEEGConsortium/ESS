@@ -1,4 +1,4 @@
-function json=savejson(rootname,obj,varargin)
+function json=savejson_for_ess(rootname,obj,varargin)
 %
 % json=savejson(rootname,obj,filename)
 %    or
@@ -11,7 +11,9 @@ function json=savejson(rootname,obj,varargin)
 % author: Qianqian Fang (fangq<at> nmr.mgh.harvard.edu)
 % created on 2011/09/09
 %
-% edited by Nima bigdely-Shamlo and added forceArray___ directive.
+% edited by Nima bigdely-Shamlo and added '___Array___' directive: if a 
+% variable ends with this, it will always be treated as an array (and named
+% without ___Array___ in JSON.s
 %
 % $Id$
 %
@@ -168,20 +170,30 @@ end
 %%-------------------------------------------------------------------------
 function txt=obj2json(name,item,level,varargin)
 
+% if a variable name ends with  ___Array___ then force it to be an array (and remove ___Array___
+% from its name)
+mustArrayString = '___Array___';
+if length(name) > length(mustArrayString) && strcmp(name((end-length(mustArrayString) + 1):end), mustArrayString)
+    name = name(1:(end-length(mustArrayString)));
+    forceArray = true;
+else 
+    forceArray = false;
+end;
+
 if(iscell(item))
-    txt=cell2json(name,item,level,varargin{:});
+    txt=cell2json(name,item,level,forceArray, varargin{:});
 elseif(isstruct(item))
-    txt=struct2json(name,item,level,varargin{:});
+    txt=struct2json(name,item,level,forceArray, varargin{:});
 elseif(ischar(item))
-    txt=str2json(name,item,level,varargin{:});
+    txt=str2json(name,item,level,forceArray, varargin{:});
 elseif(isobject(item)) 
-    txt=matlabobject2json(name,item,level,varargin{:});
+    txt=matlabobject2json(name,item,forceArray, level,varargin{:});
 else
-    txt=mat2json(name,item,level,varargin{:});
+    txt=mat2json(name,item,level,forceArray, varargin{:});
 end
 
 %%-------------------------------------------------------------------------
-function txt=cell2json(name,item,level,varargin)
+function txt=cell2json(name,item,level,forceArray, varargin)
 txt={};
 if(~iscell(item))
         error('input is not a cell');
@@ -235,12 +247,19 @@ end
 txt = sprintf('%s',txt{:});
 
 %%-------------------------------------------------------------------------
-function txt=struct2json(name,item,level,varargin)
+function txt=struct2json(name,item,level,forceArray, varargin)
 txt={};
 if(~isstruct(item))
 	error('input is not a struct');
 end
 dim=size(item);
+
+% the code expects n x 1 structure arrays (otherwise it add extra array brackets)
+if dim(1) > 1 && dim(2) == 1
+    item = item';
+    dim=size(item);
+end;
+
 if(ndims(squeeze(item))>2) % for 3D or higher dimensions, flatten to 2D for now
     item=reshape(item,dim(1),numel(item)/dim(1));
     dim=size(item);
@@ -248,11 +267,11 @@ end
 len=numel(item);
 
 forcearray= (len>1 || (jsonopt('SingletArray',0,varargin{:})==1 && level>0));
-
-if isfield(item, 'forceArray_____'); % by Nima to allow focing to be an array
-    forcearray = true;
-    item = rmfield(item, 'forceArray_____');
-end;
+forcearray = forcearray | forceArray;
+% if isfield(item, 'forceArray_____'); % by Nima to allow focing to be an array
+%     forcearray = true;
+%     item = rmfield(item, 'forceArray_____');
+% end;
 
 ws=struct('tab',sprintf('\t'),'newline',sprintf('\n'));
 ws=jsonopt('whitespaces_',ws,varargin{:});
@@ -317,7 +336,7 @@ end
 txt = sprintf('%s',txt{:});
 
 %%-------------------------------------------------------------------------
-function txt=str2json(name,item,level,varargin)
+function txt=str2json(name,item,level,forcearray, varargin)
 txt={};
 if(~ischar(item))
         error('input is not a string');
@@ -362,7 +381,7 @@ end
 txt = sprintf('%s',txt{:});
 
 %%-------------------------------------------------------------------------
-function txt=mat2json(name,item,level,varargin)
+function txt=mat2json(name,item,level,forcearray, varargin)
 if(~isnumeric(item) && ~islogical(item))
         error('input is not an array');
 end
@@ -383,7 +402,7 @@ if(length(size(item))>2 || issparse(item) || ~isreal(item) || ...
               padding1,checkname(name,varargin{:}),nl,padding0,class(item),nl,padding0,regexprep(mat2str(size(item)),'\s+',','),nl);
     end
 else
-    if(numel(item)==1 && jsonopt('SingletArray',0,varargin{:})==0 && level>0)
+    if ~forcearray && (numel(item)==1 && jsonopt('SingletArray',0,varargin{:})==0 && level>0)
         numtxt=regexprep(regexprep(matdata2json(item,level+1,varargin{:}),'^\[',''),']','');
     else
         numtxt=matdata2json(item,level+1,varargin{:});
@@ -440,7 +459,7 @@ end
 txt=sprintf('%s%s%s',txt,padding1,'}');
 
 %%-------------------------------------------------------------------------
-function txt=matlabobject2json(name,item,level,varargin)
+function txt=matlabobject2json(name,item,level, forceArray, varargin)
 if numel(item) == 0 %empty object
     st = struct();
 else

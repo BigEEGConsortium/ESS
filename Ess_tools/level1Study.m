@@ -3052,13 +3052,13 @@ classdef level1Study < levelStudy;
                 xmlAsStructure.projectFunding(i).organization = xmlAsStructure.project.funding(i).organization;
                 xmlAsStructure.projectFunding(i).grantId = xmlAsStructure.project.funding(i).grantId;
             end;
-            xmlAsStructure.projectFunding.forceArray_____=  true;
+               xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'projectFunding');
+
             xmlAsStructure = rmfield(xmlAsStructure, 'project');
             
             clear recordingParameterSets;
             for i=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet)
                 recordingParameterSets(i).recordingParameterSetLabel = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).recordingParameterSetLabel;
-                recordingParameterSets(i).forceArray_____=  true;
                 clear modality;
                 for j=1:length(xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality)
                     modality{j} = xmlAsStructure.recordingParameterSets.recordingParameterSet(i).channelType.modality(j);
@@ -3084,11 +3084,13 @@ classdef level1Study < levelStudy;
                 for j=1:length(modality)
                     recordingParameterSets(i).modality(j) = modality{j};
                 end;
-                
-                recordingParameterSets(i).modality(1).forceArray_____=  true;
+               
             end;
             recordingParameterSets = renameField(recordingParameterSets, 'modality', 'modalities');
+            recordingParameterSets = rename_field_to_force_array(recordingParameterSets, 'modalities');
             xmlAsStructure.recordingParameterSets = recordingParameterSets;
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'recordingParameterSets');
+
             
             clear sessions
             for i=1:length(xmlAsStructure.sessions.session)
@@ -3109,7 +3111,7 @@ classdef level1Study < levelStudy;
                 
                 sessions{i} = xmlAsStructure.sessions.session(i);
                 sessions{i}.dataRecordings = dataRecordings;
-                sessions{i}.dataRecordings(1).forceArray_____=  true;
+               
                 % convert subject age, height and weight to numbers
                 clear subjects
                 for j=1:length(xmlAsStructure.sessions.session(i).subject)
@@ -3118,20 +3120,18 @@ classdef level1Study < levelStudy;
                     %         subjects{j}.height = str2double(xmlAsStructure.sessions.session(i).subject(j).height);
                     %         subjects{j}.weight = str2double(xmlAsStructure.sessions.session(i).subject(j).weight);
                     subjects{j} = renameField(subjects{j}, 'channelLocations', 'channelLocationFile');
-                    subjects{j}.forceArray_____=  true;
                 end;
                 
                 for j=1:length(subjects)
                     sessions{i}.subjects(j) = subjects{j};
                 end;
+                sessions{i} = rename_field_to_force_array(sessions{i}, 'subjects');
                 
-                sessions{i} = rmfield(sessions{i}, 'subject');
-                sessions{i}.forceArray_____=  true;
-                
+                sessions{i} = rmfield(sessions{i}, 'subject');                
             end;
             
             
-            % convert the sessions varoable from being interpreted as
+            % convert the sessions variable from being interpreted as
             % the (XML-style) sessiontask into the new (JSON-style)
             % session concepts with each data recording having its own task label.
             sessionCombinedAcrossTasks = {};
@@ -3163,31 +3163,36 @@ classdef level1Study < levelStudy;
             xmlAsStructure = rmfield(xmlAsStructure, 'sessions');
             
             for i=1:length(sessionCombinedAcrossTasks)
+                sessionCombinedAcrossTasks{i} = rename_field_to_force_array(sessionCombinedAcrossTasks{i}, 'dataRecordings');
                 xmlAsStructure.sessions(i) = sessionCombinedAcrossTasks{i};
             end;
+            
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'sessions');
+
             
             % tasks
             clear tasks;
             for i=1:length(xmlAsStructure.tasks.task)
                 tasks{i} = xmlAsStructure.tasks.task(i);
-                tasks{i}.forceArray_____=  true;
             end;
             xmlAsStructure = rmfield(xmlAsStructure, 'tasks');
             for i=1:length(tasks)
                 xmlAsStructure.tasks(i) = tasks{i};
             end;
-            
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'tasks');
+
             
             % publications
             clear publications;
             for i=1:length(xmlAsStructure.publications.publication)
                 publications{i} = xmlAsStructure.publications.publication(i);
-                publications{i}.forceArray_____=  true;
             end;
             xmlAsStructure = rmfield(xmlAsStructure, 'publications');
             for i=1:length(publications)
                 xmlAsStructure.publications(i) = publications{i};
             end;
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'publications');
+
                         
             % experimenters
             clear experimenters;
@@ -3195,12 +3200,12 @@ classdef level1Study < levelStudy;
                 experimenters{i} = xmlAsStructure.experimenters.experimenter(i);
                 [experimenters{i}.givenName, experimenters{i}.familyName, experimenters{i}.additionalName] = splitName(experimenters{i}.name);
                 experimenters{i} = rmfield(experimenters{i}, 'name');
-                experimenters{i}.forceArray_____=  true;
             end;
             xmlAsStructure = rmfield(xmlAsStructure, 'experimenters');
             for i=1:length(experimenters)
                 xmlAsStructure.experimenters(i) = experimenters{i};
             end;
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'experimenters');
             
             [xmlAsStructure.contact.givenName, xmlAsStructure.contact.familyName, xmlAsStructure.contact.additionalName] = splitName(xmlAsStructure.contact.name);
             xmlAsStructure.contact = rmfield(xmlAsStructure.contact, 'name');
@@ -3223,12 +3228,13 @@ classdef level1Study < levelStudy;
                         eventCodes(i).numberOfInstances = -1;
                     end;
                 end;
-                eventCodes(i).forceArray_____=  true;
             end;
             xmlAsStructure.eventCodes = eventCodes;
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'eventCodes');
             
             xmlAsStructure = renameField(xmlAsStructure, 'organization', 'organizations');
-            xmlAsStructure.organizations.forceArray_____=  true;
+          xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'organizations');
+
             
             if isempty(xmlAsStructure.copyright)
                 xmlAsStructure.copyright = 'NA';
@@ -3238,8 +3244,8 @@ classdef level1Study < levelStudy;
             % sort field names so important ones, e.g type and id end up on the top
             fieldNames = fieldnames(xmlAsStructure);
             topFields = {'title', 'type', 'essVersion', 'shortDescription', 'dateCreated', ...
-                'dateModified', 'id', 'DOI', 'contact', 'description', 'rootURI','summary', 'projectFunding',...
-                'tasks', 'publications', 'experimenters'};
+                'dateModified', 'id', 'DOI', 'contact', 'description', 'rootURI','summary', 'projectFunding___Array___',...
+                'tasks___Array___', 'publications___Array___', 'experimenters___Array___'};
             
             xmlAsStructure = orderfields(xmlAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
             
