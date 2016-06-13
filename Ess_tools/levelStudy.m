@@ -401,8 +401,7 @@ classdef levelStudy
                 eval(sprintf(['!' shellString], ['''' fullFile{i} '''']));
             end;
         end;
-        
-        
+                
         function obj = combinePartialRuns(obj, partFolders, finalFolder)
             % obj = combinePartialRuns(obj, partFolders, finalFolder)
             %
@@ -505,6 +504,38 @@ classdef levelStudy
             
             combinedObj = combinedObj.validate;
             obj = combinedObj;
+        end;
+        
+          function writeJSONP(obj, essFolder)
+            % writeJSONP(obj, essFolder)
+            % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+%             if nargin < 2
+%                 essFolder = fileparts(obj.essFilePath);
+%             end;
+            
+            if ~exist(essFolder, 'dir')
+                mkdir(essFolder);
+            end;
+            
+            json = getAsJSON(obj);
+            
+            fid= fopen([essFolder filesep 'manifest.js'], 'w');
+            fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
+            fclose(fid);
+        end;
+        
+        function copyJSONReportAssets(obj, essFolder)
+%             if nargin < 2
+%                 essFolder = fileparts(obj.essFilePath);
+%             end;
+            
+            thisClassFilenameAndPath = mfilename('fullpath');
+            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+            % copy index.html
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
+            
+            % copy javascript and CSS used in index.html
+            copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
         end;
     end
     methods (Static)

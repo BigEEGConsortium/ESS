@@ -148,12 +148,19 @@ classdef level2Study < levelStudy;
             
         end;
         
-        function obj = write(obj, level2XmlFilePath)
+        function obj = write(obj, level2XmlFilePath, alsoWriteJson)
+            % obj = write(obj, level2XmlFilePath, alsoWriteJson)
+            % Writes the information into an ESS-formatted XML file and JSON manifest.js file.
+            
             
             % assign the input file path as the object path and write
             % there.
             if nargin > 1
                 obj.level2XmlFilePath = level2XmlFilePath;
+            end;
+            
+            if alsoWriteJson
+                obj.writeJSONP(obj.essFilePath); % since this function has an internal call to obj.write, this prevents circular references
             end;
             
             % use xml_io tools to write XML from a Matlab structure
@@ -962,14 +969,15 @@ classdef level2Study < levelStudy;
             end;
                         
             objAsStructure.studyLevel2Files = files;
-            objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
+             objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
             
             for i=1:length(objAsStructure.project)
                 objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
                 objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
             end;       
             objAsStructure = rename_field_to_force_array(objAsStructure, 'projectFunding');
-            objAsStructure = rmfield(objAsStructure, 'project');                                                        
+            objAsStructure = rmfield(objAsStructure, 'project');                      
+
             
             objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
             objAsStructure = rename_field_to_force_array(objAsStructure, 'organizations');
@@ -982,10 +990,12 @@ classdef level2Study < levelStudy;
             [objAsStructure.contact.givenName, objAsStructure.contact.familyName, objAsStructure.contact.additionalName] = splitName(objAsStructure.contact.name);
             objAsStructure.contact = rmfield(objAsStructure.contact, 'name');
             
+            [dummy, objAsStructure.studyLevel1] = obj.level1StudyObj.getAsJSON;              %#ok<*ASGLU>
+            
             % sort field names so important ones, e.g type and id end up on the top
             fieldNames = fieldnames(objAsStructure);
             topFields = {'title', 'type', 'studyLevel2SchemaVersion', 'dateCreated', ...
-                'dateModified', 'id', 'DOI', 'contact', 'rootURI'};
+                'dateModified', 'id', 'DOI', 'contact', 'rootURI', 'projectFunding___Array___'};
             
             objAsStructure = orderfields(objAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
             
@@ -993,9 +1003,10 @@ classdef level2Study < levelStudy;
             opt.SingletCell = true;  % even single cells are saved as JSON arrays.
             opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
             opt.emptyString = '"NA"';
-            json = savejson_for_ess2('', objAsStructure, opt);
+            json = savejson_for_ess('', objAsStructure, opt);
             
-            json(strrep "interpolatedChannels": "NA"
+            % be default empty arrays are converted to NA but json is numerical and cannot be 'NA'
+            json = strrep(json, '"interpolatedChannels": "NA"', '"interpolatedChannels": []');
             
         end;
     end;

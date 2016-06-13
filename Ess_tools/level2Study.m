@@ -148,12 +148,23 @@ classdef level2Study < levelStudy;
             
         end;
         
-        function obj = write(obj, level2XmlFilePath)
+        function obj = write(obj, level2XmlFilePath, alsoWriteJson)
+            % obj = write(obj, level2XmlFilePath, alsoWriteJson)
+            % Writes the information into an ESS-formatted XML file and JSON manifest.js file.
+            
             
             % assign the input file path as the object path and write
             % there.
             if nargin > 1
                 obj.level2XmlFilePath = level2XmlFilePath;
+            end;
+            
+            if nargin < 3
+                alsoWriteJson = true;
+            end; 
+            
+            if alsoWriteJson
+                obj.writeJSONP(obj.level2XmlFilePath); % since this function has an internal call to obj.write, this prevents circular references
             end;
             
             % use xml_io tools to write XML from a Matlab structure

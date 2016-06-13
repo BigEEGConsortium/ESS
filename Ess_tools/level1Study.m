@@ -1120,7 +1120,7 @@ classdef level1Study < levelStudy;
         function obj = write(obj, essFilePath, alsoWriteJson)
             % obj = write(essFilePath, alsoWriteJson)
             %
-            % Writes the information into an ESS-formatted XML file.
+            % Writes the information into an ESS-formatted XML file and JSON manifest.js file.
             
             if nargin < 3
                 alsoWriteJson = true;
@@ -1135,7 +1135,7 @@ classdef level1Study < levelStudy;
             end;
             
             if alsoWriteJson
-                obj.writeJSONP; % since this function has an internal call to obj.write, this prevents cicular references
+                obj.writeJSONP(fileparts(obj.essFilePath)); % since this function has an internal call to obj.write, this prevents circular references
             end;
             
             docNode = com.mathworks.xml.XMLUtils.createDocument('studyLevel1');
@@ -2146,8 +2146,8 @@ classdef level1Study < levelStudy;
                 if ~exist([essPath filesep 'manifest.js'], 'file')
                     issue(end+1).description = 'manifest.js file was missing.';
                     if fixIssues                        
-                        obj.copyJSONReportAssets;
-                        obj.writeJSONP;
+                        obj.copyJSONReportAssets(fileparts(obj.essFilePath));
+                        obj.writeJSONP(fileparts(obj.essFilePath));
                         issue(end).howItWasFixed = 'manifest.js file created.';
                     end;
                 end;
@@ -2709,6 +2709,9 @@ classdef level1Study < levelStudy;
             copyfile([essDocumentPathStr filesep 'asset' filesep 'xml_style.xsl'], [essFolder filesep 'xml_style.xsl']);
             copyfile([essDocumentPathStr filesep 'asset' filesep 'Readme.txt'], [essFolder filesep 'Readme.txt']);
             
+            % JSON-based report assets
+            obj.copyJSONReportAssets(essFolder);
+            
             % if license if CC0, copy the license file into the folder.
             if strcmpi(obj.summaryInfo.license.type, 'cc0')
                 copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [essFolder filesep 'License.txt']);
@@ -3256,37 +3259,37 @@ classdef level1Study < levelStudy;
             json = savejson_for_ess('', xmlAsStructure, opt);
         end;        
         
-        function writeJSONP(obj, essFolder)
-            % writeJSONP(obj, essFolder)
-            % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
-            if nargin < 2
-                essFolder = fileparts(obj.essFilePath);
-            end;
-            
-            if ~exist(essFolder, 'dir')
-                mkdir(essFolder);
-            end;
-            
-            json = getAsJSON(obj);
-            
-            fid= fopen([essFolder filesep 'manifest.js'], 'w');
-            fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
-            fclose(fid);
-        end;
-        
-        function copyJSONReportAssets(obj, essFolder)
-            if nargin < 2
-                essFolder = fileparts(obj.essFilePath);
-            end;
-            
-            thisClassFilenameAndPath = mfilename('fullpath');
-            essDocumentPathStr = fileparts(thisClassFilenameAndPath);
-            % copy index.html
-            copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
-            
-            % copy javascript and CSS used in index.html
-            copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
-        end;
+%         function writeJSONP(obj, essFolder)
+%             % writeJSONP(obj, essFolder)
+%             % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+%             if nargin < 2
+%                 essFolder = fileparts(obj.essFilePath);
+%             end;
+%             
+%             if ~exist(essFolder, 'dir')
+%                 mkdir(essFolder);
+%             end;
+%             
+%             json = getAsJSON(obj);
+%             
+%             fid= fopen([essFolder filesep 'manifest.js'], 'w');
+%             fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
+%             fclose(fid);
+%         end;
+%         
+%         function copyJSONReportAssets(obj, essFolder)
+%             if nargin < 2
+%                 essFolder = fileparts(obj.essFilePath);
+%             end;
+%             
+%             thisClassFilenameAndPath = mfilename('fullpath');
+%             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+%             % copy index.html
+%             copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
+%             
+%             % copy javascript and CSS used in index.html
+%             copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
+%         end;
         
         function obj = updateEventNumberOfInstances(obj)
             % obj = updateEventNumberOfInstances(obj)
