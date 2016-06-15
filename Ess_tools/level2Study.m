@@ -164,7 +164,7 @@ classdef level2Study < levelStudy;
             end; 
             
             if alsoWriteJson
-                obj.writeJSONP(obj.level2XmlFilePath); % since this function has an internal call to obj.write, this prevents circular references
+                obj.writeJSONP(fileparts(obj.level2XmlFilePath)); % since this function has an internal call to obj.write, this prevents circular references
             end;
             
             % use xml_io tools to write XML from a Matlab structure
@@ -307,6 +307,9 @@ classdef level2Study < levelStudy;
             if strcmpi(obj.level1StudyObj.summaryInfo.license.type, 'cc0')
                 copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [inputOptions.level2Folder filesep 'License.txt']);
             end;
+                                    
+            % JSON-based report assets
+            obj.copyJSONReportAssets(inputOptions.level2Folder);
             
             obj.uuid = char(java.util.UUID.randomUUID);
             obj.title = obj.level1StudyObj.studyTitle;
@@ -354,7 +357,7 @@ classdef level2Study < levelStudy;
                             channelLocationFullPath = obj.level1StudyObj.sessionTaskInfo(i).subject(1).channelLocations;
                             [EEG, dataRecordingParameterSet, allEEGChannels, allScalpChannels] = loadAndPrepareRawFile(obj.level1StudyObj, fileFinalPath, ...
                                 rootFolder, currentTask, channelLocationFullPath, obj.level1StudyObj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel, ...
-                                obj.level1StudyObj.sessionTaskInfo(i).sessionNumber, j);
+                                obj.level1StudyObj.sessionTaskInfo(i).sessionNumber, j, inputOptions.forTest);
                             
                             % run the pipeline
                             
@@ -368,10 +371,13 @@ classdef level2Study < levelStudy;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-                            if inputOptions.forTest
-                                fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-                                EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
-                            end;
+%                             if inputOptions.forTest
+%                                 fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+%                                 if length(EEG.chanlocs) > size(EEG.data,1)
+%                                     EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
+%                                 end;
+%                                 EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+%                             end;
                             
                             % execute the pipeline
                             [EEG, computationTimes] = prepPipeline(EEG, params);
@@ -490,24 +496,22 @@ classdef level2Study < levelStudy;
                                 filterLabel = {'Line Noise Removal'};
                                 filterFieldName = {'lineNoise'};
                                 filterFunctionName = {'cleanLineNoise'};
-                                
-                                
-                                for f=1:length(filterLabel)
-                                    newFilter = struct;
-                                    newFilter.filterLabel = filterLabel{f};
-                                    newFilter.executionOrder = num2str(f);
-                                    newFilter.softwareEnvironment = matlabVersionSTring;
-                                    newFilter.softwarePackage = eeglabVersionString;
-                                    newFilter.functionName = filterFunctionName{f};
-                                    fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
-                                    for p=1:length(fields)
-                                        newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
-                                    end;
-                                    newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
-                                    
-                                    obj.filters.filter(end+1) = newFilter;
+                                                                                                
+                                newFilter = struct;
+                                newFilter.filterLabel = filterLabel{f};
+                                newFilter.executionOrder = num2str(f);
+                                newFilter.softwareEnvironment = matlabVersionSTring;
+                                newFilter.softwarePackage = eeglabVersionString;
+                                newFilter.functionName = filterFunctionName{f};
+                                newFilter.codeHash = hlp_cryptohash(which('cleanLineNoise.m'),true);
+                                fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
+                                for p=1:length(fields)
+                                    newFilter.parameters.parameter(p).name = fields{p};
+                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
                                 end;
+                                newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                                
+                                obj.filters.filter(end+1) = newFilter;
                                 
                                 % Reference (too complicated to put above)
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
@@ -516,6 +520,7 @@ classdef level2Study < levelStudy;
                                     newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
+                                    newFilter.codeHash = hlp_cryptohash(which('performReference.m'),true);
                                     newFilter.functionName = 'robustReference';
                                     fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
                                         'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...

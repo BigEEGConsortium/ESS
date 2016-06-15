@@ -309,7 +309,8 @@ classdef levelStudy
                     allScalpChannels = [allScalpChannels newChannels(~nonScalpChannel)];
                     channelLocationType = dataRecordingParameterSet.modality(m).channelLocationType;
                     allEEGChannelLabels = cat(1, allEEGChannelLabels, newChannelLabels);
-                    newChannelLabels = cat(1, newChannelLabels, nonScalpChannelLabels); %#ok<NASGU>
+                    newChannelLabels
+                    newChannelLabels = cat(1, newChannelLabels(:), nonScalpChannelLabels(:))'; %#ok<NASGU>
                 end;
             end;
             
