@@ -46,7 +46,7 @@ function getLevelHierarchy(studyObj){
 	var currentLevel = study;
 	while (true) {
 		studyLevelHierarchy.unshift(currentLevel);
-		if ("parentStudyObj" in currentLevel){
+		if ("parentStudy" in currentLevel){
 			studyLevelHierarchyType.unshift('level-derived');
 			currentLevel = currentLevel.parentStudyObj;
 		}
