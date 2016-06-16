@@ -3029,7 +3029,7 @@ classdef level1Study < levelStudy;
             end;
         end;
         
-        function [json, xmlAsStructure]= getAsJSON(obj)
+        function [json, xmlAsStructure] = getAsJSON(obj)
             % [json, jsonAsStructure] = getAsJSON(obj)
             % get the ESS study as a JSON object.
                         
@@ -3044,10 +3044,10 @@ classdef level1Study < levelStudy;
             % add fields that do not exist in XML yet, shoul be here on top to make the JSON
             % elements to show on topobj.ge
             xmlAsStructure.DOI = 'NA';
-            xmlAsStructure.type = 'EssStudyLevel1';
+            xmlAsStructure.type = 'ess:StudyLevel1';
             xmlAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
             xmlAsStructure.dateModified = xmlAsStructure.dateCreated;
-            xmlAsStructure.id = ['eegstudy.org/study/' strrep(obj.studyTitle, ' ', '_') '/' obj.studyUuid];
+            xmlAsStructure.id = ['ess:study/' strrep(obj.studyTitle, ' ', '_') '/' obj.studyUuid];
             xmlAsStructure = rmfield(xmlAsStructure, 'uuid'); 
             
             
@@ -3100,7 +3100,7 @@ classdef level1Study < levelStudy;
                 clear dataRecordings
                 for j=1:length(xmlAsStructure.sessions.session(i).dataRecordings.dataRecording)
                     tempVar = xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j);
-                    tempVar.dataRecordingId = ['eegstudy.org/recording/' xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j).dataRecordingUuid];
+                    tempVar.dataRecordingId = ['ess:recording/' xmlAsStructure.sessions.session(i).dataRecordings.dataRecording(j).dataRecordingUuid];
                     if j>1 
                         tempVar = orderfields(tempVar, dataRecordings(1));
                     end;

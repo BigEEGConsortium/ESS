@@ -10,6 +10,10 @@ classdef levelDerivedStudy  < levelStudy;
         % study title, in case file was moved.
         title = ' ';
         
+        derivationDescription = ' '; % explains the derivation operation. Should not repeat study Level 1 description.
+        derivationShortDescription = ' '; % explains the derivation operation in less than 120 characters. 
+                                          % Should not repeat study Level 1 short description.
+        
         % a unique identifier (uuid) with 32 random  alphanumeric characters and four hyphens).
         % It is used to uniquely identify each STDL2 document.
         uuid = ' ';
@@ -30,7 +34,7 @@ classdef levelDerivedStudy  < levelStudy;
         % in the order specified in executionOrder (multiple numbers here mean multiple filter
         % runs.
         filters = struct('filter', struct('filterLabel', ' ', 'filterDescription', ' ', 'executionOrder', ' ', ...
-            'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ',...
+            'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ', 'codeHash', ' ',...
             'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
         % files containing EEGLAB datasets, each recording gets its own file
@@ -43,17 +47,17 @@ classdef levelDerivedStudy  < levelStudy;
         
         % Information about the project under which this experiment is
         % performed.
-        projectInfo = struct('organization', ' ',  'grantId', ' ');
+        project = struct('organization', ' ',  'grantId', ' ');
         
         % Information of individual to contact for data results, or more information regarding the study/data.
-        contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
+        contact = struct ('name', ' ', 'phone', ' ', 'email', ' ');
         
         % Iinformation regarding the organization that conducted the
         % research study.
-        organizationInfo = struct('name', ' ', 'logoLink', ' ');
+        organization = struct('name', ' ', 'logoLink', ' ');
         
         % Copyright information.
-        copyrightInfo = ' ';
+        copyright = ' ';
     end;
     
     % properties that we do not want to be written/read to/from the XML
@@ -127,12 +131,20 @@ classdef levelDerivedStudy  < levelStudy;
             
         end;
         
-        function obj = write(obj, levelDerivedXmlFilePath)
+        function obj = write(obj, levelDerivedXmlFilePath, alsoWriteJson)
             
             % assign the input file path as the object path and write
             % there.
             if nargin > 1
                 obj.levelDerivedXmlFilePath = levelDerivedXmlFilePath;
+            end;
+            
+             if nargin < 3
+                alsoWriteJson = true;
+            end; 
+            
+            if alsoWriteJson
+                obj.writeJSONP(fileparts(obj.levelDerivedXmlFilePath)); % since this function has an internal call to obj.write, this prevents circular references
             end;
             
             % use xml_io tools to write XML from a Matlab structure
@@ -444,7 +456,7 @@ classdef levelDerivedStudy  < levelStudy;
                 
                 obj.filters.filter.filterLabel = inputOptions.filterLabel;
                 obj.filters.filter.filterDescription = inputOptions.filterDescription;
-                obj.filters.filter.executionOrder = 1;
+                obj.filters.filter.executionOrder = '1';
                 obj.filters.filter.softwareEnvironment = matlabVersionSTring;
                 obj.filters.filter.softwarePackage = eeglabVersionString;
                 obj.filters.filter.functionName = func2str(callbackFunction); % get function name as string from its handle
@@ -458,6 +470,8 @@ classdef levelDerivedStudy  < levelStudy;
                 error('Level-derived from Level 1 studies is not implemented yet');
             end;
                 
+            % JSON-based report assets
+            obj.copyJSONReportAssets(inputOptions.levelDerivedFolder);
             
             % Calculate total study size
             [dummy, obj.totalSize]= dirsize(fileparts(obj.levelDerivedXmlFilePath)); %#ok<ASGLU>
@@ -729,7 +743,104 @@ classdef levelDerivedStudy  < levelStudy;
             publishPrepPipelineReport(EEG, ...
                 levelDerivedFolder, 'summaryReport.html', ...
                 relativeSessionFolder, reportFileName);
-        end;       
+        end;     
+        
+        function json = getAsJSON(obj)
+            % json = getAsJSON(obj)
+            % get the ESS study as a JSON object.
+            
+            propertiesToExcludeFromXMLIO = findAttrValue(obj, 'AbortSet', true);
+            % remove fields that are flagged for not being saved to the XML
+            % file.
+            warning('off', 'MATLAB:structOnObject');
+            objAsStructure = rmfield(struct(obj), propertiesToExcludeFromXMLIO);
+            warning('on', 'MATLAB:structOnObject');
+            
+            % add fields that do not exist in XML yet, should be here on top to make the JSON
+            % elements to show on top
+            objAsStructure.DOI = 'NA';
+            objAsStructure.type = 'ess:StudyLevelDerived';
+            objAsStructure.studyLevelDerivedSchemaVersion = '1.1.0';
+            objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
+            objAsStructure.dateModified = objAsStructure.dateCreated;
+            objAsStructure.id = ['ess:study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
+            objAsStructure = rmfield(objAsStructure, 'uuid');
+            
+            clear jsonfilters;
+            for i=1:length(objAsStructure.filters.filter)
+                tempvar = objAsStructure.filters.filter(i);              
+                tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
+                tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
+                                
+                params = tempvar.parameters.parameter;
+                tempvar.parameters = params;
+                tempvar = rename_field_to_force_array(tempvar, 'parameters');
+                
+                if i>1
+                    tempVar = orderfields(tempvar, jsonfilters(1));
+                end;
+                jsonfilters(i) = tempvar;
+            end;
+            
+            objAsStructure.filters = jsonfilters;
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'filters');
+            
+            clear files;
+            for i=1:length(objAsStructure.studyLevelDerivedFiles.studyLevelDerivedFile)
+                tempvar = objAsStructure.studyLevelDerivedFiles.studyLevelDerivedFile(i);
+                                                                
+                tempvar = renameField(tempvar, 'dataRecordingUuid', 'dataRecordingId');
+
+                tempvar.id = tempvar.uuid; 
+                tempvar = rmfield(tempvar, 'uuid');                                               
+                
+                if i>1
+                    tempVar = orderfields(tempvar, files(1));
+                end;
+                files(i) = tempvar;
+            end;
+                        
+            objAsStructure.studyLevelDerivedFiles = files;
+             objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevelDerivedFiles');
+            
+            for i=1:length(objAsStructure.project)
+                objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
+                objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
+            end;       
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'projectFunding');
+            objAsStructure = rmfield(objAsStructure, 'project');                      
+
+            
+            objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'organizations');
+
+            
+            if isempty(objAsStructure.copyright)
+                objAsStructure.copyright = 'NA';
+            end;
+            
+            [objAsStructure.contact.givenName, objAsStructure.contact.familyName, objAsStructure.contact.additionalName] = splitName(objAsStructure.contact.name);
+            objAsStructure.contact = rmfield(objAsStructure.contact, 'name');
+            
+            [dummy, objAsStructure.parentStudy] = obj.parentStudyObj.getAsJSON;              %#ok<*ASGLU>
+            
+            % sort field names so important ones, e.g type and id end up on the top
+            fieldNames = fieldnames(objAsStructure);
+            topFields = {'title', 'type', 'studyLevelDerivedSchemaVersion', 'dateCreated', ...
+                'dateModified', 'id', 'DOI', 'contact', 'rootURI', 'projectFunding___Array___'};
+            
+            objAsStructure = orderfields(objAsStructure, [topFields setdiff(fieldNames, topFields, 'stable')']);
+            
+            opt.ForceRootName = false;
+            opt.SingletCell = true;  % even single cells are saved as JSON arrays.
+            opt.SingletArray = false; % single numerical arrays are NOT saved as JSON arrays.
+            opt.emptyString = '"NA"';
+            json = savejson_for_ess('', objAsStructure, opt);
+            
+            % be default empty arrays are converted to NA but json is numerical and cannot be 'NA'
+            json = strrep(json, '"interpolatedChannels": "NA"', '"interpolatedChannels": []');
+            
+        end;
     end;
     methods (Static)
          function levelObject = readLevelXML(levelXML)

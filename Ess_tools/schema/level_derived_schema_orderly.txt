@@ -2,8 +2,11 @@
 
 object {
 string title;
-string type ["ess:StudyLevel2"]; // added to XML
-string studyLevel2SchemaVersion;
+string type ["ess:StudyLevelDerived"]; // added to XML
+string studyLevelDerivedSchemaVersion;
+string derivationDescription;
+string {1, 120}  derivationShortDescription;
+string filterDescription;
 
 string dateCreated; // added to XML, based on PROV ontology
 string dateModified; // added to XML, based on PROV ontology
@@ -23,7 +26,6 @@ array [
         string softwareEnvironment;
         string softwarePackage;
         string functionName;
-        string filterDescription;
         string codeHash; // MDF5 hash of the function code
         array [
           object {
@@ -38,28 +40,16 @@ array [
 
 array [
   object{
-     string studyLevel2FileName;
+     string studyLevelDerivedFileName;
      string dataRecordingId; // changed the name from dataRecordingUuid in XML
      string id; // changed from uuid
-     string noiseDetectionResultsFile;
      string eventInstanceFile;
      string reportFileName;
-     array [
-        integer
-     ] averageReferenceChannels;
-     array [
-        integer
-     ] rereferencedChannels;
-     array [
-        integer
-     ] interpolatedChannels;
      string dataQuality ["Good", "Suspect", "Unusable"];
   }
-] studyLevel2Files; // changed from XML, removed the studyLevel2File node inside
+] studyLevelDerivedFiles; // changed from XML, removed the studyLevelDerivedFile node inside
 
-object {
-// all level 1 ESS goes here
-}* studyLevel1;
+object {}* parentStudy;
 
 string totalSize;
 

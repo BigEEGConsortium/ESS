@@ -50,7 +50,7 @@ classdef level2Study < levelStudy;
         % Here we are assuming a number of filters to have been executed on the data,
         % in the order specified in executionOrder (multiple numbers here mean multiple filter
         % runs.
-        filters = struct('filter', struct('filterLabel', ' ', 'executionOrder', ' ', ...
+        filters = struct('filter', struct('filterLabel', ' ', 'filterDescription', ' ', 'executionOrder', ' ', ...
             'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ', 'codeHash', ' ',...
             'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
@@ -164,7 +164,7 @@ classdef level2Study < levelStudy;
             end; 
             
             if alsoWriteJson
-                obj.writeJSONP(obj.level2XmlFilePath); % since this function has an internal call to obj.write, this prevents circular references
+                obj.writeJSONP(fileparts(obj.level2XmlFilePath)); % since this function has an internal call to obj.write, this prevents circular references
             end;
             
             % use xml_io tools to write XML from a Matlab structure
@@ -496,33 +496,33 @@ classdef level2Study < levelStudy;
                                 filterLabel = {'Line Noise Removal'};
                                 filterFieldName = {'lineNoise'};
                                 filterFunctionName = {'cleanLineNoise'};
-                                
-                                
-                                for f=1:length(filterLabel)
-                                    newFilter = struct;
-                                    newFilter.filterLabel = filterLabel{f};
-                                    newFilter.executionOrder = num2str(f);
-                                    newFilter.softwareEnvironment = matlabVersionSTring;
-                                    newFilter.softwarePackage = eeglabVersionString;
-                                    newFilter.functionName = filterFunctionName{f};
-                                    new
-                                    fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
-                                    for p=1:length(fields)
-                                        newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
-                                    end;
-                                    newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
-                                    
-                                    obj.filters.filter(end+1) = newFilter;
+                                                                                                
+                                newFilter = struct;
+                                newFilter.filterLabel = filterLabel{f};
+                                newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';                                
+                                newFilter.executionOrder = num2str(f);
+                                newFilter.softwareEnvironment = matlabVersionSTring;
+                                newFilter.softwarePackage = eeglabVersionString;
+                                newFilter.functionName = filterFunctionName{f};
+                                newFilter.codeHash = hlp_cryptohash(which('cleanLineNoise.m'),true);
+                                fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
+                                for p=1:length(fields)
+                                    newFilter.parameters.parameter(p).name = fields{p};
+                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
                                 end;
+                                newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
+                                
+                                obj.filters.filter(end+1) = newFilter;
                                 
                                 % Reference (too complicated to put above)
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
                                     newFilter = struct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
+                                    newFilter.filterDescription = 'average referencing after interpolating noisy channels';                                    
                                     newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
+                                    newFilter.codeHash = hlp_cryptohash(which('performReference.m'),true);
                                     newFilter.functionName = 'robustReference';
                                     fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
                                         'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
@@ -937,6 +937,8 @@ classdef level2Study < levelStudy;
                 tempvar = objAsStructure.filters.filter(i);              
                 tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
                 tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
+                
+                tempvar = renameField(
                 
                 params = tempvar.parameters.parameter;
                 tempvar.parameters = params;

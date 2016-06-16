@@ -2,14 +2,14 @@
 
 object {
 string title;
-string type ["EssStudyLevel1"]; // added to XML
+string type ["ess:StudyLevel1"]; // added to XML
 string essVersion;
 
 string {1, 120}  shortDescription;
 
 string dateCreated; // added to XML, based on PROV ontology
 string dateModified; // added to XML, based on PROV ontology
-string {32, } id; // added to XML, replaced uuid. Should start with eegstudy.org/study/[study title with spaces replaced by _]/ and then some unique uuid. 
+string {32, } id; // added to XML, replaced uuid. Should start with ess:study/[study title with spaces replaced by _]/ and then some unique uuid.
 string DOI; // many new repositories give you a DOI for your study
 
 string description;
@@ -38,7 +38,7 @@ array [
                 string referenceLabel;
                 string channelLocationType;
                 array [
-string		
+string
     ] channelLabels;
                 array [
 		string
@@ -73,7 +73,7 @@ array [
             string channelLocationFile;
           }*
         ] subjects; // name changed from subject to subjects since it is an array.
-        
+
 	object {
           string text;
           string linkLabel;
@@ -86,7 +86,7 @@ array [
               string
             ] taskLabels;
             string filename;
-            string dataRecordingId; // should be eegstudy.org/recording/ and then a uniuqe uuid
+            string dataRecordingId; // should be ess:recording/ and then a uniuqe uuid
             string startDateTime;
             string recordingParameterSetLabel;
             string eventInstanceFile;

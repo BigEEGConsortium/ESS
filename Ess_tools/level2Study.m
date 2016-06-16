@@ -50,7 +50,7 @@ classdef level2Study < levelStudy;
         % Here we are assuming a number of filters to have been executed on the data,
         % in the order specified in executionOrder (multiple numbers here mean multiple filter
         % runs.
-        filters = struct('filter', struct('filterLabel', ' ', 'executionOrder', ' ', ...
+        filters = struct('filter', struct('filterLabel', ' ', 'filterDescription', ' ', 'executionOrder', ' ', ...
             'softwareEnvironment', ' ', 'softwarePackage', ' ', 'functionName', ' ', 'codeHash', ' ',...
             'parameters', struct('parameter', struct('name', ' ', 'value', ' ')), 'recordingParameterSetLabel', ' '));
         
@@ -499,6 +499,7 @@ classdef level2Study < levelStudy;
                                                                                                 
                                 newFilter = struct;
                                 newFilter.filterLabel = filterLabel{f};
+                                newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';                                
                                 newFilter.executionOrder = num2str(f);
                                 newFilter.softwareEnvironment = matlabVersionSTring;
                                 newFilter.softwarePackage = eeglabVersionString;
@@ -517,6 +518,7 @@ classdef level2Study < levelStudy;
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
                                     newFilter = struct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
+                                    newFilter.filterDescription = 'average referencing after interpolating noisy channels';                                    
                                     newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
@@ -909,8 +911,8 @@ classdef level2Study < levelStudy;
             publishPrepReport(EEG, summary, session, 1, true);
         end;
         
-        function json = getAsJSON(obj)
-            % json = getAsJSON(obj)
+        function [json, objAsStructure] = getAsJSON(obj)
+            % [json, objAsStructure] = getAsJSON(obj)
             % get the ESS study as a JSON object.
             
             propertiesToExcludeFromXMLIO = findAttrValue(obj, 'AbortSet', true);
@@ -923,11 +925,11 @@ classdef level2Study < levelStudy;
             % add fields that do not exist in XML yet, should be here on top to make the JSON
             % elements to show on top
             objAsStructure.DOI = 'NA';
-            objAsStructure.type = 'EssStudyLevel2';
+            objAsStructure.type = 'ess:StudyLevel2';
             objAsStructure.studyLevel2SchemaVersion = '1.1.0';
             objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
             objAsStructure.dateModified = objAsStructure.dateCreated;
-            objAsStructure.id = ['eegstudy.org/study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
+            objAsStructure.id = ['ess:study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
             objAsStructure = rmfield(objAsStructure, 'uuid');
             
             clear jsonfilters;
@@ -935,7 +937,7 @@ classdef level2Study < levelStudy;
                 tempvar = objAsStructure.filters.filter(i);              
                 tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
                 tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
-                
+                                
                 params = tempvar.parameters.parameter;
                 tempvar.parameters = params;
                 tempvar = rename_field_to_force_array(tempvar, 'parameters');
@@ -957,8 +959,10 @@ classdef level2Study < levelStudy;
                     tempvar.averageReferenceChannels = str2double(strtrim(strsplit(objAsStructure.studyLevel2Files.studyLevel2File(i).averageReferenceChannels, ',')));
                 end;
                 tempvar = rename_field_to_force_array(tempvar, 'averageReferenceChannels');
-                
-                tempvar.id = tempvar.uuid;
+                                
+                tempvar = renameField(tempvar, 'dataRecordingUuid', 'dataRecordingId');
+
+                tempvar.id = tempvar.uuid; 
                 tempvar = rmfield(tempvar, 'uuid');
                 
                 if ~isempty(objAsStructure.studyLevel2Files.studyLevel2File(i).rereferencedChannels)
