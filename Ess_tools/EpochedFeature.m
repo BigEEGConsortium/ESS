@@ -1,11 +1,10 @@
-classdef EpochedFeature < Entity
+classdef EpochedFeature < Block
     properties
-        tensor % a numerical array with any number of dimensions
-        axis % a cell array containing axis information for the tensor
+       
     end;
     methods
         function obj = EpochedFeature
-            obj = obj@Entity;
+            obj = obj@Block;
             obj.type = 'ess:EpochedFeature'; % use / to append childen types here.
             obj = obj.setId;
         end

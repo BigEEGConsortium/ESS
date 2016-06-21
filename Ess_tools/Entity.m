@@ -3,13 +3,13 @@ classdef Entity < dynamicprops
         type = 'ess:Thing';      
         id;
         dateCreated 
-        dateModified 
+     %   dateModified 
     end;
     methods
         function obj = Entity
             add_ess_path_if_needed;
             obj.dateCreated = datestr8601(now,'*ymdHMS');
-            obj.dateModified = obj.dateCreated;
+           % obj.dateModified = obj.dateCreated;
         end;
         
         function obj = setId(obj)
