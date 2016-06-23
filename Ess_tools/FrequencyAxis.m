@@ -1,9 +1,6 @@
 classdef FrequencyAxis < BaseAxis
     %  The frequency axis characterizes the frequencies of one or more data elements.
     
-    properties (Constant)
-        typeLabel = 'frequency';
-    end
     properties
         frequencies % An array of frequencies points for each element, in Hz
     end;
@@ -11,6 +8,7 @@ classdef FrequencyAxis < BaseAxis
         function obj =  FrequencyAxis(varargin)
             obj.type = 'ess:BaseAxis/FrequencyAxis';
             obj = obj.setId;
+            obj.typeLabel = 'frequency';
             inputOptions = arg_define(varargin, ...              
                 arg('frequencies', [], [],'An array of frequencies points for each element. In Hz', 'type', 'denserealdouble')...               
                 );

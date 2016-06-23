@@ -1,9 +1,27 @@
 classdef Block < Entity
+    % Block is the base data structure for holding numerical data.
+    % Its main fields are a tensor with arbitrary dimension and
+    % a number of axis, each with a different type label, e.g. time,
+    % frequency, trial, etc.
+    % Block data can be accessed using an extended indexing syntax,
+    % for example
+    %
+    % >> b = Block('tensor', [1 2 3; 4 5 6], 'axes', ...
+    %       {TimeAxis('times', [0 0.1]), FrequencyAxis('frequencies', [1 2 3])});
+    %
+    % >> b('frequency',:)
+    % and
+    % >> b('frequency','time')
+    %
+    % these will arrange dimensions according to provided type label.
+    % assignments work the same way:
+    % >> b('frequency',end) = [4 5 6];
+    
     properties
         tensor % a numerical array with any number of dimensions
-        axes % a cell array containing axis information for the tensor. 
-             % the number of of elements should be the same as the number of 
-             % dimensions of "tensor" field.
+        axes % a cell array containing axis information for the tensor.
+        % the number of of elements should be the same as the number of
+        % dimensions of "tensor" field.
     end;
     methods
         function obj = Block(varargin)
@@ -62,7 +80,11 @@ classdef Block < Entity
             % axes property with the matching typeLabel
             %
             % the second time 'frequency' is usd it referes to the second axis with the
-            % label 'frequency'.            
+            % label 'frequency'.
+            
+            % extrct only axis type labels from extended index syntax,
+            % for example {'time', {..}} maps to 'time'
+            allLabels = cellfun(@Block.extendedIndexToLabel, allLabels, 'UniformOutput', false);
             
             label = allLabels{index};
             orderOfOccurance = sum(strcmpi(label, allLabels(1:index)));
@@ -90,8 +112,8 @@ classdef Block < Entity
                     sref = builtin('subsref',obj,s);
                 case '()'
                     if length(s) < 2
-                                                
-                        [axisPermutation newSubs] = resolveSubref(obj, s);                        
+                        
+                        [axisPermutation newSubs] = resolveSubref(obj, s);
                         
                         permutedTensor = permute(obj.tensor, axisPermutation);
                         
@@ -115,8 +137,8 @@ classdef Block < Entity
                     output = builtin('subsasgn',obj,s, input);
                 case '()'
                     if length(s) < 2
-                                                
-                        [axisPermutation newSubs] = resolveSubref(obj, s);                        
+                        
+                        [axisPermutation newSubs] = resolveSubref(obj, s);
                         
                         permutedTensor = permute(obj.tensor, axisPermutation);
                         
@@ -140,11 +162,16 @@ classdef Block < Entity
     end
     methods (Access = 'protected')
         function [axisPermutation newSubs] = resolveSubref(obj, s)
+            % [axisPermutation newSubs] = resolveSubref(obj, s)
+            % s is the structure provided by MATLAb subref function.
+            
             typeLabels = axesTypeLabels(obj);
             axisValue = {};
             newSubs = s.subs;
             for i=1:length(s.subs)
-                equalVector = cellfun(@(x) isequal(s.subs{i}, x), typeLabels);
+                [subrefString, parameters] = Block.extendedIndexToLabel(s.subs{i});
+                
+                equalVector = cellfun(@(x) isequal(subrefString, x), typeLabels);
                 if any(equalVector)
                     axisValue{i} = obj.typeLabelToAxesId(s.subs, i);
                     newSubs{i} = ':';
@@ -164,6 +191,25 @@ classdef Block < Entity
                 axisValue{find(unspecifiedAxisId)} = inferredUnspecifiedAxis;
             end;
             axisPermutation = cell2mat(axisValue);
+        end;
+        
+    end
+    methods (Access = 'protected', Static)
+        function [label, parameters] = extendedIndexToLabel(indexVar)
+            % converts {'time', 'min', 1, 'max', 5..} to
+            % label = 'time' and parameters = {'min', 1, 'max', 5..}
+            parameters = {};
+            if ischar(indexVar)
+                label = indexVar;
+            elseif iscell(indexVar)
+                label = indexVar{1};
+                if length(indexVar) > 1
+                    parameters = indexVar(2:end);
+                end
+                assert(ischar(label), 'The first element in the extended indexing cell array must be a string.');
+            else
+                label = indexVar;
+            end;
         end;
     end;
 end

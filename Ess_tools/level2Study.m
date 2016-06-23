@@ -273,6 +273,10 @@ classdef level2Study < levelStudy;
             
             obj.level2Folder = inputOptions.level2Folder;
             
+            if isempty(which('prepPipeline'))
+                error('prepPipeline function is not in the path, please add PREP pipeline to your MATLAB path');
+            end;
+            
             % start from index 1 if the first studyLevel2File is pactically empty,
             % otherwise start after the last studyLevel2File
             if length(obj.studyLevel2Files.studyLevel2File) == 1 && isempty(strtrim(obj.studyLevel2Files.studyLevel2File(1).studyLevel2FileName))
@@ -436,6 +440,12 @@ classdef level2Study < levelStudy;
                             else % convert to ess convention
                                 filenameInEss = obj.level1StudyObj.essConventionFileName('eeg', ['studyLevel2_' obj.level1StudyObj.studyTitle], obj.level1StudyObj.sessionTaskInfo(i).sessionNumber,...
                                     subjectInSessionNumber, obj.level1StudyObj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj.level1StudyObj, i, j), length(obj.level1StudyObj.sessionTaskInfo(i).subject),'', '.set');
+                            end;
+                            
+                            % EEGLAB empties EEG.chanlocs if it has more items than
+                            % the number of chanels.
+                            if length(EEG.chanlocs) > size(EEG.daya, 1)
+                                EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
                             end;
                             
                             pop_saveset(EEG, 'filename', filenameInEss, 'filepath', sessionFolder, 'savemode', 'onefile', 'version', '7.3');
