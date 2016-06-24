@@ -1,6 +1,6 @@
 classdef EpochedFeature < Block
     properties
-       % eventTimes % latencis of events from which epochs have been extracted, 
+        eventTimes % latencis of events from which epochs have been extracted, 
                    % relative to the start of their respective data recordings.
     end;
     methods
@@ -78,10 +78,8 @@ classdef EpochedFeature < Block
                         eventIdToRemove = [eventIdToRemove maxId];
                     end;
                     
-                    if ~isempty(eventIdToRemove)
-                        fprintf('- Removed %d of the original %d (%d percent) events of \n   type "%s" due to excessive overlap.\n', length(eventIdToRemove), n, round(100 * length(eventIdToRemove) / n), uniqueHEDStrings{i});
-                    end;
-                    
+                    fprintf('Removed %d of the original %d (%d percent) events of type %s due to excessive overlap.', length(eventIdToRemove), n, length(allEventIdsToRemove) / n, uniqueHEDStrings{i});
+
                     allEventIdsToRemove = cat(1, allEventIdsToRemove(:), eventSubset(eventIdToRemove));                    
                     clear afterRemovalTemporalOverlap totalOverlap temporalOverlap;
                 end;

@@ -1,11 +1,7 @@
 classdef ChannelAxis < SpaceAxis
     %  The channel axis characterizes EEG channels (sensors) and their locations.
     
-    properties
-        labels
-        namingSystem
-        positions
-        coordinateSystem
+    properties        
     end;
     
     methods
@@ -21,7 +17,7 @@ classdef ChannelAxis < SpaceAxis
                 arg('positions', [], [],'Coordinates for each location', 'type', 'denserealdouble'),...
                 arg('coordinateSystem', '', [],'The coordinate system of the positions. E.g. "MNI", "Zebris", ...', 'type', 'char'),...
                 arg('length', [],[],'Optionally the number of elements of the space axis. If no names/positions are given'), ...
-                arg('chanlocs', [],[],'EEGLAB EEG.chanlocs structure') ... ! continue here
+                arg('chanlocs', [],[],'EEGLAB EEG.chanlocs structure. If provided, extract information from it.') ...                 
                 );
             
             if isempty(inputOptions.chanlocs)
@@ -42,6 +38,10 @@ classdef ChannelAxis < SpaceAxis
             end;
             else % read data from EEGLAB's EEG.chanlocs structure
                 for i=1:length(inputOptions.chanlocs)
+                    if strcmpi(inputOptions.chanlocs(i).type, 'EEG')
+                        obj.labels{end+1} = inputOptions.chanlocs(i).labels;
+                        obj.positions(end+1,:) = [inputOptions.chanlocs(i).X inputOptions.chanlocs(i).Y inputOptions.chanlocs(i).Z];
+                    end;
                 end;
             end;
         end
