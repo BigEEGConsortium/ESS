@@ -9,6 +9,20 @@ classdef EpochedFeature < Block
             obj.type = 'ess:EpochedFeature'; % use / to append childen types here.
             obj = obj.setId;
         end
+        function [obj noisyEpochIds averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
+             trialByFeature = obj('trial', :);
+             medianFeatures = median(trialByFeature);
+             centeredFeatures = bsxfun(@minus, trialByFeature, medianFeatures);
+             clear medianFeatures trialByFeature;
+             robustStdFeatures = 1.4826 * median(abs(centeredFeatures)); % median absolute deviation multiplied by a factor gives robust standard deviation
+             robustZFeatures =  bsxfun(@times, centeredFeatures, 1./robustStdFeatures);
+             clear robustStdFeatures;
+             
+             outlierFeature = abs(robustZFeatures) > 3; % both too negative and too positive
+             averageOutlierRatio = nanmean(outlierFeature, 2);
+             noisyEpochIds = averageOutlierRatio > 0.13;
+             clear robustZFeatures outlierFeature;            
+        end;
     end
     methods (Static)
         function [trialFrames, trialTimes, trialHEDStrings, trialEventTypes] = getTrialTimesFromEEGstructure(varargin)
@@ -20,8 +34,9 @@ classdef EpochedFeature < Block
                 arg('hedStringsCell', [],[],'HED string to epoch on. Only events with HED strings that match to at least one of the items in this cell array of HED strings will be included in the returned trial times.', 'type', 'cellstr'), ...
                 arg('eventTypes', [],[],'Event types to epoch on. Empty means all events ', 'type', 'cellstr'), ...
                 arg('excludedEventTypes', {},[],'Events types to exclude', 'type', 'cellstr'), ...
-                arg('maxSameTypeProximity', 0.5,[0 Inf],'How much to allow same-type event overlap. When two events have the same type or HED string are closer than this value (in seconds), only one of them will be included.')...
-                );
+                arg('maxSameTypeProximity', 0.5,[0 Inf],'How much to allow same-type event overlap. When two events have the same type or HED string are closer than this value (in seconds), only one of them will be included.'),...
+                arg('maxSameTypeCount', Inf,[1 Inf],'How many same-time events are allowed. Events with highest overlap with the same type are deleted first.')...
+            );
             
             EEG = inputOptions.EEG;
             trialFrames = [EEG.event(:).latency];
@@ -67,8 +82,32 @@ classdef EpochedFeature < Block
                     
                     totalOverlap = sum(temporalOverlap);
                     afterRemovalTemporalOverlap = temporalOverlap;
-                    % start removing events with highest overlap until no event has an ovrlap
                     eventIdToRemove = [];
+
+                    if length(totalOverlap) > inputOptions.maxSameTypeCount
+                        % remove highest overlapping events first, until
+                        % maximum of maxSameTypeCount event remain.
+                        
+                        % do a random permute on events with zero overlap 
+                        % so events with total overlap of zero are randomly 
+                        % removed (otherwise they will be deleted from the
+                        % start of the recording, which is not desirable).
+                        [sortedOverlap sortId] = sort(totalOverlap, 'descend');
+                        zeroId = find(sortedOverlap == 0, 1);
+                        
+                        % randomly shuffle IDs with zero overlap
+                        idsWithZeroOverlap = sortId(zeroId:end);
+                        idsWithZeroOverlap = idsWithZeroOverlap(randperm(length(idsWithZeroOverlap)));
+                        sortId(zeroId:end) = idsWithZeroOverlap;
+                        
+                        eventIdToRemove = sortId(1:(length(totalOverlap) - inputOptions.maxSameTypeCount));
+                        afterRemovalTemporalOverlap(eventIdToRemove,:) = 0;
+                        afterRemovalTemporalOverlap(:,eventIdToRemove) = 0;
+                        totalOverlap = sum(afterRemovalTemporalOverlap);
+                    end;
+                    
+                    
+                    % start removing events with highest overlap until no event has an overlap
                     while full(any(totalOverlap))
                         [dummy maxId] = max(totalOverlap);
                         %totalOverlap = totalOverlap - temporalOverlap(maxId,:);
@@ -132,6 +171,6 @@ classdef EpochedFeature < Block
                 epochedTensor(i,1:epochLength,:) = tensor(epochDimensionIndices(i,:),:);
             end;
             
-        end
+        end       
     end
 end

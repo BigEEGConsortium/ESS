@@ -13,7 +13,10 @@ classdef TrialAxis < InstanceAxis
             obj = obj@InstanceAxis;
             obj.type = 'ess:BaseAxis/InstanceAxis/TrialAxis';
             obj = obj.setId;
+            
             obj.typeLabel = 'trial';
+            obj. perElementProperties = [obj. perElementProperties {'times' 'codes' 'hedStrings'}];
+
 
             inputOptions = arg_define(varargin, ...              
                 arg('times', [], [],'A numerical array with time. In seconds for each trial relative to the start of its data recording.'),... 
@@ -29,7 +32,7 @@ classdef TrialAxis < InstanceAxis
             
             % place empty elements for instances, code and hed strings. 
             if isempty(inputOptions.instances)
-                inputOptions.instances = cell(length(inputOptions.times));
+                inputOptions.instances = cell(length(inputOptions.times), 1);
             end;
             
             if isempty(inputOptions.codes)
@@ -58,6 +61,7 @@ classdef TrialAxis < InstanceAxis
             
             obj.instances = inputOptions.instances(:);
             obj.times = inputOptions.times(:);
+            obj.codes = inputOptions.codes(:);
             check_monotonic(obj.times, 'times');
         end              
     end;

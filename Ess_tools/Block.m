@@ -106,6 +106,10 @@ classdef Block < Entity
             end;
         end;
         
+        function out=end(A,k,n)
+            error('"end" cannot be used with Block object indexing.');
+        end
+        
         function sref = subsref(obj, s)
             switch s(1).type
                 case '.'
@@ -114,6 +118,10 @@ classdef Block < Entity
                     if length(s) < 2
                         
                         [axisPermutation newSubs] = resolveSubref(obj, s);
+                        
+                        if length(axisPermutation) < ndims(obj.tensor)
+                            axisPermutation = [axisPermutation setdiff(1:ndims(obj.tensor), axisPermutation)];
+                        end;
                         
                         permutedTensor = permute(obj.tensor, axisPermutation);
                         
@@ -159,6 +167,30 @@ classdef Block < Entity
             end
         end;
         
+        function newObj = sliceAxes(obj, varargin)
+            % Produce a new Block object with input axes
+            % and the tensor array sliced to provided axis indices.
+            % axis names and their ranges should be provided as
+            % 'axis typelabel 1', indices_1, ...
+            % for example:
+            % 'time', 1:5, 'channel', 5:15s
+                        
+            if mod(length(varargin), 2) ~= 0 % if an odd number of arguments presented
+                error('An even number of arguments, with ''key'', value, ''key'', value.. structure should be provided');
+            end;
+            
+            extendedIndices = {};
+            for i=1:(length(varargin)/2)
+                j = 1+ (i-1) *2;
+                extendedIndices{i} = {varargin{j}, varargin{j+1}};
+            end;
+            
+            %newObj = obj(extendedIndices{:});
+            newObj = obj('time', :);
+            newObj.setId;
+                        
+        end;
+        
     end
     methods (Access = 'protected')
         function [axisPermutation newSubs] = resolveSubref(obj, s)
@@ -174,7 +206,17 @@ classdef Block < Entity
                 equalVector = cellfun(@(x) isequal(subrefString, x), typeLabels);
                 if any(equalVector)
                     axisValue{i} = obj.typeLabelToAxesId(s.subs, i);
-                    newSubs{i} = ':';
+                    if isempty(parameters) || strcmpi(parameters{1}, ':')
+                        newSubs{i} = ':';
+                    else                    
+                        if isnumeric(parameters{1})
+                            newSubs{i} = parameters{1};
+                        elseif ischar(parameters{1})
+                            newSubs{i} = str2num(parameters{1});
+                        else
+                            error('Extended parameter is not a string nor numeric');
+                        end;
+                    end;
                 else
                     axisValue{i} = [];
                     newSubs{i} = s.subs{i};
@@ -182,13 +224,16 @@ classdef Block < Entity
             end;
             
             unspecifiedAxisId = cellfun(@isempty, axisValue);
-            if sum(unspecifiedAxisId) > 1
-                error('only one axis can be unnamed, e.g. ("time", :) is allowed but ("time", :,:) is not.');
+            if sum(unspecifiedAxisId) > 1 &&  sum(unspecifiedAxisId) < length(unspecifiedAxisId)
+                error('Either one axis or all axes can be unnamed, e.g. ("time", :) is allowed but ("time", :,:) is not.');
             end;
             
             if any(unspecifiedAxisId)
                 inferredUnspecifiedAxis = setdiff(1:length(s.subs), cell2mat(axisValue));
-                axisValue{find(unspecifiedAxisId)} = inferredUnspecifiedAxis;
+                ids = find(unspecifiedAxisId);
+                for i=1:length(ids)
+                    axisValue{ids(i)} = inferredUnspecifiedAxis(i);
+                end;
             end;
             axisPermutation = cell2mat(axisValue);
         end;

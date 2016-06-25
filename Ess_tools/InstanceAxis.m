@@ -9,7 +9,11 @@ classdef InstanceAxis < BaseAxis
         function obj =  InstanceAxis(varargin)
             obj.type = 'ess:BaseAxis/InstanceAxis';
             obj = obj.setId;
+            
             obj.typeLabel = 'instance';
+            obj. perElementProperties = [obj. perElementProperties {'instances'}];
+
+            
             if nargin > 0
                 inputOptions = arg_define(varargin, ...
                     arg('instances', [], [],'A cell array with information for each "instance" element.')...

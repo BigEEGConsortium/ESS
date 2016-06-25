@@ -11,7 +11,10 @@ classdef TimeAxis < BaseAxis
         function obj =  TimeAxis(varargin)
             obj.type = 'ess:BaseAxis/TimeAxis';
             obj = obj.setId;
+            
             obj.typeLabel = 'time';
+            obj. perElementProperties = [obj. perElementProperties {'times'}];
+            
             inputOptions = arg_define(varargin, ...
                 arg('nominalRate', [],[],'The nominal sampling rate of the data. Only if regularly sampled, in Hz.'), ...
                 arg('initTime', 0, [],'The initial time point. From which times will be deduced. (default: `0.0`)'),...
