@@ -117,11 +117,7 @@ classdef Block < Entity
                 case '()'
                     if length(s) < 2
                         
-                        [axisPermutation newSubs] = resolveSubref(obj, s);
-                        
-                        if length(axisPermutation) < ndims(obj.tensor)
-                            axisPermutation = [axisPermutation setdiff(1:ndims(obj.tensor), axisPermutation)];
-                        end;
+                        [axisPermutation newSubs] = resolveSubref(obj, s);                        
                         
                         permutedTensor = permute(obj.tensor, axisPermutation);
                         
@@ -185,9 +181,13 @@ classdef Block < Entity
                 extendedIndices{i} = {varargin{j}, varargin{j+1}};
             end;
             
-            %newObj = obj(extendedIndices{:});
-            newObj = obj('time', :);
-            newObj.setId;
+            newObj = obj;
+            s = substruct('()',extendedIndices);
+            permutedTensor = subsref(newObj,s);
+            axisPermutation = resolveSubref(obj, s); 
+            newObj.tensor = permutedTensor;
+            newObj.tensor = ipermute(permutedTensor, axisPermutation);
+            newObj = setAsNewlyCreated(newObj);
                         
         end;
         
@@ -236,6 +236,10 @@ classdef Block < Entity
                 end;
             end;
             axisPermutation = cell2mat(axisValue);
+            
+            if length(axisPermutation) < ndims(obj.tensor)
+                axisPermutation = [axisPermutation setdiff(1:ndims(obj.tensor), axisPermutation)];
+            end;
         end;
         
     end
