@@ -10,7 +10,7 @@ classdef EpochedFeature < Block
             obj = obj.setId;
         end
         function [obj noisyEpochIds averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
-             trialByFeature = obj('trial', :);
+             trialByFeature = obj.index ('trial', ':');
              medianFeatures = median(trialByFeature);
              centeredFeatures = bsxfun(@minus, trialByFeature, medianFeatures);
              clear medianFeatures trialByFeature;
@@ -20,8 +20,11 @@ classdef EpochedFeature < Block
              
              outlierFeature = abs(robustZFeatures) > 3; % both too negative and too positive
              averageOutlierRatio = nanmean(outlierFeature, 2);
-             noisyEpochIds = averageOutlierRatio > 0.13;
-             clear robustZFeatures outlierFeature;            
+             cleanEpochIds = averageOutlierRatio < 0.13;
+             clear robustZFeatures outlierFeature;      
+             
+             obj = obj.sliceAxes('trial', find(cleanEpochIds));
+             assert(obj.isValid, 'Result is not valid');
         end;
     end
     methods (Static)

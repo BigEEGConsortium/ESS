@@ -46,6 +46,8 @@ classdef ChannelAxis < SpaceAxis
                     end;
                 end;
             end;
+            
+            obj.labels = obj.labels(:);
         end
         
         function l = length(obj)

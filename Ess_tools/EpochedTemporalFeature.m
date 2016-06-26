@@ -50,6 +50,8 @@ classdef EpochedTemporalFeature < EpochedFeature
             obj.axes{1} = TrialAxis('times', trialTimes, 'hedStrings', trialHEDStrings, 'codes', trialEventTypes);
             obj.axes{2} = TimeAxis('initTime', inputOptions.timeRange(1), 'nominalRate', EEG.srate, 'numberOfTimes', size(obj.tensor, 2));
             obj.axes{3} = ChannelAxis('chanlocs', EEG.chanlocs(inputOptions.channelIndices));
+            
+            assert(obj.isValid, 'Result is not valid');
         end
     end
 end

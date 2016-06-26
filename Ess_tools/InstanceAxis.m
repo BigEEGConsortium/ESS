@@ -24,7 +24,7 @@ classdef InstanceAxis < BaseAxis
         end
         
         function l = length(obj)
-            l = length(obj.frequencies);
+            l = length(obj.instances);
         end;
     end;
 end

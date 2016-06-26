@@ -16,6 +16,12 @@ classdef Block < Entity
     % these will arrange dimensions according to provided type label.
     % assignments work the same way:
     % >> b('frequency',end) = [4 5 6];
+    %
+    % Axes can be accessed using the syntactic sugar obj.axisTypelabel
+    % where axisTypelabel is the type label associated with an obj.axes.
+    % only the first axis with the label is returned. For example, 
+    % obj.time returns the TimeAxis and obj.channel returns ChannelAxis (if
+    % exists).
     
     properties
         tensor % a numerical array with any number of dimensions
@@ -112,8 +118,21 @@ classdef Block < Entity
         
         function sref = subsref(obj, s)
             switch s(1).type
-                case '.'
-                    sref = builtin('subsref',obj,s);
+                case '.'          
+                    sref = obj;
+                    for i=1:length(s)
+                        if i == 1
+                            axesTypes = obj.axesTypeLabels;
+                            [wasMember id]= ismember(s(i).subs, axesTypes);
+                            if wasMember
+                                sref = obj.axes{id(1)};
+                            else
+                                sref = builtin('subsref',obj,s(i));
+                            end;
+                        else
+                            sref = builtin('subsref',sref,s(i));
+                        end;
+                    end;
                 case '()'
                     if length(s) < 2
                         
@@ -173,27 +192,73 @@ classdef Block < Entity
                         
             if mod(length(varargin), 2) ~= 0 % if an odd number of arguments presented
                 error('An even number of arguments, with ''key'', value, ''key'', value.. structure should be provided');
-            end;
+            end;                    
             
             extendedIndices = {};
+            providedAxesLabel = {};
+            axisSliceMap = containers.Map;
             for i=1:(length(varargin)/2)
                 j = 1+ (i-1) *2;
+                providedAxesLabel{i} = varargin{j};
                 extendedIndices{i} = {varargin{j}, varargin{j+1}};
+                axisSliceMap(varargin{j}) = varargin{j+1};
+            end;
+            
+            % some axis are specified in input, others are assumed to have
+            % full  indices, i.e. :
+            typeLabels = obj.axesTypeLabels;
+            remainingAxes = setdiff(typeLabels, providedAxesLabel);
+            for i=1:length(remainingAxes)
+                extendedIndices{end+1} = {remainingAxes{i}, ':'};
+                axisSliceMap(remainingAxes{i}) = ':';
             end;
             
             newObj = obj;
             s = substruct('()',extendedIndices);
             permutedTensor = subsref(newObj,s);
-            axisPermutation = resolveSubref(obj, s); 
+            [axisPermutation newSubs]= resolveSubref(obj, s); 
             newObj.tensor = permutedTensor;
-            newObj.tensor = ipermute(permutedTensor, axisPermutation);
+            newObj.tensor = ipermute(permutedTensor, axisPermutation); % prevent a change in axis order
+            
+            % slice axes
+            for i=1:length(axisPermutation)
+                if i<= length(newSubs)
+                    newObj.axes{axisPermutation(i)} = newObj.axes{axisPermutation(i)}(newSubs{i});
+                else
+                    newObj.axes{axisPermutation(i)} = newObj.axes{axisPermutation(i)}; % for axis where we have implicitly assumed :
+                end;
+            end;
+            
             newObj = setAsNewlyCreated(newObj);
                         
         end;
         
+        function out = index(obj, varargin)
+            out = subsref(obj, substruct('()', varargin));
+        end;
+        
+        function valid = isValid(obj)
+            valid = true;
+            s = size(obj.tensor);
+            for i=1:length(s)
+                if s(i) ~= obj.axes{i}.length
+                    fprintf('Dimension %d of tensor is incompatible with the length of the associated axis of type "%s".\n', i, obj.axes{i}.typeLabel);
+                    valid = false;
+                end;
+            end;
+            
+            for i=1:length(obj.axes)
+                axisIsValid = obj.axes{i}.isValid;
+                if ~axisIsValid
+                    fprintf('Axis %d (type "%s") is invalid\n', i, obj.axes{i}.typeLabel);
+                end;
+                valid = valid && axisIsValid;
+            end;
+        end;
+        
     end
     methods (Access = 'protected')
-        function [axisPermutation newSubs] = resolveSubref(obj, s)
+        function [axisPermutation, newSubs] = resolveSubref(obj, s)
             % [axisPermutation newSubs] = resolveSubref(obj, s)
             % s is the structure provided by MATLAb subref function.
             
@@ -224,6 +289,7 @@ classdef Block < Entity
             end;
             
             unspecifiedAxisId = cellfun(@isempty, axisValue);
+            numberOfSpecifiedAxes = sum(~cellfun(@isempty, axisValue));
             if sum(unspecifiedAxisId) > 1 &&  sum(unspecifiedAxisId) < length(unspecifiedAxisId)
                 error('Either one axis or all axes can be unnamed, e.g. ("time", :) is allowed but ("time", :,:) is not.');
             end;
@@ -238,7 +304,19 @@ classdef Block < Entity
             axisPermutation = cell2mat(axisValue);
             
             if length(axisPermutation) < ndims(obj.tensor)
-                axisPermutation = [axisPermutation setdiff(1:ndims(obj.tensor), axisPermutation)];
+                additionalAxisIDs = setdiff(1:ndims(obj.tensor), axisPermutation);
+                axisPermutation = [axisPermutation additionalAxisIDs];
+                
+                if numberOfSpecifiedAxes > 1 
+                    % this is to trigger  vectorization 
+                    % for cases like obj('trial', :);
+                    % where only one axis has been specified
+                    % is is equivalent to tensors(:,:)
+                    % after appropriate dimension re-ordering (permute).
+                    for i=1:length(additionalAxisIDs)
+                        newSubs{end+1} = ':';
+                    end;
+                end;
             end;
         end;
         

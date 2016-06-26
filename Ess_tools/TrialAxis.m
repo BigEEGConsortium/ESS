@@ -62,6 +62,7 @@ classdef TrialAxis < InstanceAxis
             obj.instances = inputOptions.instances(:);
             obj.times = inputOptions.times(:);
             obj.codes = inputOptions.codes(:);
+            obj.hedStrings = inputOptions.hedStrings(:);
             check_monotonic(obj.times, 'times');
         end              
     end;
