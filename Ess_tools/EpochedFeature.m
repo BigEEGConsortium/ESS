@@ -9,22 +9,49 @@ classdef EpochedFeature < Block
             obj.type = 'ess:EpochedFeature'; % use / to append childen types here.
             obj = obj.setId;
         end
-        function [obj noisyEpochIds averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
-             trialByFeature = obj.index ('trial', ':');
-             medianFeatures = median(trialByFeature);
-             centeredFeatures = bsxfun(@minus, trialByFeature, medianFeatures);
-             clear medianFeatures trialByFeature;
-             robustStdFeatures = 1.4826 * median(abs(centeredFeatures)); % median absolute deviation multiplied by a factor gives robust standard deviation
-             robustZFeatures =  bsxfun(@times, centeredFeatures, 1./robustStdFeatures);
-             clear robustStdFeatures;
-             
-             outlierFeature = abs(robustZFeatures) > 3; % both too negative and too positive
-             averageOutlierRatio = nanmean(outlierFeature, 2);
-             cleanEpochIds = averageOutlierRatio < 0.13;
-             clear robustZFeatures outlierFeature;      
-             
-             obj = obj.sliceAxes('trial', find(cleanEpochIds));
-             assert(obj.isValid, 'Result is not valid');
+        function [obj  averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
+            trialByFeature = obj.index ('trial', ':');
+            if true
+                nonTimeOrTrialAxisLabels = setdiff(obj.axesTypeLabels, {'time', 'trial'});
+                indexArguments = [nonTimeOrTrialAxisLabels {':'}];
+                
+                featureByCombinedTimeAndTrial = obj.index(indexArguments{:});
+                medianTimeFeatures = median(featureByCombinedTimeAndTrial, ndims(featureByCombinedTimeAndTrial));
+                centeredTimeFeatures = bsxfun(@minus, featureByCombinedTimeAndTrial, medianTimeFeatures);
+                robustStdTimeFeatures = 1.4826 * median(abs(centeredTimeFeatures), ndims(featureByCombinedTimeAndTrial));
+                
+                % now median and std have to be reshaped into 'trial' x features
+                
+                reshapedStds = repmat(robustStdTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
+                reshapedMedians = repmat(medianTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
+                % permute dimensions to match trialByFeature
+                dims = 1:ndims(reshapedStds);
+                reshapedStds = permute(reshapedStds, [dims(end), dims(end-1), dims(1:end-2)]);
+                reshapedStds = reshapedStds(:,:);
+                
+                reshapedMedians = permute(reshapedMedians, [dims(end), dims(end-1), dims(1:end-2)]);
+                reshapedMedians = reshapedMedians(:,:);
+                
+                centeredFeatures = bsxfun(@minus, trialByFeature, reshapedMedians);
+                robustZFeatures =  bsxfun(@times, centeredFeatures, 1./reshapedStds);
+                
+            else
+                medianFeatures = median(trialByFeature);
+                centeredFeatures = bsxfun(@minus, trialByFeature, medianFeatures);
+                clear medianFeatures trialByFeature;
+                robustStdFeatures = 1.4826 * median(abs(centeredFeatures)); % median absolute deviation multiplied by a factor gives robust standard deviation
+                robustZFeatures =  bsxfun(@times, centeredFeatures, 1./robustStdFeatures);
+                clear robustStdFeatures;
+            end;
+            
+            
+            outlierFeature = abs(robustZFeatures) > 3; % both too negative and too positive
+            averageOutlierRatio = nanmean(outlierFeature, 2);
+            cleanEpochIds = averageOutlierRatio < 0.13;
+            clear robustZFeatures outlierFeature;
+            
+            obj = obj.sliceAxes('trial', find(cleanEpochIds));
+            assert(obj.isValid, 'Result is not valid');
         end;
     end
     methods (Static)

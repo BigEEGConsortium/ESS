@@ -112,26 +112,33 @@ classdef Block < Entity
             end;
         end;
         
+        function axis = getAxis(obj, axisType)
+            axesTypes = obj.axesTypeLabels;
+            [wasMember, id]= ismember(axisType, axesTypes);
+            if wasMember
+                axis = obj.axes{id(1)};
+            else
+                axis = [];
+            end;
+        end;
+        
         function out=end(A,k,n)
             error('"end" cannot be used with Block object indexing.');
         end
         
         function sref = subsref(obj, s)
             switch s(1).type
-                case '.'          
-                    sref = obj;
-                    for i=1:length(s)
-                        if i == 1
-                            axesTypes = obj.axesTypeLabels;
-                            [wasMember id]= ismember(s(i).subs, axesTypes);
-                            if wasMember
-                                sref = obj.axes{id(1)};
-                            else
-                                sref = builtin('subsref',obj,s(i));
-                            end;
+                case '.'
+                    if length(s) < 2
+                        axesTypes = obj.axesTypeLabels;
+                        [wasMember id]= ismember(s.subs, axesTypes);
+                        if wasMember
+                            sref = obj.axes{id(1)};
                         else
-                            sref = builtin('subsref',sref,s(i));
+                            sref = builtin('subsref',obj,s);
                         end;
+                    else
+                        sref = builtin('subsref', obj,s);
                     end;
                 case '()'
                     if length(s) < 2
