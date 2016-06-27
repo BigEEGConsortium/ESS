@@ -126,7 +126,7 @@ classdef Block < Entity
             error('"end" cannot be used with Block object indexing.');
         end
         
-        function sref = subsref(obj, s)
+        function [sref, varargout]= subsref(obj, s)
             switch s(1).type
                 case '.'
                     if length(s) < 2
@@ -135,10 +135,10 @@ classdef Block < Entity
                         if wasMember
                             sref = obj.axes{id(1)};
                         else
-                            sref = builtin('subsref',obj,s);
+                            [sref, varargout{1:(nargout-1)}] = builtin('subsref',obj,s);
                         end;
                     else
-                        sref = builtin('subsref', obj,s);
+                        [sref, varargout{1:(nargout-1)}] = builtin('subsref', obj,s);
                     end;
                 case '()'
                     if length(s) < 2
@@ -247,6 +247,12 @@ classdef Block < Entity
         function valid = isValid(obj)
             valid = true;
             s = size(obj.tensor);
+            
+            valid = length(s) == length(obj.axes);
+            if ~valid
+                fprintf('Number of axis is different than dimensions of tensor\n');
+            end;
+            
             for i=1:length(s)
                 if s(i) ~= obj.axes{i}.length
                     fprintf('Dimension %d of tensor is incompatible with the length of the associated axis of type "%s".\n', i, obj.axes{i}.typeLabel);
@@ -310,16 +316,27 @@ classdef Block < Entity
             end;
             axisPermutation = cell2mat(axisValue);
             
+            
+            vectorize = length(s.subs) < ndims(obj.tensor) && length(find(unspecifiedAxisId)) > 0;
+            % this is to trigger  vectorization, returning a lower number
+            % of dimensions than obj.tensor by folding several of them into
+            % one. For example  obj('trial', :)
+            % where there are less axis specified than tensor dimensions
+            % but at least there is one range without explicit label specified (: at the end).
+            % obj('trial', :) permutes the trial dimension to be the
+            % first and then performs permutedTensor(:,:).
+            % Otherwise,for example for obj('trial') or obj({'trial' 2:3})
+            % only permutation (and slicing, if requested) is
+            % performed but no vectorization, so the number of output
+            % dimensions is the same number as obj.tensor.
+            
             if length(axisPermutation) < ndims(obj.tensor)
                 additionalAxisIDs = setdiff(1:ndims(obj.tensor), axisPermutation);
                 axisPermutation = [axisPermutation additionalAxisIDs];
                 
-                if numberOfSpecifiedAxes > 1 
-                    % this is to trigger  vectorization 
-                    % for cases like obj('trial', :);
-                    % where only one axis has been specified
-                    % is is equivalent to tensors(:,:)
-                    % after appropriate dimension re-ordering (permute).
+               % if numberOfSpecifiedAxes > 1 
+               if ~vectorize %length(s.subs) > 1
+                    
                     for i=1:length(additionalAxisIDs)
                         newSubs{end+1} = ':';
                     end;

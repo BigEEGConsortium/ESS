@@ -1,7 +1,7 @@
 classdef EpochedFeature < Block
     properties
-       % eventTimes % latencis of events from which epochs have been extracted, 
-                   % relative to the start of their respective data recordings.
+        % eventTimes % latencis of events from which epochs have been extracted,
+        % relative to the start of their respective data recordings.
     end;
     methods
         function obj = EpochedFeature
@@ -9,17 +9,24 @@ classdef EpochedFeature < Block
             obj.type = 'ess:EpochedFeature'; % use / to append childen types here.
             obj = obj.setId;
         end
-        function [obj  averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
+        
+        function [obj, averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
             trialByFeature = obj.index ('trial', ':');
             if true
+                tic;
                 nonTimeOrTrialAxisLabels = setdiff(obj.axesTypeLabels, {'time', 'trial'});
                 indexArguments = [nonTimeOrTrialAxisLabels {':'}];
                 
-                featureByCombinedTimeAndTrial = obj.index(indexArguments{:});
-                medianTimeFeatures = median(featureByCombinedTimeAndTrial, ndims(featureByCombinedTimeAndTrial));
-                centeredTimeFeatures = bsxfun(@minus, featureByCombinedTimeAndTrial, medianTimeFeatures);
-                robustStdTimeFeatures = 1.4826 * median(abs(centeredTimeFeatures), ndims(featureByCombinedTimeAndTrial));
+                dims = 1:(ndims(obj.tensor)-1); % -1 since we have combined trial and time
+                timeAndTrialByfeatures = permute(obj.index(indexArguments{:}), [dims(end), dims(1:(end-1))]);
+                medianTimeFeatures = median(timeAndTrialByfeatures);
+                centeredTimeFeatures = bsxfun(@minus, timeAndTrialByfeatures, medianTimeFeatures);
+                robustStdTimeFeatures = 1.4826 * median(abs(centeredTimeFeatures));
                 
+                medianTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
+                robustStdTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
+                
+                toc;
                 % now median and std have to be reshaped into 'trial' x features
                 
                 reshapedStds = repmat(robustStdTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
@@ -57,7 +64,7 @@ classdef EpochedFeature < Block
     methods (Static)
         function [trialFrames, trialTimes, trialHEDStrings, trialEventTypes] = getTrialTimesFromEEGstructure(varargin)
             % [trialFrames, trialTimes, trialHEDStrings, trialEventTypes]= getTrialTimesFromEEGstructure(varargin)
-            % trialTimes is                                    
+            % trialTimes is
             
             inputOptions = arg_define(varargin, ...
                 arg('EEG', [],[],'EEGLAB EEG structure. Can be the first argument without the keyword EEG'),...
@@ -66,7 +73,7 @@ classdef EpochedFeature < Block
                 arg('excludedEventTypes', {},[],'Events types to exclude', 'type', 'cellstr'), ...
                 arg('maxSameTypeProximity', 0.5,[0 Inf],'How much to allow same-type event overlap. When two events have the same type or HED string are closer than this value (in seconds), only one of them will be included.'),...
                 arg('maxSameTypeCount', Inf,[1 Inf],'How many same-time events are allowed. Events with highest overlap with the same type are deleted first.')...
-            );
+                );
             
             EEG = inputOptions.EEG;
             trialFrames = [EEG.event(:).latency];
@@ -113,13 +120,13 @@ classdef EpochedFeature < Block
                     totalOverlap = sum(temporalOverlap);
                     afterRemovalTemporalOverlap = temporalOverlap;
                     eventIdToRemove = [];
-
+                    
                     if length(totalOverlap) > inputOptions.maxSameTypeCount
                         % remove highest overlapping events first, until
                         % maximum of maxSameTypeCount event remain.
                         
-                        % do a random permute on events with zero overlap 
-                        % so events with total overlap of zero are randomly 
+                        % do a random permute on events with zero overlap
+                        % so events with total overlap of zero are randomly
                         % removed (otherwise they will be deleted from the
                         % start of the recording, which is not desirable).
                         [sortedOverlap sortId] = sort(totalOverlap, 'descend');
@@ -151,7 +158,7 @@ classdef EpochedFeature < Block
                         fprintf('- Removed %d of the original %d (%d percent) events of \n   type "%s" due to excessive overlap.\n', length(eventIdToRemove), n, round(100 * length(eventIdToRemove) / n), uniqueHEDStrings{i});
                     end;
                     
-                    allEventIdsToRemove = cat(1, allEventIdsToRemove(:), eventSubset(eventIdToRemove));                    
+                    allEventIdsToRemove = cat(1, allEventIdsToRemove(:), eventSubset(eventIdToRemove));
                     clear afterRemovalTemporalOverlap totalOverlap temporalOverlap;
                 end;
                 
@@ -174,7 +181,7 @@ classdef EpochedFeature < Block
             % (number of epochs before + 1 + number of epochs after) as its second dimension.
             % all other dimensions will have the same order and size as the
             % remaining dimensions (after the first) of the input tensor.
-            % any epoch that violates the boundaries is automatically removed so the number of 
+            % any epoch that violates the boundaries is automatically removed so the number of
             % output epochs may be less than length(times)
             %
             % Input example:
@@ -188,7 +195,7 @@ classdef EpochedFeature < Block
             s = size(tensor);
             epochLength = numberOfIndicesBefore + 1 + numberOfIndicesAfter;
             numberOfEpochs = length(indices);
-
+            
             epochDimensionIndices  = repmat(indices(:), [1 epochLength]) + repmat(-numberOfIndicesBefore:numberOfIndicesAfter, [numberOfEpochs 1]);
             outOfBoundEpochs = any(epochDimensionIndices < 1, 2) | any(epochDimensionIndices > size(tensor, 1), 2);
             epochDimensionIndices(outOfBoundEpochs,:) = [];
@@ -201,6 +208,6 @@ classdef EpochedFeature < Block
                 epochedTensor(i,1:epochLength,:) = tensor(epochDimensionIndices(i,:),:);
             end;
             
-        end       
+        end
     end
 end
