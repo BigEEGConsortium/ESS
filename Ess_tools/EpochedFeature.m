@@ -10,10 +10,19 @@ classdef EpochedFeature < Block
             obj = obj.setId;
         end
         
-        function [obj, averageOutlierRatio] = removeNoisyEpochs(obj, varargin)
+        function [obj, cleanEpochIds, trialNoiseEstimate] = removeNoisyEpochs(obj, varargin)
+            % [obj, cleanEpochIds, trialNoiseEstimate] = removeNoisyEpochs(obj, varargin)
+            % Removes outlier trials, i.e. trials with  
+            
+            inputOptions = arg_define(varargin, ...
+                arg('useAvaregZ', true, [false true],'Average Z values over feature. There are two methods for outlier detection implemented in this function: (1) average Z values over all trial features [this option] (2) Threshold the values to find individual outlier feature elements and calculate the ratio of outliers in each trial.', 'type', 'logical'),...
+                arg('zthreshold', 5.5, [],'Max z-transformed feature value considered normal. Values with higher absolute Z are considered outliers.', 'type', 'denserealdouble'),...
+                arg('maxOutlierRatio', 0.15, [],'Max ratio of outliers values for normal trials. Only applicable if useAvaregZ is set to False. Trials with higher ratio of outliers to normal values are considered outliers and removed.', 'type', 'denserealdouble'),...
+                arg('uniformOverTime', true, [false true],'Combine time and trial axis before calculating Z statistics. Robust Z Statistics can be either calculated over Trials, or over a joint Time x Trials axis.  The combined method, when applicable, is recommended since it does not affect significance calculations.', 'type', 'logical')...                
+            );
+            
             trialByFeature = obj.index ('trial', ':');
-            if true
-                tic;
+            if inputOptions.uniformOverTime && ismember('time', obj.axesTypeLabels)                
                 nonTimeOrTrialAxisLabels = setdiff(obj.axesTypeLabels, {'time', 'trial'});
                 indexArguments = [nonTimeOrTrialAxisLabels {':'}];
                 
@@ -25,8 +34,7 @@ classdef EpochedFeature < Block
                 
                 medianTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
                 robustStdTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
-                
-                toc;
+                                
                 % now median and std have to be reshaped into 'trial' x features
                 
                 reshapedStds = repmat(robustStdTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
@@ -40,8 +48,7 @@ classdef EpochedFeature < Block
                 reshapedMedians = reshapedMedians(:,:);
                 
                 centeredFeatures = bsxfun(@minus, trialByFeature, reshapedMedians);
-                robustZFeatures =  bsxfun(@times, centeredFeatures, 1./reshapedStds);
-                
+                robustZFeatures =  bsxfun(@times, centeredFeatures, 1./reshapedStds);                
             else
                 medianFeatures = median(trialByFeature);
                 centeredFeatures = bsxfun(@minus, trialByFeature, medianFeatures);
@@ -51,11 +58,17 @@ classdef EpochedFeature < Block
                 clear robustStdFeatures;
             end;
             
-            
-            outlierFeature = abs(robustZFeatures) > 3; % both too negative and too positive
-            averageOutlierRatio = nanmean(outlierFeature, 2);
-            cleanEpochIds = averageOutlierRatio < 0.13;
-            clear robustZFeatures outlierFeature;
+            if inputOptions.useAvaregZ
+                outlierFeature = mean(abs(robustZFeatures'));
+                cleanEpochIds = outlierFeature < 5.5;
+                trialNoiseEstimate = outlierFeature;
+            else
+                outlierFeature = abs(robustZFeatures) > inputOptions.zthreshold; % both too negative and too positive
+                averageOutlierRatio = nanmean(outlierFeature, 2);
+                cleanEpochIds = averageOutlierRatio < inputOptions.maxOutlierRatio;
+                trialNoiseEstimate = averageOutlierRatio;
+                clear robustZFeatures outlierFeature;
+            end;
             
             obj = obj.sliceAxes('trial', find(cleanEpochIds));
             assert(obj.isValid, 'Result is not valid');

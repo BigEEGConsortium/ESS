@@ -130,7 +130,7 @@ classdef Block < Entity
             switch s(1).type
                 case '.'
                     if length(s) < 2
-                        axesTypes = obj.axesTypeLabels;
+                        axesTypes = builtin('subsref',obj,substruct('.', 'axesTypeLabels')); 
                         [wasMember id]= ismember(s.subs, axesTypes);
                         if wasMember
                             sref = obj.axes{id(1)};
