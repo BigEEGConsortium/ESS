@@ -340,7 +340,7 @@ classdef levelDerivedStudy  < levelStudy;
             mkdir([inputOptions.levelDerivedFolder filesep 'session']);
             mkdir([inputOptions.levelDerivedFolder filesep 'additional_data']);
             
-            obj.uuid = char(java.util.UUID.randomUUID);
+            obj.uuid = getUuid;
             obj.studyLevelDerivedSchemaVersion  = '1.0';
                         
             if ismember(class(obj.parentStudyObj), {'level2Study', 'levelDerivedStudy'})
@@ -400,7 +400,7 @@ classdef levelDerivedStudy  < levelStudy;
                        
                        % create a UUID for the study level derived file and add
                        % it to the end of dataRecordingUuidHistory.
-                       studyLevelDerivedFileUuid = char(java.util.UUID.randomUUID);
+                       studyLevelDerivedFileUuid = getUuid;
                        
                        if isfield(EEG, 'etc') && isempty(EEG.etc)
                            EEG.etc = struct;
@@ -638,7 +638,7 @@ classdef levelDerivedStudy  < levelStudy;
             
             % make sure uuid and title are set
             if isempty(obj.uuid)
-                obj.uuid = char(java.util.UUID.randomUUID);
+                obj.uuid = getUuid;
                 issue(end+1).description = sprintf('UUID is empty.\n');
                 issue(end).howItWasFixed = 'A new UUID is set.';
             end;

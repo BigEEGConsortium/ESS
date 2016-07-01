@@ -14,7 +14,7 @@ classdef Entity %< dynamicprops
         end;
         
         function obj = setId(obj)
-            obj.id = [obj.type '/' getUuid];
+            obj.id = [obj.type '/' char(java.util.UUID.randomUUID)];
         end;
         
         function obj = setAsNewlyCreated(obj)
@@ -22,7 +22,8 @@ classdef Entity %< dynamicprops
            % obj.dateModified = obj.dateCreated;
            obj = setId(obj);
         end;
-                
+        
+        function getUuid
     end;
 end
       

@@ -59,7 +59,7 @@ classdef TrialAxis < InstanceAxis
                 end;
             end;
             
-            obj.instances = inputOptions.instances(:);
+            obj.cells = inputOptions.instances(:);
             obj.times = inputOptions.times(:);
             obj.codes = inputOptions.codes(:);
             obj.hedStrings = inputOptions.hedStrings(:);

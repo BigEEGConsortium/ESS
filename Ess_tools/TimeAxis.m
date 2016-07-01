@@ -38,8 +38,5 @@ classdef TimeAxis < BaseAxis
             end
         end
         
-        function l = length(obj)
-            l = length(obj.times);
-        end;
     end;
 end

@@ -759,7 +759,7 @@ classdef level2Study < levelStudy;
             
             % make sure uuid and title are set
             if isempty(obj.uuid)
-                obj.uuid = char(java.util.UUID.randomUUID);
+                obj.uuid = getUuid;
                 issue(end+1).description = sprintf('UUID is empty.\n');
                 issue(end).howItWasFixed = 'A new UUID is set.';
             end;
@@ -841,7 +841,7 @@ classdef level2Study < levelStudy;
                 if ~isfield(obj.studyLevel2Files.studyLevel2File(i), 'uuid') || ~level1Study.isAvailable(obj.studyLevel2Files.studyLevel2File(i).uuid) && ~isempty(moreInfo)
                     issue(end+1).description = sprintf('Uuid for Level 2 record associated with session %s (recording number %d) is empty.\n', moreInfo.sessionNumber{1}, moreInfo.dataRecordingNumber);
                     if fixIssues
-                        obj.studyLevel2Files.studyLevel2File(i).uuid = char(java.util.UUID.randomUUID);
+                        obj.studyLevel2Files.studyLevel2File(i).uuid = getUuid;
                         issue(end).howItWasFixed = 'A new uuid was created.';
                     end;
                 end;

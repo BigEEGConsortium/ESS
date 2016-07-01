@@ -1,5 +1,5 @@
 classdef ChannelAxis < SpaceAxis
-    %  The channel axis characterizes EEG channels (sensors) and their locations.
+    %  The channel axis characterizes EEG/EMG/ECG (EXG) channels (sensors) and their locations.
     
     properties        
     end;
@@ -50,8 +50,5 @@ classdef ChannelAxis < SpaceAxis
             obj.labels = obj.labels(:);
         end
         
-        function l = length(obj)
-            l = length(obj.labels);
-        end
     end;
 end

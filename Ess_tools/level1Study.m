@@ -169,7 +169,7 @@ classdef level1Study < levelStudy;
                     % prepare the object based on input values.
                     % assigns a random UUID.
                     obj.essVersion = '2.2';
-                    obj.studyUuid = char(java.util.UUID.randomUUID);
+                    obj.studyUuid = getUuid;
                     
                     % if data recodring parameter set if assigned, use it
                     % for all the recordings.
@@ -1675,7 +1675,7 @@ classdef level1Study < levelStudy;
             if length(obj.studyUuid) < 10 % uuid shoudllbe at least 10 random characters
                 issue(end+1).description = 'UUID is empty or less than 10 (random) characeters.';
                 if fixIssues
-                    obj.studyUuid = char(java.util.UUID.randomUUID);
+                    obj.studyUuid = getUuid;
                     issue(end).howItWasFixed = 'A new UUID is set.';
                 end;
             end;
@@ -1970,7 +1970,7 @@ classdef level1Study < levelStudy;
                         % check dataRecordingUuid
                         if ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid)
                             issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a UUID in dataRecordingUuid.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
-                            obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid = char(java.util.UUID.randomUUID);
+                            obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid = getUuid;
                             issue(end).howItWasFixed = 'UUID placed into the field.';
                         end;
                         

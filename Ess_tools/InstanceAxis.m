@@ -3,7 +3,7 @@ classdef InstanceAxis < BaseAxis
     %  observations, subjects, studies) of some data and can hold attached per-instance "payload".
     
     properties        
-        instances % A cell array with information for each "instance" element.
+        cells % A cell array with information for each "instance" element.
     end;
     methods
         function obj =  InstanceAxis(varargin)
@@ -11,20 +11,17 @@ classdef InstanceAxis < BaseAxis
             obj = obj.setId;
             
             obj.typeLabel = 'instance';
-            obj. perElementProperties = [obj. perElementProperties {'instances'}];
+            obj. perElementProperties = [obj. perElementProperties {'cells'}];
 
             
             if nargin > 0
                 inputOptions = arg_define(varargin, ...
-                    arg('instances', [], [],'A cell array with information for each "instance" element.')...
+                    arg('cells', [], [],'A cell array with information for each "instance" element.')...
                     );
                 
-                obj.instances = inputOptions.instances;
+                obj.cells = inputOptions.cells;
             end;
         end
         
-        function l = length(obj)
-            l = length(obj.instances);
-        end;
     end;
 end

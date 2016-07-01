@@ -56,7 +56,7 @@ H5F.close(fileId);
             dataset = struct2StructArray(dataset);
         elseif ischar(dataset)
             dataset = dataset';
-        elseif isnan(dataset)
+        elseif ~iscell(dataset) & isnan(dataset)
             dims = [0, 0];
             if ~isStructField
                 dims = readAttribute(datasetId, 'dims');
@@ -97,8 +97,12 @@ H5F.close(fileId);
             if strcmpi(childStructure(a).objectType, 'Group')
                 grandChildStructure = getGroupDatasets(fileId, ...
                     [hdf5Path, '/', childStructure(a).name]);
-                parentStructure.(childStructure(a).name) = ...
-                    createEmptyStructureFields({grandChildStructure.name});
+                if isempty(grandChildStructure)
+                    parentStructure.(childStructure(a).name) = [];
+                else
+                    parentStructure.(childStructure(a).name) = ...
+                        createEmptyStructureFields({grandChildStructure.name});
+                end;
                 parentStructure.(childStructure(a).name) = ...
                     readHdf5Data(fileId, ...
                     [hdf5Path, '/', childStructure(a).name], ....

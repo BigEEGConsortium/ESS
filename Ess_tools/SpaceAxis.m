@@ -33,16 +33,15 @@ classdef SpaceAxis < BaseAxis
                     if isempty(inputOptions.length)
                         error('Either "names" or "length" must be provoded');
                     else
+                        obj.labels = cell(inputOptions.length, 1);
                         for i=1:inputOptions.length
-                            obj.labels{i} = '';
+                            obj.labels{i} = '';                            
                         end;
+                        obj.positions = zeros(inputOptions.length,0);
                     end;
                 end;
             end;
         end
         
-        function l = length(obj)
-            l = length(obj.labels);
-        end
     end;
 end

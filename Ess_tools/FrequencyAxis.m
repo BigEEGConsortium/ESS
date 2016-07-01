@@ -20,8 +20,5 @@ classdef FrequencyAxis < BaseAxis
             check_monotonic(obj.frequencies, 'frequencies');           
         end
         
-        function l = length(obj)
-            l = length(obj.frequencies);
-        end;
     end;
 end
