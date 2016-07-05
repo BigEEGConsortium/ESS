@@ -444,7 +444,7 @@ classdef level2Study < levelStudy;
                             
                             % EEGLAB empties EEG.chanlocs if it has more items than
                             % the number of chanels.
-                            if length(EEG.chanlocs) > size(EEG.daya, 1)
+                            if length(EEG.chanlocs) > size(EEG.data, 1)
                                 EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
                             end;
                             

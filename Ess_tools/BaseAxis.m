@@ -1,6 +1,10 @@
 classdef BaseAxis < Entity
     properties
-        typeLabel
+        typeLabel % quantity represented by the axis, e.g. 'time', 'channel', 'trial'. 
+                  % these are automatically set by child objects and should not be changed by
+                  % extrenal scripts.
+        % customLabel % for distinguishing axes with the same type, e.g. two 'channel' axis, 
+                      % instead can use e.g. 'toChannel', 'fromChannel'
     end;
     properties %(Access = protected)
         perElementProperties = {};% a cell array of strings with the names of properties in

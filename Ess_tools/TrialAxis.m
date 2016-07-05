@@ -66,14 +66,15 @@ classdef TrialAxis < InstanceAxis
             check_monotonic(obj.times, 'times');
         end            
         
-        function ids = getHEDMatchIds(obj, queryHEDString)
+        function matchVector = getHEDMatch(obj, queryHEDString)
+            % matchVector = getHEDMatch(obj, queryHEDString)
             events = struct('usertags', '');
             
             for i=1:length( obj.hedStrings)
-                events(i).usertags = trialAxis.hedStrings{i};
+                events(i).usertags = obj.hedStrings{i};
             end;
             
-            ids = find(findTagMatchEvents(events, queryHEDString));            
+            matchVector = findTagMatchEvents(events, queryHEDString);            
         end;
     end;
 end
