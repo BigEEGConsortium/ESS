@@ -16,10 +16,19 @@ classdef EpochedTemporalFeature < EpochedFeature
                 arg('timeRange',[-2 2],[],'Time range [before after] to include in the epoch. This is in seconds.'), ...
                 arg('lowpass', 0.5,[0 Inf],'Low-pass EEG at this frequency. Use empty to skip'), ...
                 arg('highpass', 20,[0 Inf],'High-pass EEG at this frequency. Leave empty to skip.'), ...
-                arg('maxChannels', Inf,[1 Inf],'Maximum number of channels to use. A uniform subset of channels will be used if this value is less than the number of channels in EEG.'), ...
+                arg('highpass', 20,[0 Inf],'High-pass EEG at this frequency. Leave empty to skip.'), ...
                 arg_sub('select',{},@EpochedFeature.getTrialTimesFromEEGstructure, 'A struct argument. Arguments are as in myotherfunction(), can be assigned as a cell array of name-value pairs or structs.'));
             
-            assert(inputOptions.timeRange(2) > inputOptions.timeRange(1), 'The "timeRange" is invalid');                    
+            assert(inputOptions.timeRange(2) > inputOptions.timeRange(1), 'The "timeRange" is invalid');
+            
+            if ~isempty(inputOptions.lowpass)
+                EEG = pop_eegfiltnew(EEG, inputOptions.lowpass, []);
+            end;
+            
+                
+            if ~isempty(inputOptions.highpass)
+                EEG = pop_eegfiltnew(EEG, [], inputOptions.highpass);
+            end;
             
             inputOptions.select.EEG = EEG;
             [trialFrames, trialTimes, trialHEDStrings, trialEventTypes] =  EpochedFeature.getTrialTimesFromEEGstructure(inputOptions.select);
@@ -36,12 +45,6 @@ classdef EpochedTemporalFeature < EpochedFeature
                 end;
             end;
             
-            EEG = pop_select(EEG, 'channel', inputOptions.channelIndices);
-                            
-            if size(EEG.data, 1) > inputOptions.maxChannels
-                subset = loc_subsets(EEG.chanlocs, inputOptions.maxChannels);
-                EEG = pop_select(EEG, 'channel', subset{1});
-            end;                      
             
             if inputOptions.timeRange(1) < 0
                 numberOfIndicesBefore = -inputOptions.timeRange(1) * EEG.srate;
@@ -53,19 +56,12 @@ classdef EpochedTemporalFeature < EpochedFeature
                 numberOfIndicesAfter = (inputOptions.timeRange(2) - inputOptions.timeRange(1)) * EEG.srate;
             end;
                         
-            % filter EEG channels
-            if ~isempty(inputOptions.lowpass)
-                EEG = pop_eegfiltnew(EEG, inputOptions.lowpass, []);
-            end;            
-            if ~isempty(inputOptions.highpass)
-                EEG = pop_eegfiltnew(EEG, [], inputOptions.highpass);
-            end;
             
             obj.tensor = EpochedFeature.epochTensor(EEG.data', epochTimes, numberOfIndicesBefore, numberOfIndicesAfter);
 
             obj.axes{1} = TrialAxis('times', trialTimes, 'hedStrings', trialHEDStrings, 'codes', trialEventTypes);
             obj.axes{2} = TimeAxis('initTime', inputOptions.timeRange(1), 'nominalRate', EEG.srate, 'numberOfTimes', size(obj.tensor, 2));
-            obj.axes{3} = ChannelAxis('chanlocs', EEG.chanlocs);
+            obj.axes{3} = ChannelAxis('chanlocs', EEG.chanlocs(inputOptions.channelIndices));
             
             assert(obj.isValid, 'Result is not valid');
         end
