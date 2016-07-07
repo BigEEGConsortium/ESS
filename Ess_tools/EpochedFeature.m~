@@ -45,7 +45,7 @@ classdef EpochedFeature < Block
                 reshapedMedians = reshapedMedians(:,:);
                 trialByFeature = obj.index ('trial', ':');
                 centeredFeatures = bsxfun(@minus, trialByFeature, reshapedMedians);
-                clear reshapedMedians;
+                clear reshapedMedians trialByFeature;
                 
                 reshapedStds = repmat(robustStdTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
                 reshapedStds = permute(reshapedStds, [dims(end), dims(end-1), dims(1:end-2)]);
