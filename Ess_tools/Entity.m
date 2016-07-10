@@ -14,7 +14,8 @@ classdef Entity %< dynamicprops
         end;
         
         function obj = setId(obj)
-            obj.id = [obj.type '/' getUuid];
+            parts = strsplit(obj.type, '/');
+            obj.id = [lower(parts{end}) '_' getUuid];
         end;
         
         function obj = setAsNewlyCreated(obj)
