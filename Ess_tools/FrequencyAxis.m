@@ -6,7 +6,8 @@ classdef FrequencyAxis < BaseAxis
     end;
     methods
         function obj =  FrequencyAxis(varargin)
-            obj.type = 'ess:BaseAxis/FrequencyAxis';
+            obj = obj@BaseAxis;
+            obj = obj.defineAsSubType('FrequencyAxis');
             obj = obj.setId;
             
             obj.typeLabel = 'frequency';

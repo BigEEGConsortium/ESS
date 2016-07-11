@@ -7,7 +7,8 @@ classdef InstanceAxis < BaseAxis
     end;
     methods
         function obj =  InstanceAxis(varargin)
-            obj.type = 'ess:BaseAxis/InstanceAxis';
+            obj = obj@BaseAxis;
+            obj = obj.defineAsSubType('InstanceAxis');
             obj = obj.setId;
             
             obj.typeLabel = 'instance';

@@ -9,7 +9,9 @@ classdef TimeAxis < BaseAxis
     end;
     methods
         function obj =  TimeAxis(varargin)
-            obj.type = 'ess:BaseAxis/TimeAxis';
+            obj = obj@BaseAxis;
+            obj = obj.defineAsSubType('TimeAxis');
+            
             obj = obj.setId;
             
             obj.typeLabel = 'time';
