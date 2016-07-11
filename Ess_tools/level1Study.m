@@ -1695,6 +1695,11 @@ classdef level1Study < levelStudy;
                 issue(end+1).description = 'There has to be at least one Recording Parameter Set defined.';
             end;
             
+            % make sure there is at least one contact (phone or email)
+            if ~(level1Study.isAvailable(obj.contactInfo.name) || level1Study.isAvailable(obj.contactInfo.phone) || level1Study.isAvailable(obj.contactInfo.email))
+                issue(end+1).description = 'There has to be at least some contact information available (name, phone or email)';
+            end;
+            
             % validate task information and find out how many tasks are present
             numberOfTasks = max(1, length(obj.tasksInfo));
             taskLabels = {};
@@ -1881,7 +1886,7 @@ classdef level1Study < levelStudy;
                 
                 % validate subject existence
                 if isempty(obj.sessionTaskInfo(i).subject)
-                    issue(end+1).description = sprintf('Sesion %s does not have any subjects.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                    issue(end+1).description = sprintf('Session %s does not have any subjects.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                 else % check if inSessionNumber is set for all subejcts in the session
                     for j=1:length(obj.sessionTaskInfo(i).subject)
                         
@@ -2716,7 +2721,7 @@ classdef level1Study < levelStudy;
             end;
             
             % update total study size
-            [dummy, obj.summaryInfo.totalSize]= dirsize(path); %#ok<ASGLU>
+            [dummy, obj.summaryInfo.totalSize]= dirsize(essFolder); %#ok<ASGLU>
             
             obj.rootURI = '.'; % the ess convention folder is the root
             

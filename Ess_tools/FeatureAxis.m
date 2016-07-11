@@ -17,8 +17,8 @@ classdef FeatureAxis < BaseAxis
     end;
     methods
         function obj =  FeatureAxis(varargin)
-            obj = obj@BaseAxis;
-            obj.type = 'ess:BaseAxis/FeatureAxis';
+            obj = obj@BaseAxis;    
+            obj = obj.defineAsSubType('FeatureAxis');
             obj = obj.setId;
             
             obj.typeLabel = 'feature';
