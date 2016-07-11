@@ -10,7 +10,7 @@ classdef EpochedFeature < Block
             obj = obj.setId;
         end
         
-        function [obj, cleanEpochIds, trialNoiseEstimate] = removeNoisyEpochs(obj, varargin)
+        function [obj, epochIsClean, trialNoiseEstimate] = removeNoisyEpochs(obj, varargin)
             % [obj, cleanEpochIds, trialNoiseEstimate] = removeNoisyEpochs(obj, varargin)
             % Removes outlier trials, i.e. trials with  
             
@@ -36,22 +36,11 @@ classdef EpochedFeature < Block
                 
                 medianTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
                 robustStdTimeFeatures = permute(robustStdTimeFeatures, [dims(2:end) dims(1)]);
-                                
-                % now median and std have to be reshaped into 'trial' x features
                 
-                reshapedMedians = repmat(medianTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
-                dims = 1:ndims(reshapedMedians);
-                reshapedMedians = permute(reshapedMedians, [dims(end), dims(end-1), dims(1:end-2)]);
-                reshapedMedians = reshapedMedians(:,:);
-                trialByFeature = obj.index ('trial', ':');
-                centeredFeatures = bsxfun(@minus, trialByFeature, reshapedMedians);
-                clear reshapedMedians;
-                
-                reshapedStds = repmat(robustStdTimeFeatures, [ones(1, length(nonTimeOrTrialAxisLabels)), obj.getAxis('time').length obj.getAxis('trial').length]);
-                reshapedStds = permute(reshapedStds, [dims(end), dims(end-1), dims(1:end-2)]);
-                reshapedStds = reshapedStds(:,:);
-                robustZFeatures =  bsxfun(@times, centeredFeatures, 1./reshapedStds);
-                clear centeredFeatures;              
+                % make sure of singeltn expanson on ending dimensions to save memory
+                robustZFeatures =  bsxfun(@times, bsxfun(@minus, permute(obj.index('trial', 'time', :), [3, 1, 2]), medianTimeFeatures), 1./robustStdTimeFeatures);
+                robustZFeatures = permute(robustZFeatures, [2 3 1]);
+                robustZFeatures = robustZFeatures(:,:);                     
             else
                 trialByFeature = obj.index ('trial', ':');
                 medianFeatures = median(trialByFeature);
@@ -63,20 +52,20 @@ classdef EpochedFeature < Block
             end;
             
             if inputOptions.useAvaregZ
-                outlierFeature = mean(abs(robustZFeatures'));
-                cleanEpochIds = outlierFeature < inputOptions.zthreshold;
+                outlierFeature = mean(abs(robustZFeatures), 2);
+                epochIsClean = outlierFeature < inputOptions.zthreshold;
                 trialNoiseEstimate = outlierFeature;
             else
                 outlierFeature = abs(robustZFeatures) > inputOptions.zthreshold; % both too negative and too positive
                 averageOutlierRatio = nanmean(outlierFeature, 2);
-                cleanEpochIds = averageOutlierRatio < inputOptions.maxOutlierRatio;
+                epochIsClean = averageOutlierRatio < inputOptions.maxOutlierRatio;
                 trialNoiseEstimate = averageOutlierRatio;
                 clear robustZFeatures outlierFeature;
             end;
             
-            obj = obj.sliceAxes('trial', find(cleanEpochIds));
+            obj = obj.sliceAxes('trial', find(epochIsClean));
             assert(obj.isValid, 'Result is not valid');
-            fprintf('%d percent of trials (%d) were removed.\n', round(100*mean(~cleanEpochIds)), sum(~cleanEpochIds));
+            fprintf('%d percent of trials (%d) were removed.\n', round(100*mean(~epochIsClean)), sum(~epochIsClean));
         end;
     end
     methods (Static)

@@ -2572,9 +2572,7 @@ classdef level1Study < levelStudy;
                 
                 
                 for j=1:length(obj.sessionTaskInfo(i).dataRecording)
-                    % TODO: for Non-EEG nly data we should use 'nonEEG'
-                    % instead of 'eeg' in the beginning of the file
-                    
+                % use 
                     % find out what modalities are in the data recording
                     [dataRecordingModalities, dataRecordingModalityString]= obj.getModalitiesForDataRecording(i, j);
                     

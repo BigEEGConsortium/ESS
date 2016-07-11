@@ -1,0 +1,123 @@
+classdef FeatureAxis < BaseAxis
+    %  The feature axis describes individual features of some data (e.g. their
+    %   names and/or statistics) 
+
+    properties
+        names % Optionally a cell array of names for each feature (e.g. 'amplitude', 'phase', 'distance' or 'log-power')              
+        units % Optionally a cell array of unit strings for each feature
+              % (e.g. 'microvolts', 'radians' or 'meters')
+        flags % Optionally a cell array, with each cell containing string-type property flags for each feature. (e.g. 
+              % {'nonnegative'}, {'angle'} or {'squared', 'log'}) 
+        errorDistributions % Optionally a cell array of  strings encoding 
+                          % the distribution type for which the "error bars" for each
+                          % feature are encoded. (e.g. 'normal', 'beta')
+        samplingDistributions % Optionally a cell array of  strings encoding 
+                          % the type of distribution that each feature is drawn from
+                          % (e.g. 'laplace', 'bernoulli')       
+    end;
+    methods
+        function obj =  FeatureAxis(varargin)
+            obj = obj@BaseAxis;
+            obj.type = 'ess:BaseAxis/FeatureAxis';
+            obj = obj.setId;
+            
+            obj.typeLabel = 'feature';
+            obj.perElementProperties = [obj. perElementProperties {'names' 'units' 'flags' 'errorDistributions' 'samplingDistributions'}];
+
+            inputOptions = arg_define(varargin, ...              
+                arg('length', [], [],'The number of elements of the feature axis, If no other arguments are given.'),... 
+                arg('names', {}, {},'Cells with unit strings for each feature. E.g. ''amplitude'', ''phase'', ''distance'' or ''log-power''.'),...  
+                arg('units', {}, {},'Cells with string-type property flags. E.g. ''microvolts'', ''radians'' or ''meters''', 'type', 'cellstr'),...
+                arg('errorDistributions', {}, {},'Cells with string-type "error bars" distributions. E.g. ''normal'', ''beta'''),...  
+                arg('samplingDistributions', {}, {},'Cells with feature distribution strings. E.g. ''laplace'', ''bernoulli'''),...  
+                arg('flags', {}, {},'Cells with property flags for each feature. E.g. {''nonnegative''}, {''angle''} or {''squared'', ''log''}', 'type', 'cellstr')...
+                );
+            
+            providedPerElementProperties = {};
+            skippedPerElementProperties = {};
+            for i=1:length(obj.perElementProperties)
+                if isempty(inputOptions.(obj.perElementProperties{i}))
+                    skippedPerElementProperties{end+1} = obj.perElementProperties{i};
+                else
+                    providedPerElementProperties{end+1} = obj.perElementProperties{i};
+                end;
+            end;
+            
+            if isempty(providedPerElementProperties)
+                if isempty(inputOptions.length)
+                    error('Either ''length'' or at least one per-item properity must be provided.');
+                else % length is provided
+                    for i=1:length(skippedPerElementProperties)
+                        obj.(skippedPerElementProperties{i}) = cell(inputOptions.length, 1);
+                    end;
+                end
+            else % some per-item properties are provided
+                inferredLength = length(inputOptions.(obj.providedPerElementProperties{1}));
+                
+            end;
+                
+            end;
+                for i=1:length(obj.perElementProperties)
+                    obj.(obj.perElementProperties{i}) = cell(
+                end;
+            elseif ~isempty(inputOptions.length)
+                 for i=1:length(skippedPerElementProperties)
+                     
+                     
+            else
+                 
+            end;
+                
+            
+          
+            
+            
+            % place empty elements for instances, code and hed strings. 
+            if isempty(inputOptions.cells)
+                inputOptions.cells = cell(length(inputOptions.times), 1);
+            end;
+            
+            if isempty(inputOptions.codes)
+                for i=1:length(inputOptions.times)
+                    inputOptions.codes{i} = '';
+                end;
+            end;
+            
+            if isempty(inputOptions.hedStrings)
+                for i=1:length(inputOptions.times)
+                    inputOptions.hedStrings{i} = '';
+                end;
+            end;
+            
+            % try to extract times from 'time' field of instances
+            if isempty(inputOptions.times) 
+                obj.times = zeros(length(inputOptions.cells), 1);
+                for i=1:length(inputOptions.cells)
+                    if isfield(inputOptions.cells{i}, 'time') && ~isempty(inputOptions.cells{i}.time)
+                        obj.times(i) = inputOptions.cells{i}.time;
+                    else
+                        error('Failed to extract ''times'' from ''time'' field of ''instances''');
+                    end;
+                end;
+            end;
+            
+            obj.cells = inputOptions.cells(:);
+            obj.times = inputOptions.times(:);
+            obj.codes = inputOptions.codes(:);
+            obj.hedStrings = inputOptions.hedStrings(:);
+            check_monotonic(obj.times, 'times');
+        end            
+        
+        function matchVector = getHEDMatch(obj, queryHEDString)
+            % matchVector = getHEDMatch(obj, queryHEDString)
+
+            [uniqueHedStrings, dummy, ids]= unique(obj.hedStrings);
+            matchVector = false(length(obj.hedStrings), 1);
+            for i=1:length(uniqueHedStrings)
+                events.usertags = obj.hedStrings{i};
+                matchVector(ids == i) = findTagMatchEvents(events, uniqueHedStrings{i});
+            end;
+
+        end;
+    end;
+end
