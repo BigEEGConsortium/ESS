@@ -27,6 +27,7 @@ classdef BaseAxis < Entity
     methods
         function obj = BaseAxis
             obj = obj@Entity;
+            obj = obj.defineAsSubType('BaseAxis');
         end;
         
         function l = length(obj)

@@ -6,7 +6,7 @@ classdef EpochedFeature < Block
     methods
         function obj = EpochedFeature
             obj = obj@Block;
-            obj.type = 'ess:EpochedFeature'; % use / to append childen types here.
+            obj = obj.defineAsSubType('EpochedFeature');
             obj = obj.setId;
         end
         

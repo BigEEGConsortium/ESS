@@ -5,7 +5,7 @@ classdef EpochedTemporalFeature < EpochedFeature
     methods
         function obj = EpochedTemporalFeature
             obj = obj@EpochedFeature;
-            obj.type = 'ess:EpochedFeature/EpochedTemporalFeature'; % use / to append childen types here.
+            obj = obj.defineAsSubType('EpochedTemporalFeature');
             obj = obj.setId;
         end
         

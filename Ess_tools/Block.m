@@ -32,7 +32,7 @@ classdef Block < Entity
     methods
         function obj = Block(varargin)
             obj = obj@Entity;
-            obj.type = 'ess:Block'; % use / to append childen types here.
+            obj = obj.defineAsSubType('Block');
             obj = obj.setId;
             
             if nargin > 0

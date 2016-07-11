@@ -1,6 +1,6 @@
 classdef Entity %< dynamicprops
     properties 
-        type = 'ess:Thing'; % each object has to have a type. Types have an explict MIME-like hierarchy, separated by /, i.e. parent/child     
+        type = 'ess:Entity'; % each object has to have a type. Types have an explict MIME-like hierarchy, separated by /, i.e. parent/child     
         id; % each object must have a unique ID. These are gerenally created by appeding a UUID to 'ess:[object type]/'
         dateCreated 
      %   dateModified 
@@ -24,6 +24,11 @@ classdef Entity %< dynamicprops
            obj = setId(obj);
         end;
                 
+        function obj = defineAsSubType(obj, subtype)
+            % uses / to append childen (subtypes).
+            % for Example ess:Entity/Block
+            obj.type = [obj.type '/' subtype];
+        end;
     end;
 end
       

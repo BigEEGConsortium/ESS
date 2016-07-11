@@ -11,7 +11,7 @@ classdef TrialAxis < InstanceAxis
     methods
         function obj =  TrialAxis(varargin)
             obj = obj@InstanceAxis;
-            obj.type = 'ess:BaseAxis/InstanceAxis/TrialAxis';
+            obj = obj.defineAsSubType('TrialAxis');
             obj = obj.setId;
             
             obj.typeLabel = 'trial';
