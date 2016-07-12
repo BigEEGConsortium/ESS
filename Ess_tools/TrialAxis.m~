@@ -73,7 +73,7 @@ classdef TrialAxis < InstanceAxis
             [uniqueHedStrings, dummy, ids]= unique(obj.hedStrings);
             matchVector = false(length(obj.hedStrings), 1);
             for i=1:length(uniqueHedStrings)
-                events.usertags = uniqueHedStrings{i};
+                events.usertags = obj.hedStrings{i};
                 matchVector(ids == i) = findTagMatchEvents(events, queryHEDString);
             end;
 

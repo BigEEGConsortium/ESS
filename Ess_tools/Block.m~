@@ -195,7 +195,7 @@ classdef Block < Entity
             % axis names and their ranges should be provided as
             % 'axis typelabel 1', indices_1, ...
             % for example:
-            % 'time', 1:5, 'channel', 5:15
+            % 'time', 1:5, 'channel', 5:15s
             
             if mod(length(varargin), 2) ~= 0 % if an odd number of arguments presented
                 error('An even number of arguments, with ''key'', value, ''key'', value.. structure should be provided');
@@ -296,7 +296,6 @@ classdef Block < Entity
                             if length(parameters) == 1 % e.g. {'time', '1:10'}
                                 newSubs{i} = str2num(parameters{1});
                             else % e.g. {'time', 'range', [-1 1]}
-                                newSubs{i} = obj.axes{axisValue{i}}.parseRange(parameters);
                             end
                         else
                             error('Extended parameter is not a string nor numeric');

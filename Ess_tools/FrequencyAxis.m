@@ -21,5 +21,13 @@ classdef FrequencyAxis < BaseAxis
             check_monotonic(obj.frequencies, 'frequencies');           
         end
         
+        function idMask = parseRange(obj, rangeCell)
+            switch  rangeCell{1}
+                case'range' % the value for range should be in the form of [min max]
+                    idMask = obj.frequencies >= rangeCell{2}(1) & obj.frequencies <= rangeCell{2}(2);
+                otherwise
+                    error('Range string not recognized');
+            end
+        end
     end;
 end

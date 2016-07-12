@@ -40,13 +40,12 @@ classdef TimeAxis < BaseAxis
             end
         end
         
-        function idMask = parseRange(obj, rangeCell)
-            switch  rangeCell{1}
-                case'range' % the value for range should be in the form of [min max]
-                    idMask = obj.times >= rangeCell{2}(1) & obj.times <= rangeCell{2}(2);
-                otherwise
-                    error('Range string not recognized');
-            end
+        function ids = parseRange(rangeCell)
+            case rangeCell{1}
+                'range':
+                else
+                    error('Range string not recognized')
+        end
         end;
     end;
 end

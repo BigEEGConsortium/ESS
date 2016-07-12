@@ -88,5 +88,9 @@ classdef BaseAxis < Entity
                 end;
             end;
         end;
+        
+        function ids = parseRange(obj, rangeCell)
+            % this function is overriden in child classes. 
+        end;
     end
 end

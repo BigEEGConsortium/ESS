@@ -62,16 +62,13 @@ classdef FeatureAxis < BaseAxis
             end;   
         end            
         
-        function matchVector = getHEDMatch(obj, queryHEDString)
-            % matchVector = getHEDMatch(obj, queryHEDString)
-
-            [uniqueHedStrings, dummy, ids]= unique(obj.hedStrings);
-            matchVector = false(length(obj.hedStrings), 1);
-            for i=1:length(uniqueHedStrings)
-                events.usertags = obj.hedStrings{i};
-                matchVector(ids == i) = findTagMatchEvents(events, uniqueHedStrings{i});
-            end;
-
+        function idMask = parseRange(obj, rangeCell)
+            switch  rangeCell{1}
+                case'name' % to be used for example as {'name', 'mean'}
+                    idMask = cellfun(@(x) isequal(rangeCell{2}, x), obj.names);
+                otherwise
+                    error('Range string not recognized');
+            end
         end;
     end;
 end

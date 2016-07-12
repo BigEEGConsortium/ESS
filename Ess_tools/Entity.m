@@ -1,4 +1,4 @@
-classdef Entity %< dynamicprops
+classdef Entity %< dynamicprops, matlab.mixin.Heterogeneous ?
     properties 
         type = 'ess:Entity'; % each object has to have a type. Types have an explict MIME-like hierarchy, separated by /, i.e. parent/child     
         id; % each object must have a unique ID. These are gerenally created by appeding a UUID to 'ess:[object type]/'
