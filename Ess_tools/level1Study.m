@@ -2726,7 +2726,7 @@ classdef level1Study < levelStudy;
             obj.rootURI = '.'; % the ess convention folder is the root
             
             obj.isInEssContainer = 'Yes';
-            validation in level 1 
+             
             % write the XML file
             obj = obj.write([essFolder filesep 'study_description.xml']);
             

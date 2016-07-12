@@ -12,7 +12,7 @@ classdef TrialAverage < Block
             if nargin > 0
                 if isa(varargin{1}, 'Block')
                     trialBlock = varargin{1};
-                    obj.axes{1} = FeatureAxis('names', {'mean', 'standard deviation of mean', 'median', 'median absolute deviation'});
+                    obj.axes{1} = FeatureAxis('names', {'mean', 'standard deviation', 'standard deviation of mean', 'median', 'median absolute deviation'});
                     nonTrialAxisLabels = {};
                     axesLengths = length(obj.axes{1});
                     for i=1:length(trialBlock.axes)
@@ -25,13 +25,15 @@ classdef TrialAverage < Block
                         end;
                     end
                     
+                    obj.numberOfTrials = length(trialBlock.trial);
                     obj.tensor = zeros(axesLengths);
                     
                     obj.tensor(1,:) = vec(mean(trialBlock.index('trial', nonTrialAxisLabels{:})));
-                    obj.tensor(2,:) = vec(std(trialBlock.index('trial', nonTrialAxisLabels{:})) / sqrt(length(trialBlock.trial)));
+                    obj.tensor(2,:) = vec(std(trialBlock.index('trial', nonTrialAxisLabels{:})));
+                    obj.tensor(3,:) = obj.tensor(2,:) / sqrt(obj.numberOfTrials);
                     m = median(trialBlock.index('trial', nonTrialAxisLabels{:}));
-                    obj.tensor(3,:) = vec(m);
-                    obj.tensor(4,:) = vec(median(abs(bsxfun(@minus, trialBlock.index('trial', nonTrialAxisLabels{:}), m))));
+                    obj.tensor(4,:) = vec(m);
+                    obj.tensor(5,:) = vec(median(abs(bsxfun(@minus, trialBlock.index('trial', nonTrialAxisLabels{:}), m))));
                 end;
             end;
         end
@@ -48,8 +50,17 @@ classdef TrialAverage < Block
             %
             
             if length(obj.axes) == 3
+                
+                relativeSignificance = mean(abs(obj.index({'feature' 'name' 'mean'}, 'channel', 'time')) ./ obj.index({'feature' 'name' 'standard deviation'}, 'channel', 'time'), 3);
+                
+                [dummy sortedChannelId] = sort(relativeSignificance, 'descend');
+                
+                numberOfplots = max(length(sortedChannelId), 9);
+                
                 time = obj.getAxis('time');
-                plot(time.times, squeeze(obj.index({'feature' 'name' 'mean'}, {'channel', 1}, 'time')));
+                channelId = 1;
+                confplot_t(time.times * 1000, vec(obj.index({'feature' 'name' 'mean'}, {'channel', channelId}, 'time')), vec(obj.index({'feature' 'name' 'standard deviation'}, {'channel', channelId}, 'time')), obj.numberOfTrials, 0.05:0.01:0.499,@gray, true);
+                xlabel('Time (ms)');
             end;
         end;
     end
