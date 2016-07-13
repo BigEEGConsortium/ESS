@@ -63,7 +63,7 @@ classdef level1Study < levelStudy;
         % information different tasks in each session of the study.
         tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
         
-        eventSpecificiationMethod = ' '; % should be either 'codes' or 'tags'.
+        eventSpecificationMethod = ' '; % should be either 'codes' or 'tags'.
         
         isInEssContainer = 'No'; % should be either 'Yes' or 'No'.
         
@@ -818,12 +818,12 @@ classdef level1Study < levelStudy;
                 
             end; %ends sessions node
             
-            % eventSpecificiationMethod
-            potentialEventSpecificiationMethodNodeArray = studyNode.getElementsByTagName('eventSpecificiationMethod');
-            if nodeExistsAndHasAChild(potentialEventSpecificiationMethodNodeArray)
-                obj.eventSpecificiationMethod = strtrim(char(potentialEventSpecificiationMethodNodeArray.item(0).getFirstChild.getData));
+            % eventSpecificationMethod
+            potentialeventSpecificationMethodNodeArray = studyNode.getElementsByTagName('eventSpecificationMethod');
+            if nodeExistsAndHasAChild(potentialeventSpecificationMethodNodeArray)
+                obj.eventSpecificationMethod = strtrim(char(potentialeventSpecificationMethodNodeArray.item(0).getFirstChild.getData));
             else
-                obj.eventSpecificiationMethod = '';
+                obj.eventSpecificationMethod = '';
             end;
             
             % isInEssContainer
@@ -1170,9 +1170,9 @@ classdef level1Study < levelStudy;
             rootURIElement.appendChild(docNode.createTextNode(obj.rootURI));
             docRootNode.appendChild(rootURIElement);
             
-            eventSpecificiationMethodElement = docNode.createElement('eventSpecificiationMethod');
-            eventSpecificiationMethodElement.appendChild(docNode.createTextNode(obj.eventSpecificiationMethod));
-            docRootNode.appendChild(eventSpecificiationMethodElement);
+            eventSpecificationMethodElement = docNode.createElement('eventSpecificationMethod');
+            eventSpecificationMethodElement.appendChild(docNode.createTextNode(obj.eventSpecificationMethod));
+            docRootNode.appendChild(eventSpecificationMethodElement);
             
             % isInEssContainer
             isInEssContainerElement = docNode.createElement('isInEssContainer');
@@ -2063,8 +2063,8 @@ classdef level1Study < levelStudy;
                 issue(end+1).description = sprintf('Some session numbers are missing. These numbers have to be from 1 up to the number of sesssions.\n Here are the missing numbers: %s.', num2str(missingSessionNumber));
             end;
             
-            if ~level1Study.isAvailable(obj.eventSpecificiationMethod) || ~ismember(strtrim(lower(obj.eventSpecificiationMethod)), {'codes', 'tags'})
-                issue(end+1).description = sprintf('eventSpecificiationMethod node is empty or invalid. It has to be either ''Codes'' or ''Tags''.');
+            if ~level1Study.isAvailable(obj.eventSpecificationMethod) || ~ismember(strtrim(lower(obj.eventSpecificationMethod)), {'codes', 'tags'})
+                issue(end+1).description = sprintf('eventSpecificationMethod node is empty or invalid. It has to be either ''Codes'' or ''Tags''.');
             end;
             
             if ~level1Study.isAvailable(obj.isInEssContainer) || ~ismember(strtrim(lower(obj.isInEssContainer)), {'yes', 'no'})
@@ -2073,7 +2073,7 @@ classdef level1Study < levelStudy;
             
             % only check the validity of event codes when they are the
             % primary source of event information.
-            if strcmpi(strtrim(obj.eventSpecificiationMethod), 'codes')
+            if strcmpi(strtrim(obj.eventSpecificationMethod), 'codes')
                 
                 if isempty(obj.eventCodesInfo)
                     issue(end+1).description = sprintf('No event code information is provided.');

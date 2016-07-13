@@ -132,7 +132,7 @@ font-size= 7pt
 						</tr>						
 						<tr>
 							<xsl:for-each select="/studyLevel2/studyLevel1">
-								<td>Primary source of event information: <xsl:value-of select="eventSpecificiationMethod"/>
+								<td>Primary source of event information: <xsl:value-of select="eventSpecificationMethod"/>
 								</td>
 							</xsl:for-each>
 						</tr>

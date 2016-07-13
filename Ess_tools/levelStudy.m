@@ -264,7 +264,7 @@ classdef levelStudy
             end;
             
             % add HED tags based on events
-            if ~strcmpi(level1StudyObj.eventSpecificiationMethod, 'Tags')
+            if ~strcmpi(level1StudyObj.eventSpecificationMethod, 'Tags')
                 EEG = addUsertagsToEEG(level1StudyObj, EEG, currentTask);
             end;
             
