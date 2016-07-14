@@ -10,7 +10,7 @@ classdef TimeAxis < BaseAxis
     methods
         function obj =  TimeAxis(varargin)
             obj = obj@BaseAxis;
-            obj = obj.defineAsSubType('TimeAxis');
+            obj = obj.defineAsSubType(mfilename('class'));
             
             obj = obj.setId;
             

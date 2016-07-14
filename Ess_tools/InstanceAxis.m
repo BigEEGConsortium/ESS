@@ -8,7 +8,7 @@ classdef InstanceAxis < BaseAxis
     methods
         function obj =  InstanceAxis(varargin)
             obj = obj@BaseAxis;
-            obj = obj.defineAsSubType('InstanceAxis');
+            obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
             
             obj.typeLabel = 'instance';

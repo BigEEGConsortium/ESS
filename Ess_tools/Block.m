@@ -32,7 +32,7 @@ classdef Block < Entity
     methods
         function obj = Block(varargin)
             obj = obj@Entity;
-            obj = obj.defineAsSubType('Block');
+            obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
             
             if nargin > 0
@@ -189,13 +189,17 @@ classdef Block < Entity
             end
         end;
         
-        function newObj = sliceAxes(obj, varargin)
+        function newObj = select(obj, varargin)
             % Produce a new Block object with input axes
             % and the tensor array sliced to provided axis indices.
             % axis names and their ranges should be provided as
             % 'axis typelabel 1', indices_1, ...
             % for example:
+            %
             % 'time', 1:5, 'channel', 5:15
+            %
+            % or the inices should be given as the extended range syntax, for example:
+            % 'time', {'range', [-1 1]}, 'channel', 5:15
             
             if mod(length(varargin), 2) ~= 0 % if an odd number of arguments presented
                 error('An even number of arguments, with ''key'', value, ''key'', value.. structure should be provided');
@@ -207,7 +211,11 @@ classdef Block < Entity
             for i=1:(length(varargin)/2)
                 j = 1+ (i-1) *2;
                 providedAxesLabel{i} = varargin{j};
-                extendedIndices{i} = {varargin{j}, varargin{j+1}};
+                if iscell(varargin{j+1})
+                    extendedIndices{i} = [varargin(j), varargin{j+1}];
+                else
+                    extendedIndices{i} = {varargin{j}, varargin{j+1}};
+                end;
                 axisSliceMap(varargin{j}) = varargin{j+1};
             end;
             
@@ -303,6 +311,14 @@ classdef Block < Entity
                         end;
                     end;
                 else
+                    if iscell(s.subs{i})
+                        t = s.subs{i};
+                        if ischar(t{1})
+                            error('Axis label ''%s'' not recognized', t{1});
+                        else
+                            error('Axis cell %d index not recognized', i);
+                        end;
+                    end;
                     axisValue{i} = [];
                     newSubs{i} = s.subs{i};
                 end;

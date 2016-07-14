@@ -11,7 +11,7 @@ classdef TrialAxis < InstanceAxis
     methods
         function obj =  TrialAxis(varargin)
             obj = obj@InstanceAxis;
-            obj = obj.defineAsSubType('TrialAxis');
+            obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
             
             obj.typeLabel = 'trial';

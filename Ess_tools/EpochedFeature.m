@@ -6,7 +6,7 @@ classdef EpochedFeature < Block
     methods
         function obj = EpochedFeature
             obj = obj@Block;
-            obj = obj.defineAsSubType('EpochedFeature');
+            obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
         end
         
@@ -63,7 +63,7 @@ classdef EpochedFeature < Block
                 clear robustZFeatures outlierFeature;
             end;
             
-            obj = obj.sliceAxes('trial', find(epochIsClean));
+            obj = obj.select('trial', find(epochIsClean));
             assert(obj.isValid, 'Result is not valid');
             fprintf('%d percent of trials (%d) were removed.\n', round(100*mean(~epochIsClean)), sum(~epochIsClean));
         end;
@@ -87,6 +87,16 @@ classdef EpochedFeature < Block
             trialTimes = trialFrames/ EEG.srate;
             trialHEDStrings = {EEG.event(:).usertags};
             trialEventTypes = {EEG.event(:).type};
+            
+            
+            if ~isempty(inputOptions.eventTypes)
+                id = ismember(trialEventTypes, inputOptions.eventTypes);
+                
+                trialFrames = trialFrames(id);
+                trialTimes = trialTimes(id);
+                trialHEDStrings = trialHEDStrings(id);
+                trialEventTypes = trialEventTypes(id);
+            end;
             
             % remove events of the same type that have too much overlap with their own kind
             if inputOptions.maxSameTypeProximity < max(trialTimes) - min(trialTimes)
@@ -183,6 +193,7 @@ classdef EpochedFeature < Block
             % Extracts epochs from the *first dimension* of input tensor at given indices
             % with provided "number of indices before" (numberOfIndicesBefore)
             % and "number of indices aftr" (numberOfIndicesAfter).
+            %
             % The output tensor will have size of the number of epochs as its first,
             % dimension and the indices associated with the epoch dimension
             % (number of epochs before + 1 + number of epochs after) as its second dimension.

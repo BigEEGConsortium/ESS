@@ -18,7 +18,7 @@ classdef FeatureAxis < BaseAxis
     methods
         function obj =  FeatureAxis(varargin)
             obj = obj@BaseAxis;    
-            obj = obj.defineAsSubType('FeatureAxis');
+            obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
             
             obj.typeLabel = 'feature';

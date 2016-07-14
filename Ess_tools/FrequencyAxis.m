@@ -7,7 +7,7 @@ classdef FrequencyAxis < BaseAxis
     methods
         function obj =  FrequencyAxis(varargin)
             obj = obj@BaseAxis;
-            obj = obj.defineAsSubType('FrequencyAxis');
+            obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
             
             obj.typeLabel = 'frequency';

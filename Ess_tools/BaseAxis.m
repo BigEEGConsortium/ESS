@@ -27,7 +27,7 @@ classdef BaseAxis < Entity
     methods
         function obj = BaseAxis
             obj = obj@Entity;
-            obj = obj.defineAsSubType('BaseAxis');
+            obj = obj.defineAsSubType(mfilename('class'));
         end;
         
         function l = length(obj)

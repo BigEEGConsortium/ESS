@@ -49,18 +49,57 @@ classdef TrialAverage < Block
             %                 arg_sub('select',{},@EpochedFeature.getTrialTimesFromEEGstructure, 'A struct argument. Arguments are as in myotherfunction(), can be assigned as a cell array of name-value pairs or structs.'));
             %
             
+            numberOfChannels = length(obj.getAxis('channel'));
+            
+             numberOfplots = min(numberOfChannels, 3);
+                
+                switch numberOfplots
+                    case 1
+                        rowsColumns = [1 1];
+                    case 2
+                        rowsColumns = [2 1];
+                    case 3
+                        rowsColumns = [3 1];
+                    case 4
+                        rowsColumns = [2 2];
+                    case 5
+                        rowsColumns = [2 3];
+                    case 6
+                        rowsColumns = [2 3];
+                    otherwise
+                        rowsColumns = [3 3];
+                end;
+                            
             if length(obj.axes) == 3
                 
                 relativeSignificance = mean(abs(obj.index({'feature' 'name' 'mean'}, 'channel', 'time')) ./ obj.index({'feature' 'name' 'standard deviation'}, 'channel', 'time'), 3);
                 
-                [dummy sortedChannelId] = sort(relativeSignificance, 'descend');
+                [dummy sortedChannelId] = sort(relativeSignificance, 'descend');                
+               
+                figure;
+                for i=1:numberOfplots
+                    subtightplot(rowsColumns(1), rowsColumns(2), i);                    
+
+                    time = obj.getAxis('time');
+                    line([min(time.times * 1000) max(time.times * 1000)],[0 0], 'LineStyle','-', 'Color', [0.5 0.5 0.5]);
+                    channelId = sortedChannelId(i);
+                    confplot_t(time.times * 1000, vec(obj.index({'feature' 'name' 'mean'}, {'channel', channelId}, 'time')), vec(obj.index({'feature' 'name' 'standard deviation'}, {'channel', channelId}, 'time')), obj.numberOfTrials, 0.05:0.01:0.499,@gray, true);
+                    xlabel('Time (ms)');
+                    legend(['Channel ' num2str(channelId)]);
+                    line([0 0], get(gca, 'ylim'), 'LineStyle','--', 'Color', [0.5 0.5 0.5]);
+                end;
+            elseif length(obj.axes) == 4 % ERSP
+                relativeSignificance = mean(abs(obj.index({'feature' 'name' 'mean'}, 'channel', ':')) ./ obj.index({'feature' 'name' 'standard deviation'}, 'channel', ':'), 3);
                 
-                numberOfplots = max(length(sortedChannelId), 9);
+                [dummy, sortedChannelId] = sort(relativeSignificance, 'descend');
                 
-                time = obj.getAxis('time');
-                channelId = 1;
-                confplot_t(time.times * 1000, vec(obj.index({'feature' 'name' 'mean'}, {'channel', channelId}, 'time')), vec(obj.index({'feature' 'name' 'standard deviation'}, {'channel', channelId}, 'time')), obj.numberOfTrials, 0.05:0.01:0.499,@gray, true);
-                xlabel('Time (ms)');
+                figure;
+                f = obj.getAxis('frequency');
+                t = obj.getAxis('time');
+                for i=1:numberOfplots
+                    subtightplot(rowsColumns(1), rowsColumns(2), i, 0.1);
+                    imagesclogy(t.times, f.frequencies, squeeze(obj.index({'feature' 'name' 'mean'}, {'channel', 1}, 'frequency', 'time')));
+                end;
             end;
         end;
     end
