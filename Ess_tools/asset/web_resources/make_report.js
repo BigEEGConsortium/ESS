@@ -53,7 +53,7 @@ function getLevelHierarchy(studyObj){
 		else if ("studyLevel1" in currentLevel) {
 			studyLevelHierarchyType.unshift('level2');
 			currentLevel = currentLevel.studyLevel1;
-		} else if ("eventSpecificiationMethod" in currentLevel) {
+		} else if ("eventSpecificationMethod" in currentLevel) {
 			studyLevelHierarchyType.unshift('level1');
 			break;
 		}
@@ -149,7 +149,7 @@ for (var i=0; i < level1Study.sessions.length; i++){
 
 extracted.level1.numberOfSubjects = _.uniq(labsIds).length;
 extracted.level1.subjectGroup = _.uniq(groups).toString();
-extracted.level1.eventSpecificiationMethod =  level1Study.eventSpecificiationMethod;
+extracted.level1.eventSpecificationMethod =  level1Study.eventSpecificationMethod;
 
 // count the number of recordings that the same number of channels
 var result = countArrayValues(numberOfRecordingEEGChannels);
