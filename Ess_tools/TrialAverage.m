@@ -1,5 +1,6 @@
 classdef TrialAverage < Block
-    properties        
+    properties
+        featureType
     end;
     
     methods
@@ -31,10 +32,11 @@ classdef TrialAverage < Block
                     
                     obj.tensor(1, 1,:) = vec(mean(trialBlock.index('trial', nonTrialAxisLabels{:})));
                     obj.tensor(1, 2,:) = vec(std(trialBlock.index('trial', nonTrialAxisLabels{:})));
-                    obj.tensor(1, 3,:) = obj.tensor(2,:) / sqrt(obj.numberOfTrials);
+                    obj.tensor(1, 3,:) = obj.tensor(1, 2,:) / sqrt(length(trialBlock.trial));
                     m = median(trialBlock.index('trial', nonTrialAxisLabels{:}));
                     obj.tensor(1, 4,:) = vec(m);
                     obj.tensor(1, 5,:) = vec(median(abs(bsxfun(@minus, trialBlock.index('trial', nonTrialAxisLabels{:}), m))));
+                    obj.featureType = trialBlock.type;
                 end;
             end;
         end
@@ -71,7 +73,7 @@ classdef TrialAverage < Block
                         rowsColumns = [3 3];
                 end;
                             
-            if length(obj.axes) == 3
+            if strfind(obj.featureType, 'ess:Entity/Block/EpochedFeature/EpochedTemporalFeature')
                 
                 relativeSignificance = mean(abs(obj.index({'feature' 'name' 'mean'}, 'channel', 'time')) ./ obj.index({'feature' 'name' 'standard deviation'}, 'channel', 'time'), 3);
                 
@@ -84,12 +86,12 @@ classdef TrialAverage < Block
                     time = obj.getAxis('time');
                     line([min(time.times * 1000) max(time.times * 1000)],[0 0], 'LineStyle','-', 'Color', [0.5 0.5 0.5]);
                     channelId = sortedChannelId(i);
-                    confplot_t(time.times * 1000, vec(obj.index({'feature' 'name' 'mean'}, {'channel', channelId}, 'time')), vec(obj.index({'feature' 'name' 'standard deviation'}, {'channel', channelId}, 'time')), obj.numberOfTrials, 0.05:0.01:0.499,@gray, true);
+                    confplot_t(time.times * 1000, vec(obj.index({'feature' 'name' 'mean'}, {'channel', channelId}, 'time')), vec(obj.index({'feature' 'name' 'standard deviation'}, {'channel', channelId}, 'time')), obj.getAxis('trialGroup').getGroupNumberOfTrials(1), 0.05:0.01:0.499,@gray, true);
                     xlabel('Time (ms)');
                     legend(['Channel ' num2str(channelId)]);
                     line([0 0], get(gca, 'ylim'), 'LineStyle','--', 'Color', [0.5 0.5 0.5]);
                 end;
-            elseif length(obj.axes) == 4 % ERSP
+            elseif  strfind(obj.featureType, 'ess:Entity/Block/EpochedFeature/EpochedTimeFrequencyFeature')
                 relativeSignificance = mean(abs(obj.index({'feature' 'name' 'mean'}, 'channel', ':')) ./ obj.index({'feature' 'name' 'standard deviation'}, 'channel', ':'), 3);
                 
                 [dummy, sortedChannelId] = sort(relativeSignificance, 'descend');

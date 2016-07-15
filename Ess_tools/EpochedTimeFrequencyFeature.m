@@ -107,7 +107,7 @@ classdef EpochedTimeFrequencyFeature < EpochedFeature
             obj.axes{2} = TrialAxis('times', trialTimes, 'hedStrings', trialHEDStrings, 'codes', trialEventTypes);
             obj.axes{3} = TimeAxis('times', frameTimes(sampleIds), 'nominalRate', inputOptions.temporalSampling);
             obj.axes{4} = FrequencyAxis('frequencies', freqs(freqSortIds));
-
+    
             
             assert(obj.isValid, 'Result is not valid');
         end

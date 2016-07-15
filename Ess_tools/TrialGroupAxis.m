@@ -1,4 +1,4 @@
-classdef TrialGroup < InstanceAxis
+classdef TrialGroupAxis < InstanceAxis
     % A group of trials, often selected based on a particular criteria such 
     % as matching a HED tag or having the same event code.This axis represents
     % multiple groups, each group having a "common HED string". All information
@@ -10,7 +10,7 @@ classdef TrialGroup < InstanceAxis
         descriptions % a cell array of strings containing human-readable descriptions of trial groups. Optional.
     end;
     methods
-        function obj =  TrialGroup(varargin)
+        function obj =  TrialGroupAxis(varargin)
             obj = obj@InstanceAxis;
             obj = obj.defineAsSubType(mfilename('class'));
             obj = obj.setId;
@@ -64,7 +64,11 @@ classdef TrialGroup < InstanceAxis
             obj.groups = inputOptions.groups(:);
             obj.descriptions = inputOptions.descriptions(:);
             obj.cells = inputOptions.cells(:);
-        end            
+        end      
+        
+        function number = getGroupNumberOfTrials(obj, groupNumber)
+            number = length(obj.groups{groupNumber});
+        end;
         
         function matchVector = getHEDMatch(obj, queryHEDString)
             % matchVector = getHEDMatch(obj, queryHEDString)
