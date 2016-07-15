@@ -1,6 +1,5 @@
 classdef TrialAverage < Block
-    properties
-        numberOfTrials
+    properties        
     end;
     
     methods
@@ -12,9 +11,12 @@ classdef TrialAverage < Block
             if nargin > 0
                 if isa(varargin{1}, 'Block')
                     trialBlock = varargin{1};
-                    obj.axes{1} = FeatureAxis('names', {'mean', 'standard deviation', 'standard deviation of mean', 'median', 'median absolute deviation'});
+                    
+                    obj.axes{1} = TrialGroupAxis('groups', {trialBlock.trial});
+                    obj.axes{2} = FeatureAxis('names', {'mean', 'standard deviation', 'standard deviation of mean', 'median', 'median absolute deviation'});
+
                     nonTrialAxisLabels = {};
-                    axesLengths = length(obj.axes{1});
+                    axesLengths = [length(obj.axes{1}) length(obj.axes{2})];
                     for i=1:length(trialBlock.axes)
                         if strcmp(trialBlock.axes{i}.typeLabel, 'trial')
                             numberOfTrials = length(trialBlock.axes{i});
@@ -25,15 +27,14 @@ classdef TrialAverage < Block
                         end;
                     end
                     
-                    obj.numberOfTrials = length(trialBlock.trial);
                     obj.tensor = zeros(axesLengths);
                     
-                    obj.tensor(1,:) = vec(mean(trialBlock.index('trial', nonTrialAxisLabels{:})));
-                    obj.tensor(2,:) = vec(std(trialBlock.index('trial', nonTrialAxisLabels{:})));
-                    obj.tensor(3,:) = obj.tensor(2,:) / sqrt(obj.numberOfTrials);
+                    obj.tensor(1, 1,:) = vec(mean(trialBlock.index('trial', nonTrialAxisLabels{:})));
+                    obj.tensor(1, 2,:) = vec(std(trialBlock.index('trial', nonTrialAxisLabels{:})));
+                    obj.tensor(1, 3,:) = obj.tensor(2,:) / sqrt(obj.numberOfTrials);
                     m = median(trialBlock.index('trial', nonTrialAxisLabels{:}));
-                    obj.tensor(4,:) = vec(m);
-                    obj.tensor(5,:) = vec(median(abs(bsxfun(@minus, trialBlock.index('trial', nonTrialAxisLabels{:}), m))));
+                    obj.tensor(1, 4,:) = vec(m);
+                    obj.tensor(1, 5,:) = vec(median(abs(bsxfun(@minus, trialBlock.index('trial', nonTrialAxisLabels{:}), m))));
                 end;
             end;
         end

@@ -4,9 +4,9 @@ classdef TrialAxis < InstanceAxis
     properties
         times % A numerical array with time (in seconds) for each trial relative to the start of its data recording.
         codes % maps to EEGLAB event code: EEG.event(x).type
-        hedStrings % maps to EEG.event(x).usertags combined with EG.event(x).hedtags
+        hedStrings % maps to EEG.event(x).usertags combined with EG.event(x).hedtags        
+        dataRecordingIds % a cell array with ids of the data recordings for trials, one id for each trial. 
         % eventContext
-       % dataRecordingIds % a cell array with ids of the data recordings for each trials, one id for each trial. 
     end;
     methods
         function obj =  TrialAxis(varargin)
@@ -15,7 +15,7 @@ classdef TrialAxis < InstanceAxis
             obj = obj.setId;
             
             obj.typeLabel = 'trial';
-            obj.perElementProperties = [obj. perElementProperties {'times' 'codes' 'hedStrings'}];
+            obj.perElementProperties = [obj.perElementProperties {'times' 'codes' 'hedStrings' 'dataRecordingIds'}];
 
 
             inputOptions = arg_define(varargin, ...
@@ -34,13 +34,19 @@ classdef TrialAxis < InstanceAxis
             % place empty elements for instances, code and hed strings. 
             if isempty(inputOptions.cells)
                 inputOptions.cells = cell(length(inputOptions.times), 1);
-            end;
+            end;                        
             
             if isempty(inputOptions.codes)
                 for i=1:length(inputOptions.times)
                     inputOptions.codes{i} = '';
                 end;
             end;
+            
+            if isempty(inputOptions.dataRecordingIds)
+                for i=1:length(inputOptions.times)
+                    inputOptions.dataRecordingIds{i} = '';
+                end;
+            end;            
             
             if isempty(inputOptions.hedStrings)
                 for i=1:length(inputOptions.times)
@@ -83,7 +89,7 @@ classdef TrialAxis < InstanceAxis
             switch  rangeCell{1}
                 case'range' % the value for range should be in the form of [min max]
                     idMask = obj.times >= rangeCell{2}(1) & obj.times <= rangeCell{2}(2);
-                case 'match' % to be used as {'trial' 'match' 'hedtags1, hedtag2, ...'}
+                case 'match' % to be used as {'trial' 'match' '[HED string]'}
                     idMask = getHEDMatch(obj, rangeCell{2});
                 otherwise
                     error('Range string not recognized');

@@ -1297,7 +1297,11 @@ classdef level1Study < levelStudy;
                 sessionTaskLabelElement = docNode.createElement('taskLabel');
                 sessionTaskLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).taskLabel));
                 sessionRootNode.appendChild(sessionTaskLabelElement);                      
-                                 
+                
+                purposeElement = docNode.createElement('purpose');
+                purposeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).purpose));
+                sessionRootNode.appendChild(purposeElement);
+                
                 labIdElement = docNode.createElement('labId');
                 labIdElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).labId));
                 sessionRootNode.appendChild(labIdElement);
