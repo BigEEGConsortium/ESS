@@ -1,4 +1,4 @@
-function [eventCode eventHEDString eventCount tag tagEventCode tagEventCount uniqueTag uniqueTagId originTagIds] = analyze_event_instances(originalEventCode, originalEventLatency, originalEventHEDString);
+function [eventCode, eventHEDString, eventCount, tag, tagEventCode, tagEventCount]= analyze_event_instances(originalEventCode, originalEventLatency, originalEventHEDString);
 % [eventCode eventHEDString eventCount tag tagEventCode tagEventCount uniqueTag uniqueTagId originTagIds] = analyze_event_instances(originalEventCode, originalEventLatency, originalEventHEDString);
 
 % get unique combinations of event code and hed strings
@@ -30,7 +30,8 @@ if nargout > 6
         codeId = find(originTagIds == i);
         uniqueTagEventCodes{i} =  tagEventCode(codeId);
         uniqueTagEventCodeCounts{i} =  tagEventCount(codeId);
-        uniqueTagNumberOfEventCodes(i) = length(codeId);
+        p =  uniqueTagEventCodes{i} / sum(uniqueTagEventCodes{i});       
+        uniqueTagEntropy(i) = sum(p.*log(p));
         for j=1:length(codeId)
             tagText{i} = [tagText{i} 'event ' tagEventCode{codeId(j)} '(' num2str(tagEventCount(codeId(j))) '),'];
         end

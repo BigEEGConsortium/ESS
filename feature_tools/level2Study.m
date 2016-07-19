@@ -848,6 +848,11 @@ classdef level2Study < levelStudy;
                 
             end;
             
+            c = cell2mat({obj.level1StudyObj.eventCodesInfo.condition});
+            if any(cell2mat((strfind({c.tag}, 'Action/Type'))))
+                issue(end+1).description = sprintf('Legacy HED tag ''Action/Type/'' detected. Please update this tag to ''Action/'' and redo the event instance files.');
+            end;
+            
             % display issues
             if isempty(issue)
                 fprintf('There are no issues. Great!\n');
