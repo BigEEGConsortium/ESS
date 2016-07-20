@@ -112,7 +112,8 @@ classdef Block < Entity
             end;
         end;
         
-        function axis = getAxis(obj, axisType)
+        function [axis, id]= getAxis(obj, axisType)
+            % [axis, id]= getAxis(obj, axisType)
             axesTypes = obj.axesTypeLabels;
             [wasMember, id]= ismember(axisType, axesTypes);
             if wasMember
@@ -278,6 +279,8 @@ classdef Block < Entity
         end;
         
         function newObj = horzcat(obj, obj2)
+            for 
+            
             newObj = Block;
         end;
     end

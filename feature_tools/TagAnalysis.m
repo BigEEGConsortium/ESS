@@ -25,10 +25,12 @@ classdef TagAnalysis < Entity
                             % events from different studies are always assumed to have different codes. 
         tagSummaryText = {}      % a summary description of tag properties.
         tagEntropy = []       % Shannon Entropy of tag occurances across different event codes.
+        tagStudies = {}    % studies in which the tag has an associated event code.
+        tagNumberOfStudies = [] % number of studies in which the tag has an associated event code.
+        tagTotalInstances = []; % total number of events, from any study, in which the tag is present.
     end
     
-    methods
-        
+    methods        
         function obj = TagAnalysis
             obj = obj@Entity;
             obj = obj.defineAsSubType(mfilename('class'));
@@ -56,9 +58,34 @@ classdef TagAnalysis < Entity
             % or have strings pointing to ESS containers (currently only level 2 supported as a
             % folder).
             
-            filenames = obj.getFilename('filetype', 'event');
-            for i=1:length(filenames)
-                obj = obj.addFromEventInstanceFile(filenames{i});
+            if ~iscell(essObjOrFolders)
+                essObjOrFolders = {essObjOrFolders};
+            end;                                                       
+
+            for j=1:length(essObjOrFolders)
+                if ischar(essObjOrFolders{j})
+                    essObj = level2Study(essObjOrFolders{j});
+                else
+                    essObj = essObjOrFolders{j};
+                end;
+                
+                filenames = essObj.getFilename('filetype', 'event');
+                shortStudyName = strrep(strrep(essObj.title, '-', ''), ' ', '_'); % remove - and replace spaces with _
+                if length(shortStudyName) > 15
+                    shortStudyName = shortStudyName(1:15);
+                end;
+                
+                if isempty(shortStudyName)
+                    error('Container study name is empty');
+                end;
+                
+                fprintf('Reading event instances from study %s.\n', essObj.title);
+                fprintf('File (of %d):', length(filenames))
+                for i=1:length(filenames)
+                    fprintf(' %d,', i);
+                    obj = obj.addFromEventInstanceFile(filenames{i}, shortStudyName);
+                end;
+                fprintf('\n Finished.\n');
             end;
         end;
         
@@ -71,12 +98,20 @@ classdef TagAnalysis < Entity
             obj.tagNumberOfEventCodes = [];
             obj.tagSummaryText = {};
             obj.tagEntropy = [];
+            obj.tagTotalInstances = [];
         end
         
         function obj = update(obj)
             % get unique combinations of event code and hed strings
             randomString = getUuid;
-            combined = strcat(obj.eventInstanceCodes, randomString, obj.eventInstanceHEDStrings);
+            
+            combined = cell(length(obj.eventInstanceCodes), 1);
+            for i=1:length(obj.eventInstanceCodes)
+                combined{i} = [obj.eventInstanceCodes{i} randomString obj.eventInstanceHEDStrings{i}];
+            end;
+            % combined = strcat(obj.eventInstanceCodes, randomString, obj.eventInstanceHEDStrings); % above was a bit faster.
+            
+            
             [dummy uniqueStringId originIds] = unique(combined, 'stable');
             obj.eventCodes = obj.eventInstanceCodes(uniqueStringId);
             obj.eventHEDStrings = obj.eventInstanceHEDStrings(uniqueStringId);
@@ -129,12 +164,49 @@ classdef TagAnalysis < Entity
             uniqueTagEventInstanceCounts = uniqueTagEventInstanceCounts(ord);
             uniqueTagText = uniqueTagText(ord);
             
-            obj.tags = uniqueTag;
-            obj.tagEventCodes = uniqueTagEventCodes;
-            obj.tagEventInstanceCounts = uniqueTagEventInstanceCounts;
-            obj.tagEntropy = uniqueTagEntropy;
-            obj.tagNumberOfEventCodes = cellfun(@length, uniqueTagEventCodes);
-            obj.tagSummaryText = uniqueTagText;
+            obj.tags = uniqueTag(:);
+            obj.tagEventCodes = uniqueTagEventCodes(:);
+            obj.tagEventInstanceCounts = uniqueTagEventInstanceCounts(:);
+            obj.tagTotalInstances = cellfun(@sum, obj.tagEventInstanceCounts);
+            obj.tagEntropy = uniqueTagEntropy(:);
+            obj.tagNumberOfEventCodes = vec(cellfun(@length, uniqueTagEventCodes));
+            obj.tagSummaryText = uniqueTagText(:);
+            
+            obj.tagStudies = cell(length(obj.tagEventCodes), 1);
+            for i=1:length(obj.tagEventCodes)
+                events = obj.tagEventCodes{i};
+                studies = cell(length(events), 1);
+                for j=1:length(events)
+                     studies{j} = events{j}(1:(find(events{j}== '-', 1) - 1));
+                end;
+                obj.tagStudies{i} = unique(studies);
+            end;
+                
+            obj.tagNumberOfStudies = vec(cellfun(@length, obj.tagStudies));
+            
+        end;
+        
+        function ids = find(obj, varargin)
+            ids = find(obj.tagNumberOfStudies > 1);
+           
+            skiptags = {'Event', 'Event/Description',  'Event/Label', 'Event/Category' 'Participant'  'Attribute'  'Item'  'Attribute/Onset'};
+            skipIds = find(ismember(obj.tags, skiptags));
+            
+            ids = setdiff(ids, skipIds);
+            
+            % sort by tag entropy
+            e = obj.tagEntropy(ids);
+            [dumy, ord] = sort(e, 'descend');
+            ids = ids(ord);
+        end;
+        
+        function outTable = getTable(obj, ids)
+            % outTable = getTable(obj, ids)
+            % creates a table from the most useful information using 
+            % the subset of tags indicated in 'ids' input variable. 
+            outTable = table(obj.tagTotalInstances(ids), obj.tagNumberOfEventCodes(ids),obj.tagNumberOfStudies(ids),...
+                obj.tagEntropy(ids), 'RowNames', obj.tags(ids),... 
+                'VariableNames', {'Total_Instances', 'Number_of_Codes', 'Number_of_Studies', 'Shannon_Entropy'});
         end;
     end
     
