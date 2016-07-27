@@ -20,9 +20,24 @@ classdef InstanceAxis < BaseAxis
                     arg('cells', [], [],'A cell array with information for each "instance" element.')...
                     );
                 
-                obj.cells = inputOptions.cells;
+                obj.cells = inputOptions.cells(:);
             end;
         end
         
+        function newObj = horzcat(obj, obj2)
+             if ~obj.isValid || ~obj2.isValid
+                error('One or more of the Instance Axis type objects is invalid.');
+            end;
+            
+            newObj = obj;
+            newObj = setAsNewlyCreated(newObj);
+            newObj = newObj.setId;
+            newObj.description = '';
+            for i=1:length(obj.perElementProperties)
+                newObj.(obj.perElementProperties{i}) = cat(1, obj.(obj.perElementProperties{i}), obj2.(obj.perElementProperties{i}));
+            end;
+            
+            assert(newObj.isValid, 'The final, concatenated, instance axis is invalid.');
+        end
     end;
 end

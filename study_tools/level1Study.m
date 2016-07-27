@@ -2161,9 +2161,9 @@ classdef level1Study < levelStudy;
                 
                 for i=1:length(obj.eventCodesInfo)
                     try
-                    errors = validateCellTags({obj.eventCodesInfo(i).condition.tag});
+                        errors = validatecell({obj.eventCodesInfo(i).condition.tag});
                     catch err
-                    fprintf('Encountered error \n%s\n while trying to validate the HED tag %s.\n', err.message, obj.eventCodesInfo(i).condition.tag);
+                        fprintf('Encountered error \n%s\n while trying to validate the HED tag %s.\n', err.message, obj.eventCodesInfo(i).condition.tag);
                     end;
                     if ~isempty(errors)
                         errors{1} = strrep(errors{1}, 'Errors in cell 1:', '');

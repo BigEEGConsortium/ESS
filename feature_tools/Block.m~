@@ -293,23 +293,17 @@ classdef Block < Entity
             objAxisMatchId = nan(length(obj.axes), 1);
             for i=1:length(obj.axes)                
                 for j=1:length(obj2.axes)
-                    warning off MATLAB:structOnObject
                     objAxis = struct(obj.axes{i});
                     obj2Axis = struct(obj2.axes{j});
-                    warning on MATLAB:structOnObject
                     
-                    ignoredProperties = {'id', 'description', 'custom', 'dateCreated'};
-                    for k = 1:length(ignoredProperties)
-                        objAxis = rmfield(objAxis, ignoredProperties{k});
-                        obj2Axis = rmfield(obj2Axis, ignoredProperties{k});
-                    end;
+                    ig
                    
-                    if strcmp(obj.axes{i}.type, obj2.axes{j}.type)                        
+                    if strcmp(obj.axes{i}.type, obj2.axes{i}.type)                        
                         if  strfind(obj.axes{i}.type, 'ess:Entity/BaseAxis/InstanceAxis') == 1 % both are of instance axis types
                             objAxisMatchId(i) = j;
                             ObjInstanceAxis = i;
                             Obj2InstanceAxis = j;
-                        elseif isequal(objAxis, obj2Axis)
+                        elseif isequal(obj.axes{i}, obj2.axes{j})
                             objAxisMatchId(i) = j;
                         end;
                     end;
