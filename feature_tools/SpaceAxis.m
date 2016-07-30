@@ -14,6 +14,8 @@ classdef SpaceAxis < BaseAxis
             obj = obj.setId;
             obj.typeLabel = 'space';
             obj. perElementProperties = [obj. perElementProperties {'labels' 'positions'}];
+            obj.intersectionPerItemProperties = {'labels'};
+            obj.intersectionEqualityProperties = [obj.intersectionEqualityProperties {'namingSystem'}];
             
             if nargin > 0
                 inputOptions = arg_define(varargin, ...

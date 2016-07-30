@@ -45,7 +45,7 @@ classdef FeatureAxis < BaseAxis
             
             if isempty(providedPerElementProperties)
                 if isempty(inputOptions.length)
-                    error('Either ''length'' or at least one per-item properity must be provided.');
+                    inferredLength = 0;
                 else % length is provided
                     inferredLength = inputOptions.length;                    
                 end

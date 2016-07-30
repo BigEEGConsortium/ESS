@@ -21,20 +21,20 @@ classdef TrialAxis < InstanceAxis
             inputOptions = arg_define(varargin, ...
                 arg('length', [], [0 Inf],'Number of trials. Optional as it will otherwise deduced from other inputs.'),...
                 arg('times', [], [],'A numerical array with time. In seconds for each trial relative to the start of its data recording.'),...
-                arg('cells', {}, {},'A cell array with information for each "instance" element.'),...
+                arg('payloads', {}, {},'A cell array with information for each "instance" element.'),...
                 arg('codes', {}, {},'A cell array with trial event codes.', 'type', 'cellstr'),...
                 arg('dataRecordingIds', {}, {},'A cell array with trial event codes.', 'type', 'cellstr'),...
                 arg('hedStrings', {}, {},'A cell array with trial event HED strings. Each HED string is associatd with one trial', 'type', 'cellstr')...
                 );
             
             
-            if ~isempty(inputOptions.times) && ~isempty(inputOptions.cells) && length(inputOptions.cells) ~= inputOptions.times
-                error('If both "times" and "cells" are provided, they need to have the same length.');
+            if ~isempty(inputOptions.times) && ~isempty(inputOptions.payloads) && length(inputOptions.payloads) ~= inputOptions.times
+                error('If both "times" and "payloads" are provided, they need to have the same length.');
             end;
             
             % place empty elements for instances, code and hed strings. 
-            if isempty(inputOptions.cells)
-                inputOptions.cells = cell(length(inputOptions.times), 1);
+            if isempty(inputOptions.payloads)
+                inputOptions.payloads = cell(length(inputOptions.times), 1);
             end;                        
             
             if isempty(inputOptions.codes)
@@ -57,17 +57,24 @@ classdef TrialAxis < InstanceAxis
             
             % try to extract times from 'time' field of instances
             if isempty(inputOptions.times) 
-                obj.times = zeros(length(inputOptions.cells), 1);
-                for i=1:length(inputOptions.cells)
-                    if isfield(inputOptions.cells{i}, 'time') && ~isempty(inputOptions.cells{i}.time)
-                        obj.times(i) = inputOptions.cells{i}.time;
+                obj.times = zeros(length(inputOptions.payloads), 1);
+                for i=1:length(inputOptions.payloads)
+                    if isfield(inputOptions.payloads{i}, 'time') && ~isempty(inputOptions.payloads{i}.time)
+                        obj.times(i) = inputOptions.payloads{i}.time;
                     else
                         error('Failed to extract "times" from "time" field of "instances"');
                     end;
                 end;
             end;
             
-            obj.cells = inputOptions.cells(:);
+            % fix legacy Action/Type tag     
+            if any(cell2mat(strfind(inputOptions.hedStrings, 'Action/Type')))
+                inputOptions.hedStrings = strrep(inputOptions.hedStrings, 'Action/Type/', 'Action/');
+                fprintf('Legacy ''Action/Type'' tag detected and fixed.\n');
+            end;
+            
+            
+            obj.payloads = inputOptions.payloads(:);
             obj.times = inputOptions.times(:);
             obj.codes = inputOptions.codes(:);
             obj.hedStrings = inputOptions.hedStrings(:);
@@ -81,8 +88,8 @@ classdef TrialAxis < InstanceAxis
             [uniqueHedStrings, dummy, ids]= unique(obj.hedStrings);
             matchVector = false(length(obj.hedStrings), 1);
             for i=1:length(uniqueHedStrings)
-                events.usertags = uniqueHedStrings{i};
-                matchVector(ids == i) = findTagMatchEvents(events, queryHEDString);
+                EEG.event.usertags = uniqueHedStrings{i};
+                matchVector(ids == i) = ~isempty(findTagMatchEvents(EEG, 'tags', queryHEDString));
             end;
 
         end;

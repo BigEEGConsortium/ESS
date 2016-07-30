@@ -3,6 +3,7 @@ classdef FrequencyAxis < BaseAxis
     
     properties
         frequencies % An array of frequencies points for each element, in Hz
+        
     end;
     methods
         function obj =  FrequencyAxis(varargin)
@@ -11,6 +12,7 @@ classdef FrequencyAxis < BaseAxis
             obj = obj.setId;
             
             obj.typeLabel = 'frequency';
+            obj.intersectionPerItemProperties = {'frequencies'};
             obj. perElementProperties = [obj. perElementProperties {'frequencies'}];
             
             inputOptions = arg_define(varargin, ...              

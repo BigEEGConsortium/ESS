@@ -2,7 +2,7 @@ classdef TrialGroupAxis < InstanceAxis
     % A group of trials, often selected based on a particular criteria such 
     % as matching a HED tag or having the same event code.This axis represents
     % multiple groups, each group having a "common HED string". All information
-    % about single-trials in the groupis placed in items of "cells" property.
+    % about single-trials in the groupis placed in items of "groups" property.
 
     properties
         commonHedStrings % HED string that all the trials in the group match to. Mandatory if trial groups were selected by matching to a single HED string.
@@ -21,7 +21,7 @@ classdef TrialGroupAxis < InstanceAxis
             inputOptions = arg_define(varargin, ...
                 arg('groups', {}, {},'A cell array with one or more TrialAxis. One for for each trial group. Mandatory.'),...
                 arg('commonHedStrings', {}, {},'A cell array with trial groups HED strings. All trials in each group match the corresponding ''common HED string''.', 'type', 'cellstr'),...
-                arg('cells', {}, {},'A cell array with extra information for each ''group''.'),...
+                arg('payloads', {}, {},'A cell array with extra information for each ''group''.'),...
                 arg('descriptions', {}, {},'A cell array with trial groups HED strings. All trials in each group match the corresponding ''common HED string''.', 'type', 'cellstr')...                            
             );
             
@@ -30,7 +30,7 @@ classdef TrialGroupAxis < InstanceAxis
                 error('Missing items in ''groups'' variable (at least one other per-item array contains more items)');
             end;
             
-            otherfields = {'commonHedStrings' 'descriptions' 'cells'};
+            otherfields = {'commonHedStrings' 'descriptions' 'payloads'};
             for i=1:length(otherfields)
                 if ~isempty(inputOptions.groups) && ~isempty(inputOptions.(otherfields{i})) && length(inputOptions.groups) ~= length(inputOptions.(otherfields{i}))
                     error('If both "groups" and ''%s'' are provided, they need to have the same length.', otherfields{i});
@@ -56,14 +56,14 @@ classdef TrialGroupAxis < InstanceAxis
             end;
             
             % place empty elements for instances, code and hed strings.
-            if isempty(inputOptions.cells)
-                inputOptions.cells = cell(length(inputOptions.groups), 1);
+            if isempty(inputOptions.payloads)
+                inputOptions.payloads = cell(length(inputOptions.groups), 1);
             end;   
             
             obj.commonHedStrings = inputOptions.commonHedStrings(:);
             obj.groups = inputOptions.groups(:);
             obj.descriptions = inputOptions.descriptions(:);
-            obj.cells = inputOptions.cells(:);
+            obj.payloads = inputOptions.payloads(:);
         end      
         
         function number = getGroupNumberOfTrials(obj, groupNumber)

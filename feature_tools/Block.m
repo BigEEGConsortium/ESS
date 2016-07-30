@@ -255,8 +255,13 @@ classdef Block < Entity
         
         function valid = isValid(obj)
             valid = true;
-            s = size(obj.tensor);
             
+            if isempty(obj)
+                return ;
+            end;
+            
+            s = size(obj.tensor);
+                        
             valid = length(s) == length(obj.axes);
             if ~valid
                 fprintf('Number of axis is different than dimensions of tensor\n');
@@ -279,6 +284,14 @@ classdef Block < Entity
         end;
         
         function newObj = horzcat(obj, obj2)
+            % concatenates objects via the first axis of type Instance (or subclasses)
+            if isempty(obj)
+                newObj = obj2;
+                return;
+            elseif isempty(obj2)
+                newObj = obj;
+                return;
+            end;
             
             if ~obj.isValid || ~obj2.isValid
                 error('One or more of the Block-type objects is invalid.');
@@ -291,26 +304,25 @@ classdef Block < Entity
             ObjInstanceAxis = [];
             Obj2InstanceAxis = [];
             objAxisMatchId = nan(length(obj.axes), 1);
-            for i=1:length(obj.axes)                
-                for j=1:length(obj2.axes)
-                    warning off MATLAB:structOnObject
-                    objAxis = struct(obj.axes{i});
-                    obj2Axis = struct(obj2.axes{j});
-                    warning on MATLAB:structOnObject
-                    
-                    ignoredProperties = {'id', 'description', 'custom', 'dateCreated'};
-                    for k = 1:length(ignoredProperties)
-                        objAxis = rmfield(objAxis, ignoredProperties{k});
-                        obj2Axis = rmfield(obj2Axis, ignoredProperties{k});
-                    end;
-                   
+            objAxisSubset = {};
+            obj2AxisSubset = {};
+            
+            for i=1:length(obj.axes)   
+                axisIdsLeft = setdiff(1:length(obj2.axes), objAxisMatchId(~isnan(objAxisMatchId)));
+                for j=axisIdsLeft                                      
                     if strcmp(obj.axes{i}.type, obj2.axes{j}.type)                        
-                        if  strfind(obj.axes{i}.type, 'ess:Entity/BaseAxis/InstanceAxis') == 1 % both are of instance axis types
+                        if  isempty(ObjInstanceAxis) && strfind(obj.axes{i}.type, 'ess:Entity/BaseAxis/InstanceAxis') == 1 % both are of instance axis types
                             objAxisMatchId(i) = j;
                             ObjInstanceAxis = i;
                             Obj2InstanceAxis = j;
-                        elseif isequal(objAxis, obj2Axis)
-                            objAxisMatchId(i) = j;
+                        else
+                            axis = obj.axes{i};
+                            [intersectObj, idObj, idObj2]= axis.intersect(obj2.axes{j});
+                            if ~isempty(intersectObj)
+                                objAxisMatchId(i) = j;
+                                objAxisSubset{i} = idObj;
+                                obj2AxisSubset{i} = idObj2;
+                            end;
                         end;
                     end;
                 end;
@@ -323,16 +335,39 @@ classdef Block < Entity
             if isempty(ObjInstanceAxis) || isempty(Obj2InstanceAxis)
                 error('No axis of (sub)type ''instance'' found to concatenate objects across.');
             end;
-                                   
-            newObj = obj;
+            
+            % prepare subindexing cell array for both objects.
+            objIndexCell = {};
+            obj2IndexCell = {};
+            for i=1:length(obj.axes)
+                if i~=ObjInstanceAxis
+                    objIndexCell{end+1} = obj.axes{i}.typeLabel;
+                    objIndexCell(end+1) = objAxisSubset(i);
+                    
+                    obj2IndexCell{end+1} = obj2.axes{i}.typeLabel;
+                    obj2IndexCell(end+1) = obj2AxisSubset(i);
+                end
+            end;
+            
+            newObj = obj.select(objIndexCell{:});
             newObj = setAsNewlyCreated(newObj);
             newObj = newObj.setId;
-            newObj.description = '';
-            newObj.custom = '';
-            newObj.tensor = cat(ObjInstanceAxis, obj.tensor, permute(obj2.tensor, objAxisMatchId));
-            newObj.axes{ObjInstanceAxis} = [obj.axes{ObjInstanceAxis} obj2.axes{Obj2InstanceAxis}];
+            if ~isequal(obj.description, newObj.description)
+                newObj.description = '';
+            end
+            if ~isequal(obj.custom, newObj.custom)
+                newObj.custom = '';
+            end;
+            
+            slicedObj2 = obj2.select(obj2IndexCell{:});
+            newObj.tensor = cat(ObjInstanceAxis, newObj.tensor, permute(slicedObj2.tensor, objAxisMatchId));
+            newObj.axes{ObjInstanceAxis} = [newObj.axes{ObjInstanceAxis} slicedObj2.axes{Obj2InstanceAxis}];
             
             assert(newObj.isValid, 'The final, concatenated, object is invalid.');
+        end;
+        
+        function itIs = isempty(obj)
+            itIs = isempty(obj.tensor);
         end;
     end
     methods (Access = 'protected')

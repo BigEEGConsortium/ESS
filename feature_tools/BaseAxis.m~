@@ -47,10 +47,10 @@ classdef BaseAxis < Entity
             end;
         end
         
-        function [sref, varargout] = subsref(obj, s)
+        function sref = subsref(obj, s)
             switch s(1).type
                 case '.'
-                    [sref, varargout{1:(nargout-1)}] = builtin('subsref',obj,s);
+                    sref = builtin('subsref',obj,s);
                 case '()'
                     for j=1:length(s) % to handle t(1:5).times case, t  = Time
                         if j == 1
@@ -71,7 +71,7 @@ classdef BaseAxis < Entity
                             
                             sref = sref.setAsNewlyCreated;
                         else
-                            [sref, varargout{1:(nargout-1)}] = builtin('subsref',sref,s(j));
+                            sref = builtin('subsref',sref,s(j));
                         end;
                     end;
                     return
@@ -106,7 +106,7 @@ classdef BaseAxis < Entity
             % this function is overriden in child classes. 
         end;
         
-        function [intersectionAxis, idObj, idOthrObj]= intersect(obj, otherAxisObj)
+        function [intersectionAxis idObj idOthrObj]= intersect(obj, otherAxisObj)
             intersectionAxis = [];
             idObj = [];
             idOthrObj = [];
@@ -119,31 +119,23 @@ classdef BaseAxis < Entity
             idObj = 1:length(obj);
             idOthrObj = 1:length(otherAxisObj);
             for i=1:length(obj.intersectionPerItemProperties)
-                warning off 'MATLAB:INTERSECT:RowsFlagIgnored'
                 [dummy ia ib] = intersect(obj.(obj.intersectionPerItemProperties{i}), otherAxisObj.(obj.intersectionPerItemProperties{i}), 'rows', 'stable');
-                warning on 'MATLAB:INTERSECT:RowsFlagIgnored'
                 idObj = intersect(idObj, ia);
                 idOthrObj = intersect(idOthrObj, ib);
             end;
             
             intersectionAxis = obj.index(idObj);
             
-            % place appropriate nan, etc values for properties that differ across axes and have not
-            % been used in intersection ovrlap calculation
             otherPerItemProperties = setdiff(obj.perElementProperties, obj.intersectionPerItemProperties);
             for i = 1:length(otherPerItemProperties)
                 for j=1:length(idObj)
-                    if ~isequal(obj.(otherPerItemProperties{i})(idObj(j)), otherAxisObj.(otherPerItemProperties{i})(idOthrObj(j)))
-                        switch class(intersectionAxis.(otherPerItemProperties{i})(j,:))
-                            case 'char'
-                                intersectionAxis.(otherPerItemProperties{i})(j) = '';
-                            case 'cell'
-                                intersectionAxis.(otherPerItemProperties{i})(j,:) = {};
-                            case {'single' 'double' 'float' 'int' 'int32' 'int16' 'int8', 'uint32' 'uint16' 'uint8'}
-                                intersectionAxis.(otherPerItemProperties{i})(j,:) = nan(1, size(intersectionAxis.(otherPerItemProperties{i})(j), 2));
-                            case 'struct'
-                                intersectionAxis.(otherPerItemProperties{i})(j,:) = struct;
-                        end;
+                if ~isequal(obj.(otherPerItemProperties{i})(idObj(j)), otherAxisObj.(otherPerItemProperties{i})(idOthrObj(j)))
+                    switch class(intersectionAxis.(otherPerItemProperties{i})(j))
+                        case 'char'
+                            intersectionAxis.(otherPerItemProperties{i})(j) = '';
+                        case 'cell'
+                            intersectionAxis.(otherPerItemProperties{i})(j) = {};
+                        case {'single' 'double' 'float' 'int' 'int32' 'int16' 'int8', 'uint32' 'uint
                     end;
                 end;
             end;
