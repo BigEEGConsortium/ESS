@@ -944,7 +944,7 @@ classdef level2Study < levelStudy;
             objAsStructure.studyLevel2SchemaVersion = '1.1.0';
             objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
             objAsStructure.dateModified = objAsStructure.dateCreated;
-            objAsStructure.id = ['ess:study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
+            objAsStructure.id = ['studylevel2_' obj.uuid];
             objAsStructure = rmfield(objAsStructure, 'uuid');
             
             clear jsonfilters;

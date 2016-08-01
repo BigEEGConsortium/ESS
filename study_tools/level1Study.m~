@@ -1901,8 +1901,8 @@ classdef level1Study < levelStudy;
                             end;
                         end;
                         
-                        if isfield(obj.sessionTaskInfo(i).subject(j), 'height') && (~isempty(strfind(obj.sessionTaskInfo(i).subject(j).height, '''')) || ~isempty(strfind(obj.sessionTaskInfo(i).subject(j).height, '"')))
-                            issue(end+1).description =  sprintf('Subject %d of sesion %s has a ''height'' field that seems to be in feets and inches (instead of centimeters).', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>                                                        
+                        if isfield(obj.sessionTaskInfo(i).subject(j), 'height') && (strfind(obj.sessionTaskInfo(i).subject(j).height, '''') | strfind(obj.sessionTaskInfo(i).subject(j).height, '"'))
+                            issue(end+1).description =  sprintf('Subject %d of sesion %s has a height that seems to be in feet (not cms) not a labId field.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>                                                        
                         end;
                         
                         

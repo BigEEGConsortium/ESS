@@ -28,7 +28,7 @@ function textFromItemsAndCounts(itemStrings, itemCounts, quantityString){
 	if (arguments.length<3)
 	var quantityString = '';
 	for (var n= 0; n < itemStrings.length;n++) {
-		//if (typeof(stringValue) != 'string')
+		if (itemStrings[n] != undefined)
 		text +=  itemStrings[n].toString() + ' (' + itemCounts[n].toString() + quantityString + ')';
 		if (n<itemStrings.length - 1)
 		text += ', ';
