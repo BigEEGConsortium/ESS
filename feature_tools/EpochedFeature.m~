@@ -101,9 +101,9 @@ classdef EpochedFeature < Block
             % remove events of the same type that have too much overlap with their own kind
             if inputOptions.maxSameTypeProximity < max(trialTimes) - min(trialTimes)
                 allEventIdsToRemove = [];
-                [uniqueEventTypes, dummy, id]= unique(trialEventTypes);
+                [c, dummy, id]= unique(trialHEDStrings);
                 clear dummy;
-                for i=1:length(uniqueEventTypes)
+                for i=1:length(uniqueHEDStrings)
                     eventSubset = find(id == i);
                     n = length(eventSubset);
                     temporalOverlap  = sparse(n,n);
@@ -172,7 +172,7 @@ classdef EpochedFeature < Block
                     end;
                     
                     if ~isempty(eventIdToRemove)
-                        fprintf('- Removed %d of the original %d (%d percent) events of \n   type "%s" due to excessive overlap (%d event left).\n', length(eventIdToRemove), n, round(100 * length(eventIdToRemove) / n), uniqueEventTypes{i}, n-length(eventIdToRemove));
+                        fprintf('- Removed %d of the original %d (%d percent) events of \n   type "%s" due to excessive overlap (%d event left).\n', length(eventIdToRemove), n, round(100 * length(eventIdToRemove) / n), uniqueHEDStrings{i}, );
                     end;
                     
                     allEventIdsToRemove = cat(1, allEventIdsToRemove(:), eventSubset(eventIdToRemove));

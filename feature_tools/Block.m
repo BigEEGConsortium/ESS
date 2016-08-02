@@ -306,6 +306,7 @@ classdef Block < Entity
             objAxisMatchId = nan(length(obj.axes), 1);
             objAxisSubset = {};
             obj2AxisSubset = {};
+            intersectAxisObjects = {};
             
             for i=1:length(obj.axes)   
                 axisIdsLeft = setdiff(1:length(obj2.axes), objAxisMatchId(~isnan(objAxisMatchId)));
@@ -322,6 +323,7 @@ classdef Block < Entity
                                 objAxisMatchId(i) = j;
                                 objAxisSubset{i} = idObj;
                                 obj2AxisSubset{i} = idObj2;
+                                intersectAxisObjects{i} = intersectObj;
                             end;
                         end;
                     end;
@@ -350,6 +352,10 @@ classdef Block < Entity
             end;
             
             newObj = obj.select(objIndexCell{:});
+            
+            nonInstanceIds = setdiff(1:length(newObj.axes), ObjInstanceAxis);
+            newObj.axes(nonInstanceIds) = intersectAxisObjects(nonInstanceIds);
+            
             newObj = setAsNewlyCreated(newObj);
             newObj = newObj.setId;
             if ~isequal(obj.description, newObj.description)

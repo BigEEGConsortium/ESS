@@ -10,8 +10,7 @@ classdef ChannelAxis < SpaceAxis
             obj.type = 'ess:BaseAxis/SpaceAxis/ChannelAxis';
             obj = obj.setId;
             
-            obj.typeLabel = 'channel';
-            
+            obj.typeLabel = 'channel';            
             
             inputOptions = arg_define(varargin, ...
                 arg('labels', {},{},'List of labels of each location. E.g. channel labels or anatomical labels; if this is already a NumPy array of type object no copy is made', 'type', 'cellstr'), ...

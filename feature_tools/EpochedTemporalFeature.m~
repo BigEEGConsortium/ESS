@@ -64,7 +64,7 @@ classdef EpochedTemporalFeature < EpochedFeature
             
             [obj.tensor, acceptedEpochs]= EpochedFeature.epochTensor(EEG.data', epochTimes, numberOfIndicesBefore, numberOfIndicesAfter);
 
-            obj.axes{1} = TrialAxis('times', trialTimes(acceptedEpochs), 'hedStrings', trialHEDStrings(acceptedEpochs), 'codes', trialEventTypes(acceptedEpochs), 'dataRecordingIds', repmat({inputOptions.dataRecordingId}, [length(acceptedEpochs), 1]));
+            obj.axes{1} = TrialAxis('times', trialTimes(acceptedEpochs), 'hedStrings', trialHEDStrings(acceptedEpochs), 'codes', trialEventTypes(acceptedEpochs), 'dataRecordingIds', dataRecordingIds);
             obj.axes{2} = TimeAxis('initTime', inputOptions.timeRange(1), 'nominalRate', EEG.srate, 'numberOfTimes', size(obj.tensor, 2));
             obj.axes{3} = ChannelAxis('chanlocs', EEG.chanlocs);
             
