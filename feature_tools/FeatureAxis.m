@@ -30,6 +30,7 @@ classdef FeatureAxis < BaseAxis
                 arg('units', {}, {},'Cells with string-type property flags. E.g. ''microvolts'', ''radians'' or ''meters''', 'type', 'cellstr'),...
                 arg('errorDistributions', {}, {},'Cells with string-type "error bars" distributions. E.g. ''normal'', ''beta'''),...  
                 arg('samplingDistributions', {}, {},'Cells with feature distribution strings. E.g. ''laplace'', ''bernoulli'''),...  
+                arg('customLabel', [], [],'A custom label (string) for the axis. This label can be used in extended indexing, e.g. obj(''customlabel_1'',:).'),...
                 arg('flags', {}, {},'Cells with property flags for each feature. E.g. {''nonnegative''}, {''angle''} or {''squared'', ''log''}', 'type', 'cellstr')...
                 );
             
@@ -60,6 +61,8 @@ classdef FeatureAxis < BaseAxis
             for i=1:length(providedPerElementProperties)
                 obj.(providedPerElementProperties{i}) = vec(inputOptions.(providedPerElementProperties{i}));
             end;   
+            
+            obj.customLabel = inputOptions.customLabel;
         end            
         
         function idMask = parseRange(obj, rangeCell)

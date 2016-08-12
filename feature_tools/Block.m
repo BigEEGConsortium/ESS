@@ -84,20 +84,31 @@ classdef Block < Entity
             end;
         end;
         
-        function axesId = typeLabelToAxesId(obj, allLabels, index)
+        function axesId = typeLabelToAxesId(obj, indexLabels, index, axisValue)
             % axesId = typeLabelToAxesId(obj, allLabels, index)
             % maps a typeLabel string to the axis item in
-            % axes property with the matching typeLabel
+            % axes property with the matching typeLabel (or custom label or axis id)
+            %
+            % index is the index (order) of the 'label' in the subscript
+            % axisValue is a cell arraw with numerical ids of axis already found
             %
             % the second time 'frequency' is used it referes to the second axis with the
             % label 'frequency'.
             
             % extract only axis type labels from extended index syntax,
             % for example {'time', {..}} maps to 'time'
-            allLabels = cellfun(@Block.extendedIndexToLabel, allLabels, 'UniformOutput', false);
+            indexLabels = cellfun(@Block.extendedIndexToLabel, indexLabels, 'UniformOutput', false);
             
-            label = allLabels{index};
-            orderOfOccurance = sum(strcmpi(label, allLabels(1:index)));
+            label = indexLabels{index};
+            % calculate how many times an axis with this type label has already been selected
+            labelsSofar = {};
+            for i=1:length(axisValue)
+                if ~isempty(axisValue{i})
+                    labelsSofar{end+1} = obj.axes{axisValue{i}}.typeLabel;
+                end;
+            end;
+            orderOfOccurance = sum(strcmpi(label, labelsSofar)) + 1;
+            %orderOfOccurance = sum(strcmpi(label, indexLabels(1:index)));
             
             if nargin < 3
                 orderOfOccurance = 1;
@@ -194,6 +205,22 @@ classdef Block < Entity
             end
         end;
         
+        function typeLabels = typeLabelsFromExtendedIndexingLabels(obj, extendedIndexingLabels)
+            if ischar(extendedIndexingLabels)
+                extendedIndexingLabels = {extendedIndexingLabels};
+            end;
+            
+            typeLabels = extendedIndexingLabels;
+            
+            for j=1:length(extendedIndexingLabels)
+                for i=1:length(obj.axes)
+                    if strcmp(obj.axes{i}.id, extendedIndexingLabels{j}) || strcmp(obj.axes{i}.customLabel, extendedIndexingLabels{j})
+                        typeLabels{j} = obj.axes{i}.typeLabel;
+                    end;
+                end;
+            end;                        
+        end;
+        
         function newObj = select(obj, varargin)
             % Produce a new Block object with input axes
             % and the tensor array sliced to provided axis indices.
@@ -227,7 +254,7 @@ classdef Block < Entity
             % some axis are specified in input, others are assumed to have
             % full  indices, i.e. :
             typeLabels = obj.getAxesInfo;
-            remainingAxes = setdiff(typeLabels, providedAxesLabel);
+            remainingAxes = setdiff(typeLabels, obj.typeLabelsFromExtendedIndexingLabels(providedAxesLabel));
             for i=1:length(remainingAxes)
                 extendedIndices{end+1} = {remainingAxes{i}, ':'};
                 axisSliceMap(remainingAxes{i}) = ':';
@@ -410,7 +437,7 @@ classdef Block < Entity
                 equalVector =  equalVector | cellfun(@(x) ~isempty(x) && isequal(subrefString, x), axesIds);
                 
                 if any(equalVector)
-                    axisValue{i} = obj.typeLabelToAxesId(s.subs, i);
+                    axisValue{i} = obj.typeLabelToAxesId(s.subs, i, axisValue);
                     if isempty(parameters) || strcmpi(parameters{1}, ':')
                         newSubs{i} = ':';
                     else
