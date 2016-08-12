@@ -73,10 +73,14 @@ classdef Block < Entity
             end;
         end
         
-        function typeLabels = axesTypeLabels(obj)
-            typeLabels = {};
+        function [axesTypeLabels, axesCustomLabels, axesIds] = getAxesInfo(obj)
+            axesTypeLabels = {};
+            axesCustomLabels = {};
+            axesIds = {};
             for i=1:length(obj.axes)
-                typeLabels{i} = obj.axes{i}.typeLabel;
+                axesTypeLabels{i} = obj.axes{i}.typeLabel;
+                axesCustomLabels{i} = obj.axes{i}.customLabel;
+                axesIds{i} = obj.axes{i}.id;
             end;
         end;
         
@@ -85,10 +89,10 @@ classdef Block < Entity
             % maps a typeLabel string to the axis item in
             % axes property with the matching typeLabel
             %
-            % the second time 'frequency' is usd it referes to the second axis with the
+            % the second time 'frequency' is used it referes to the second axis with the
             % label 'frequency'.
             
-            % extrct only axis type labels from extended index syntax,
+            % extract only axis type labels from extended index syntax,
             % for example {'time', {..}} maps to 'time'
             allLabels = cellfun(@Block.extendedIndexToLabel, allLabels, 'UniformOutput', false);
             
@@ -99,9 +103,9 @@ classdef Block < Entity
                 orderOfOccurance = 1;
             end;
             
-            typeLabels = axesTypeLabels(obj);
+            [axesTypeLabels, axesCustomLabels, axesIds] = getAxesInfo(obj);
             
-            axesId = find(strcmpi(label, typeLabels));
+            axesId = find(strcmpi(label, axesTypeLabels) | (strcmpi(label, axesCustomLabels) & ~isempty(axesCustomLabels)) | strcmpi(label, axesIds));
             
             if isempty(axesId)
                 error('No axis with type label %s can be found.', label);
@@ -130,8 +134,8 @@ classdef Block < Entity
         function [sref, varargout]= subsref(obj, s)
             switch s(1).type
                 case '.'
-                    if length(s) < 2
-                        axesTypes = builtin('subsref',obj,substruct('.', 'axesTypeLabels'));
+                    if length(s) < 2 
+                        axesTypes = builtin('subsref',obj,substruct('.', 'getAxesInfo'));
                         [wasMember id]= ismember(s.subs, axesTypes);
                         if wasMember
                             sref = obj.axes{id(1)};
@@ -222,7 +226,7 @@ classdef Block < Entity
             
             % some axis are specified in input, others are assumed to have
             % full  indices, i.e. :
-            typeLabels = obj.axesTypeLabels;
+            typeLabels = obj.getAxesInfo;
             remainingAxes = setdiff(typeLabels, providedAxesLabel);
             for i=1:length(remainingAxes)
                 extendedIndices{end+1} = {remainingAxes{i}, ':'};
@@ -310,16 +314,25 @@ classdef Block < Entity
             
             for i=1:length(obj.axes)   
                 axisIdsLeft = setdiff(1:length(obj2.axes), objAxisMatchId(~isnan(objAxisMatchId)));
+                
+                % place the i at first so it has the highst priority for matching.
+                iid = find(axisIdsLeft == i);
+                if find(iid)
+                    t = axisIdsLeft(1);
+                    axisIdsLeft(1) = i;
+                    axisIdsLeft(iid) = t;
+                end;
+                
                 for j=axisIdsLeft                                      
                     if strcmp(obj.axes{i}.type, obj2.axes{j}.type)                        
                         if  isempty(ObjInstanceAxis) && strfind(obj.axes{i}.type, 'ess:Entity/BaseAxis/InstanceAxis') == 1 % both are of instance axis types
                             objAxisMatchId(i) = j;
                             ObjInstanceAxis = i;
                             Obj2InstanceAxis = j;
-                        else
+                        elseif i ~= ObjInstanceAxis && j ~= Obj2InstanceAxis % do not intersect these with any other axes since they are the ones to be concatenated
                             axis = obj.axes{i};
                             [intersectObj, idObj, idObj2]= axis.intersect(obj2.axes{j});
-                            if ~isempty(intersectObj)
+                            if ~isempty(intersectObj) & isnan(objAxisMatchId(i)) % if that axis has not yeer been matched
                                 objAxisMatchId(i) = j;
                                 objAxisSubset{i} = idObj;
                                 obj2AxisSubset{i} = idObj2;
@@ -343,10 +356,10 @@ classdef Block < Entity
             obj2IndexCell = {};
             for i=1:length(obj.axes)
                 if i~=ObjInstanceAxis
-                    objIndexCell{end+1} = obj.axes{i}.typeLabel;
+                    objIndexCell{end+1} = obj.axes{i}.id;
                     objIndexCell(end+1) = objAxisSubset(i);
                     
-                    obj2IndexCell{end+1} = obj2.axes{i}.typeLabel;
+                    obj2IndexCell{end+1} = obj2.axes{i}.id;
                     obj2IndexCell(end+1) = obj2AxisSubset(i);
                 end
             end;
@@ -381,13 +394,21 @@ classdef Block < Entity
             % [axisPermutation newSubs] = resolveSubref(obj, s)
             % s is the structure provided by MATLAb subref function.
             
-            typeLabels = axesTypeLabels(obj);
+            [axesTypeLabels, axesCustomLabels, axesIds] = getAxesInfo(obj);
             axisValue = {};
             newSubs = s.subs;
             for i=1:length(s.subs)
                 [subrefString, parameters] = Block.extendedIndexToLabel(s.subs{i});
                 
-                equalVector = cellfun(@(x) isequal(subrefString, x), typeLabels);
+                % first match to type labels
+                equalVector = cellfun(@(x) isequal(subrefString, x), axesTypeLabels);
+                
+                % then match custom labels
+                equalVector = equalVector | cellfun(@(x) ~isempty(x) && isequal(subrefString, x), axesCustomLabels);
+
+                % then match axis ids
+                equalVector =  equalVector | cellfun(@(x) ~isempty(x) && isequal(subrefString, x), axesIds);
+                
                 if any(equalVector)
                     axisValue{i} = obj.typeLabelToAxesId(s.subs, i);
                     if isempty(parameters) || strcmpi(parameters{1}, ':')
@@ -460,8 +481,7 @@ classdef Block < Entity
                     end;
                 end;
             end;
-        end;
-        
+        end;        
     end
     methods (Access = 'protected', Static)
         function [label, parameters] = extendedIndexToLabel(indexVar)

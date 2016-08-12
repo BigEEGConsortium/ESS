@@ -24,6 +24,7 @@ classdef TrialAxis < InstanceAxis
                 arg('payloads', {}, {},'A cell array with information for each "instance" element.'),...
                 arg('codes', {}, {},'A cell array with trial event codes.', 'type', 'cellstr'),...
                 arg('dataRecordingIds', {}, {},'A cell array with data recording ids associated wiith trial.', 'type', 'cellstr'),...
+                arg('customLabel', [], [],'A string indicating a custom label for the axis. This label can be used in extended indexing, e.g. obj(''customlabel_1'',:).'),...                
                 arg('hedStrings', {}, {},'A cell array with trial event HED strings. Each HED string is associatd with one trial', 'type', 'cellstr')...
                 );
             
@@ -78,7 +79,8 @@ classdef TrialAxis < InstanceAxis
             obj.times = inputOptions.times(:);
             obj.codes = inputOptions.codes(:);
             obj.hedStrings = inputOptions.hedStrings(:);
-            obj.dataRecordingIds = inputOptions.dataRecordingIds(:);                       
+            obj.dataRecordingIds = inputOptions.dataRecordingIds(:);  
+            obj.customLabel = inputOptions.customLabel;
             check_monotonic(obj.times, 'times');
         end            
         
@@ -100,9 +102,16 @@ classdef TrialAxis < InstanceAxis
                     idMask = obj.times >= rangeCell{2}(1) & obj.times <= rangeCell{2}(2);
                 case 'match' % to be used as {'trial' 'match' '[HED string]'}
                     idMask = getHEDMatch(obj, rangeCell{2});
+                case 'codes' % to be used as {'trial' 'codes' {'eventcode1', 'eventcode2'}}
+                    idMask = ismember(obj.codes, rangeCell{2});
                 otherwise
                     error('Range string not recognized');
             end
         end;
+        
+        function obj = removeRandomTrials(obj)
+            randomMatchVector = obj.getHEDMatch('Event/Category/Miscellaneous/Random');
+            obj = obj.index(~randomMatchVector);
+        end
     end;
 end

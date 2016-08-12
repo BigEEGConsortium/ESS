@@ -74,13 +74,16 @@ function mappedX = fast_tsne(X, no_dims, initial_dims, perplexity, theta)
     X = X * M;
     clear covX M lambda
     
-    % Run the fast diffusion SNE implementation
+    % Run the fast diffusion SNE implementation    
+    currentFolder = pwd;
+    cd(fileparts(mfilename('fullpath')));
     write_data(X, no_dims, theta, perplexity);
-    tic, system('./bh_tsne'); toc
-    [mappedX, landmarks, costs] = read_data;   
+    tic, system('./bh_tsne'); toc    
+    [mappedX, landmarks, costs] = read_data;       
     landmarks = landmarks + 1;              % correct for Matlab indexing
     delete('data.dat');
     delete('result.dat');
+    cd(currentFolder);
 end
 
 

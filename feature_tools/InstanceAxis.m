@@ -13,13 +13,15 @@ classdef InstanceAxis < BaseAxis
             
             obj.typeLabel = 'instance';
             obj. perElementProperties = [obj. perElementProperties {'payloads'}];
+            obj.intersectionPerItemProperties = {'payloads'};
 
             
             if nargin > 0
                 inputOptions = arg_define(varargin, ...
-                    arg('payloads', [], [],'A cell array with information for each "instance" element.')...
+                    arg('payloads', [], [],'A cell array with information for each "instance" element.'),...
+                    arg('customLabel', [], [],'A string indicating a custom label for the axis. This label can be used in extended indexing, e.g. obj(''customlabel_1'',:).')...
                     );
-                
+                obj.customLabel = inputOptions.customLabel;
                 obj.payloads = inputOptions.payloads(:);
             end;
         end

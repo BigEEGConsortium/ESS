@@ -78,15 +78,16 @@ classdef EpochedFeature < Block
                 arg('hedStringsCell', [],[],'HED string to epoch on. Only events with HED strings that match to at least one of the items in this cell array of HED strings will be included in the returned trial times.', 'type', 'cellstr'), ...
                 arg('eventTypes', [],[],'Event types to epoch on. Empty means all events ', 'type', 'cellstr'), ...
                 arg('excludedEventTypes', {},[],'Events types to exclude', 'type', 'cellstr'), ...
+                arg('numberOfRandomTrials', 0,[0 Inf],'How many random trials to create. Random trials are not time-locked to any event and can be used for statistical null comparison. These trials have an empty event type and the HED string ''Event/Category/Miscellaneous/Random, Event/Label/Random, Event/Description/Randomly created event'''),...
                 arg('maxSameTypeProximity', 0.5,[0 Inf],'How much to allow same-type event overlap. When two events have the same type or HED string are closer than this value (in seconds), only one of them will be included.'),...
                 arg('maxSameTypeCount', Inf,[1 Inf],'How many same-time events are allowed. Events with highest overlap with the same type are deleted first.')...
                 );
             
             EEG = inputOptions.EEG;
-            trialFrames = [EEG.event(:).latency];
-            trialTimes = trialFrames/ EEG.srate;
-            trialHEDStrings = {EEG.event(:).usertags};
-            trialEventTypes = {EEG.event(:).type};
+            trialFrames = vec([EEG.event(:).latency]);
+            trialTimes = vec((trialFrames-1)/ EEG.srate);
+            trialHEDStrings = vec({EEG.event(:).usertags});
+            trialEventTypes = vec({EEG.event(:).type});
             
             
             if ~isempty(inputOptions.eventTypes)
@@ -96,7 +97,7 @@ classdef EpochedFeature < Block
                 trialTimes = trialTimes(id);
                 trialHEDStrings = trialHEDStrings(id);
                 trialEventTypes = trialEventTypes(id);
-            end;
+            end;                                             
             
             % remove events of the same type that have too much overlap with their own kind
             if inputOptions.maxSameTypeProximity < max(trialTimes) - min(trialTimes)
@@ -185,6 +186,36 @@ classdef EpochedFeature < Block
                 trialEventTypes(allEventIdsToRemove) = [];
                 
             end;
+            
+            % add random events
+            randomLatency = [];
+            maxLatency = max((size(EEG.data, 2)-1)/EEG.srate, EEG.xmax);
+            for i=1:inputOptions.numberOfRandomTrials
+                counter = 0;
+                found = false;
+                while ~isempty(found) && (~found && counter < 100000)
+                    newRandomLatency = rand * maxLatency;
+                    found = min(abs(randomLatency - newRandomLatency)) > inputOptions.maxSameTypeProximity;
+                    counter = counter + 1;
+                end;
+                if counter < 100000
+                    randomLatency = cat(1, randomLatency, newRandomLatency);
+                end;
+            end;    
+            
+            trialFrames = [trialFrames; 1+(randomLatency*EEG.srate)];
+            trialTimes = [trialTimes; randomLatency];
+            trialHEDStrings((end+1):(end+length(randomLatency))) = {'Event/Category/Miscellaneous/Random, Event/Label/Random, Event/Description/Randomly created event'};
+            
+            randomEventCandidateNames = {'random' 'random_event' 'random event' ''};
+            for i=1:length(randomEventCandidateNames)
+                if ~any(strcmp(trialEventTypes, randomEventCandidateNames{i}))
+                    trialEventTypes((end+1):(end+length(randomLatency))) = randomEventCandidateNames(i);
+                    fprintf('%d random events added and assignd the type ''%s''.\n', length(randomLatency), randomEventCandidateNames{i});
+                    break;
+                end;
+            end;
+                        
         end;
         
         function [epochedTensor, acceptedEpochs]= epochTensor(tensor, indices, numberOfIndicesBefore, numberOfIndicesAfter)
@@ -232,5 +263,42 @@ classdef EpochedFeature < Block
             end;
             
         end
+        
+        function obj = epochESSContainer(obj, containerObj, filePart, varargin)
+            % obj = epochESSContainer(obj, containerObj, filePart, epochingParams)
+            % containerObj can be a string (container folder) or object (currently only level 2)
+            % if 'filePart' is provided, intermediate results are saved in
+            % file starting with 'filePart' and numbered consequatively, e.g. filePart1.mat,
+            % filePart2.mat..
+            % epochingParams: a cell array with parameters to be passed on to 'epochChannels'
+            % functions.
+            
+            if ischar(containerObj)
+                containerObj = level2Study(containerObj);
+            end;
+            
+            [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber] = containerObj.getFilename;
+            obj = EpochedTemporalFeature;
+            for i=1:length(filename)
+                if strcmpi(containerObj.studyLevel2Files.studyLevel2File(level2DataRecordingNumber(i)).dataQuality, 'Good') % only use good quality data
+                    [path, name, ext] = fileparts(filename{i});
+                    EEG = pop_loadset([name, ext], path);
+                    newObj = EpochedTemporalFeature;
+                    if i == 1
+                        newObj = newObj.epochChannels(EEG, 'dataRecordingId', dataRecordingUuid{i}, varargin{:});
+                    else % use the same channel (by label)
+                        channelAxis = obj.channel;
+                        newObj = newObj.epochChannels(EEG, 'dataRecordingId', dataRecordingUuid{i}, 'channelLabels', channelAxis.labels, varargin{:} );
+                    end
+                    clear EEG ALLEEG;
+                    newObj = newObj.removeNoisyEpochs;
+                    if ~isempty(filePart)
+                        save([filePart num2str(i) '.mat'], 'newObj');
+                    end;
+                    obj = [obj newObj];
+                end;
+            end;
+        end;
+        
     end
 end

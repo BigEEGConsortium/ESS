@@ -1,5 +1,6 @@
 classdef EpochedTemporalFeature < EpochedFeature
     properties
+        amplitudeNormalizationFactor  = 1;
     end;
     
     methods
@@ -18,6 +19,7 @@ classdef EpochedTemporalFeature < EpochedFeature
                 arg('highpass', 20,[0 Inf],'High-pass EEG at this frequency. Leave empty to skip.'), ...
                 arg('maxChannels', Inf,[1 Inf],'Maximum number of channels to use. A uniform subset of channels will be used if this value is less than the number of channels in EEG.'), ...
                 arg('dataRecordingId', '','','Data recording id of the EEG. This is the unique id (uuid) assigned e.g. in ESS to the data recoding of the EEG variable.'), ...
+                arg('normalizeAmplitude', true, [false true],'Normalize signal amplitue over the whole data. If this option is enabld, imported contiuous EEG data is scaled to have median absolute deviation of 1. This is to reduce inter-session/subject variability due to recording and skull conductivity.'), ...
                 arg_sub('select',{},@EpochedFeature.getTrialTimesFromEEGstructure, 'A struct argument. Arguments are as in myotherfunction(), can be assigned as a cell array of name-value pairs or structs.'));
             
             assert(inputOptions.timeRange(2) > inputOptions.timeRange(1), 'The "timeRange" is invalid');                    
@@ -43,7 +45,7 @@ classdef EpochedTemporalFeature < EpochedFeature
                 subset = loc_subsets(EEG.chanlocs, inputOptions.maxChannels);
                 EEG = pop_select(EEG, 'channel', subset{1});
             end;                      
-            
+                        
             if inputOptions.timeRange(1) < 0
                 numberOfIndicesBefore = -inputOptions.timeRange(1) * EEG.srate;
                 numberOfIndicesAfter =  inputOptions.timeRange(2) * EEG.srate;
@@ -60,6 +62,12 @@ classdef EpochedTemporalFeature < EpochedFeature
             end;            
             if ~isempty(inputOptions.highpass)
                 EEG = pop_eegfiltnew(EEG, [], inputOptions.highpass);
+            end;
+            
+            if inputOptions.normalizeAmplitude
+                fprintf('Normalizing general channel amplitude by scaling all channel with the same factor..\n');
+                obj.amplitudeNormalizationFactor = 1/median(abs(EEG.data(:) - median(EEG.data(:))));
+                EEG.data  = EEG.data * obj.amplitudeNormalizationFactor;
             end;
             
             [obj.tensor, acceptedEpochs]= EpochedFeature.epochTensor(EEG.data', epochTimes, numberOfIndicesBefore, numberOfIndicesAfter);

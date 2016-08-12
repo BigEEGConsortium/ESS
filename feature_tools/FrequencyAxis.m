@@ -16,10 +16,13 @@ classdef FrequencyAxis < BaseAxis
             obj. perElementProperties = [obj. perElementProperties {'frequencies'}];
             
             inputOptions = arg_define(varargin, ...              
-                arg('frequencies', [], [],'An array of frequencies points for each element. In Hz', 'type', 'denserealdouble')...               
+                arg('frequencies', [], [],'An array of frequencies points for each element. In Hz', 'type', 'denserealdouble'),...    
+                arg('customLabel', [], [],'A custom label (string) for the axis. This label can be used in extended indexing, e.g. obj(''customlabel_1'',:).')...                                
                 );
-            obj.frequencies = inputOptions.frequencies(:);
             
+            obj.frequencies = inputOptions.frequencies(:);
+            obj.customLabel = inputOptions.customLabel;
+
             check_monotonic(obj.frequencies, 'frequencies');           
         end
         
