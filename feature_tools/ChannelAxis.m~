@@ -1,4 +1,3 @@
-% Copyright © Qusp 2016. All Rights Reserved.
 classdef ChannelAxis < SpaceAxis
     %  The channel axis characterizes EEG/EMG/ECG (EXG) channels (sensors) and their locations.
     
@@ -62,9 +61,8 @@ classdef ChannelAxis < SpaceAxis
                                     chanLocsRecord = readLocs(strcmpi({readLocs.labels}, inputOptions.chanlocs(i).labels));
                                     fields = intersect(fieldnames(inputOptions.chanlocs(i)), fieldnames(chanLocsRecord));
                                     for j=1:length(fields)
-                                        inputOptions.chanlocs(i).(fields{j}) = upper(chanLocsRecord.(fields{j}));
+                                        inputOptions.chanlocs(i).(fields{j}) = chanLocsRecord.(fields{j});
                                     end;
-                                    inputOptions.chanlocs(i).type = 'EEG';
                                 catch
                                     error('could not read channel %s location for the list of standard 10-20 locations', inputOptions.chanlocs(i).labels);
                                 end;

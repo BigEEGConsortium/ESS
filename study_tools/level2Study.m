@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef level2Study < levelStudy;
     % creates a Level 2 object, either from a Level 2 container, or by starting from a Level 1 container
     % (using 'level1XmlFilePath' option) and processing it with Standardized Data Level 2 (PREP) pipeline

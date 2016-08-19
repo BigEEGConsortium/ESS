@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef SpaceAxis < BaseAxis
     %  The space axis characterizes the spatial locations (labels and/or coordinates) of one or more data elements.
     

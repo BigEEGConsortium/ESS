@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef EpochedTemporalFeature < EpochedFeature
     properties
         amplitudeNormalizationFactor  = 1;
@@ -20,9 +21,10 @@ classdef EpochedTemporalFeature < EpochedFeature
                 arg('maxChannels', Inf,[1 Inf],'Maximum number of channels to use. A uniform subset of channels will be used if this value is less than the number of channels in EEG.'), ...
                 arg('dataRecordingId', '','','Data recording id of the EEG. This is the unique id (uuid) assigned e.g. in ESS to the data recoding of the EEG variable.'), ...
                 arg('normalizeAmplitude', true, [false true],'Normalize signal amplitue over the whole data. If this option is enabld, imported contiuous EEG data is scaled to have median absolute deviation of 1. This is to reduce inter-session/subject variability due to recording and skull conductivity.'), ...
+                arg('channelNamingSystem', '', [],'Channel naming system. E.g. 10-20, Custom, ..', 'type', 'char'), ...
                 arg_sub('select',{},@EpochedFeature.getTrialTimesFromEEGstructure, 'A struct argument. Arguments are as in myotherfunction(), can be assigned as a cell array of name-value pairs or structs.'));
             
-            assert(inputOptions.timeRange(2) > inputOptions.timeRange(1), 'The "timeRange" is invalid');                    
+            assert(inputOptions.timeRange(2) > inputOptions.timeRange(1), 'The "timeRange" is invalid');
             
             inputOptions.select.EEG = EEG;
             [trialFrames, trialTimes, trialHEDStrings, trialEventTypes] =  EpochedFeature.getTrialTimesFromEEGstructure(inputOptions.select);
@@ -74,7 +76,7 @@ classdef EpochedTemporalFeature < EpochedFeature
 
             obj.axes{1} = TrialAxis('times', trialTimes(acceptedEpochs), 'hedStrings', trialHEDStrings(acceptedEpochs), 'codes', trialEventTypes(acceptedEpochs), 'dataRecordingIds', repmat({inputOptions.dataRecordingId}, [length(acceptedEpochs), 1]));
             obj.axes{2} = TimeAxis('initTime', inputOptions.timeRange(1), 'nominalRate', EEG.srate, 'numberOfTimes', size(obj.tensor, 2));
-            obj.axes{3} = ChannelAxis('chanlocs', EEG.chanlocs);
+            obj.axes{3} = ChannelAxis('chanlocs', EEG.chanlocs, 'namingSystem', inputOptions.channelNamingSystem);
             
             assert(obj.isValid, 'Result is not valid');
         end

@@ -1,4 +1,3 @@
-% Copyright © Qusp 2016. All Rights Reserved.
 classdef EpochedFeature < Block
     properties
         % eventTimes % latencis of events from which epochs have been extracted,
@@ -198,18 +197,11 @@ classdef EpochedFeature < Block
                 error('Channel naming system must be provided');
             end
             
-            if ~isempty(folder)
+            if ~ismepty(folder)
                 d = dir(folder);
                 for i=1:length(d)
-                    if ~d(i).isdir && length(d(i).name) > 4 && strcmpi(d(i).name(end-3:end), '.set')
-                        filenames{end+1} = [folder filesep d(i).name];
-                    end;
-                end
-            end;
-            
-            if length(channelNamingSystem) == 1
-                for i=2:length(filenames)
-                    channelNamingSystem{i} = channelNamingSystem{1};
+                    if 
+                    filenames{end+1} = filenames;
                 end
             end;
             
@@ -230,6 +222,22 @@ classdef EpochedFeature < Block
 %                             pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
 %                         end;
                         
+                        
+                        % find the label naming system for the data recording
+                        channelNamingSystem  = nan;
+                        for j=1:length(studyContainer.level1StudyObj.recordingParameterSet)
+                            if strcmp(studyContainer.level1StudyObj.recordingParameterSet(j).recordingParameterSetLabel, level1DataRecording(i).recordingParameterSetLabel)
+                                for k=1:length(studyContainer.level1StudyObj.recordingParameterSet(j).modality)
+                                    if strcmpi(studyContainer.level1StudyObj.recordingParameterSet(j).modality(k).type, 'EEG')
+                                        channelNamingSystem = studyContainer.level1StudyObj.recordingParameterSet(j).modality(k).channelLocationType;
+                                    end;
+                                end;
+                            end;
+                        end
+                        
+                        if isnan(channelNamingSystem)
+                            error('Channel naming system could not be found in ESS container');
+                        end;
                         
                         newObj = obj.setAsNewlyCreated;
                         if i == 1 || ~combineEpochs

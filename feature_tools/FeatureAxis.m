@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef FeatureAxis < BaseAxis
     %  The feature axis describes individual features of some data (e.g. their
     %   names and/or statistics) 

@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef BaseAxis < Entity
     properties
         typeLabel % quantity represented by the axis, e.g. 'time', 'channel', 'trial'. 

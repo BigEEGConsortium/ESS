@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef Block < Entity
     % Block is the base data structure for holding numerical data.
     % Its main fields are a tensor with arbitrary dimension and
