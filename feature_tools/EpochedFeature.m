@@ -86,7 +86,7 @@ classdef EpochedFeature < Block
             % skipComputed     skip the computation if file with the same output name already exists (useful for resuming after an error) 
             
             if ischar(studyContainer)
-                studyContainer = levelStudy(studyContainer);
+                studyContainer = loadStudyContainer(studyContainer)
 
                
 %                 try
