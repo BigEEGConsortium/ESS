@@ -29,10 +29,10 @@ classdef EpochedFeature < Block
                 
                 dims = 1:(ndims(obj.tensor)-1); % -1 since we have combined trial and time
                 timeAndTrialByfeatures = permute(obj.index(indexArguments{:}), [dims(end), dims(1:(end-1))]);
-                medianTimeFeatures = median(timeAndTrialByfeatures);
+                medianTimeFeatures = median_lowmem(timeAndTrialByfeatures);
                 centeredTimeFeatures = bsxfun(@minus, timeAndTrialByfeatures, medianTimeFeatures);
-                clear timeAndTrialByfeatures;
-                robustStdTimeFeatures = 1.4826 * median(abs(centeredTimeFeatures));
+                clear timeAndTrialByfeatures;                
+                robustStdTimeFeatures = 1.4826 * median_lowmem(abs(centeredTimeFeatures));               
                 clear centeredTimeFeatures;
                 
                 medianTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
@@ -86,7 +86,14 @@ classdef EpochedFeature < Block
             % skipComputed     skip the computation if file with the same output name already exists (useful for resuming after an error) 
             
             if ischar(studyContainer)
-                studyContainer = level2Study(studyContainer);
+                studyContainer = levelStudy(studyContainer);
+
+               
+%                 try
+%                     studyContainer = level2Study(studyContainer);
+%                 catch
+%                     studyContainer = levelDerivedStudy(studyContainer);
+%                 end;
             end;
             
             if nargin < 4
@@ -100,7 +107,7 @@ classdef EpochedFeature < Block
             [filename, dataRecordingUuid, taskLabel, sessionNumber, level2DataRecordingNumber, subjectInfo, level1DataRecording] = studyContainer.getFilename;
             
             for i=1:length(filename)
-                if strcmpi(studyContainer.studyLevel2Files.studyLevel2File(level2DataRecordingNumber(i)).dataQuality, 'Good') % only use good quality data
+                if isprop(studyContainer, 'studyLevelDerivedFiles') ||  strcmpi(studyContainer.studyLevel2Files.studyLevel2File(level2DataRecordingNumber(i)).dataQuality, 'Good') % only use good quality data
                     outputFile = [filePart num2str(i) '.mat'];
                     if isempty(filePart) || ~(exist(outputFile, 'file') && skipComputed)
                         
@@ -120,11 +127,18 @@ classdef EpochedFeature < Block
                         
                         % find the label naming system for the data recording
                         channelNamingSystem  = nan;
-                        for j=1:length(studyContainer.level1StudyObj.recordingParameterSet)
-                            if strcmp(studyContainer.level1StudyObj.recordingParameterSet(j).recordingParameterSetLabel, level1DataRecording(i).recordingParameterSetLabel)
-                                for k=1:length(studyContainer.level1StudyObj.recordingParameterSet(j).modality)
-                                    if strcmpi(studyContainer.level1StudyObj.recordingParameterSet(j).modality(k).type, 'EEG')
-                                        channelNamingSystem = studyContainer.level1StudyObj.recordingParameterSet(j).modality(k).channelLocationType;
+                                                                     
+                        if isprop(studyContainer, 'level1StudyObj')
+                            level1StudyObj = studyContainer.level1StudyObj;
+                        else
+                            level1StudyObj = getLevel1(studyContainer);
+                        end
+                        
+                        for j=1:length(level1StudyObj.recordingParameterSet)
+                            if strcmp(level1StudyObj.recordingParameterSet(j).recordingParameterSetLabel, level1DataRecording(i).recordingParameterSetLabel)
+                                for k=1:length(level1StudyObj.recordingParameterSet(j).modality)
+                                    if strcmpi(level1StudyObj.recordingParameterSet(j).modality(k).type, 'EEG')
+                                        channelNamingSystem = level1StudyObj.recordingParameterSet(j).modality(k).channelLocationType;
                                     end;
                                 end;
                             end;
@@ -187,15 +201,18 @@ classdef EpochedFeature < Block
                 arg('filePart', '', [],'For data recording epoch files. If provided, intermediate results are saved in file starting with ''filePart'' and numbered consequatively, e.g. filePart1.mat, filePart2.mat..'),...
                 arg('combineEpochs', true, [false true],'Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale)', 'type', 'logical'), ...
                 arg('skipComputed', true,[],'Skip alread-computed recordings. Skip the computation if file with the same output name already exists (useful for resuming after an error).', 'type', 'logical'), ...
-                arg('channelNamingSystem', '', '','EEG channel location naming system. This is a cell string array and MUST be provided. If only a single string is provided it will be assumed for all files.', 'type', 'cellstr') ...
-                );                                   
+                arg('channelNamingSystem', '', '','EEG channel location naming system. This is a cell string array and MUST be provided. If only a single string is provided it will be assumed for all files.', 'type', 'cellstr'), ...
+                arg('epoching', {}, {},'Epoching parameters. This is a cell containing key, value pairs for the epoching function.') ...
+            );                                   
             
-            if isempty(filenames) && ismepty(folder)
+            if isempty(filenames) && isempty(folder)
                 error('Either ''filenames'' or ''folder'' should be provided');
             end;                     
            
             if isempty(channelNamingSystem)
                 error('Channel naming system must be provided');
+            elseif ischar(channelNamingSystem)
+                channelNamingSystem = {channelNamingSystem};
             end
             
             if ~isempty(folder)
@@ -220,6 +237,11 @@ classdef EpochedFeature < Block
                         [path, name, ext] = fileparts(filenames{i});
                         EEG = pop_loadset([name, ext], path);
                         
+                        % create data recording uuids from EEG data if not provided.
+                        if length(dataRecordingUuid) < i 
+                            dataRecordingUuid{i} = ['md5_from_EEG_variable_' hlp_cryptohash(EEG)];
+                        end
+                        
                         % only for NCTU
 %                         if isempty(EEG.chanlocs(1).type) && isempty(EEG.chanlocs(10).type)
 %                             for k=1:length(EEG.chanlocs)
@@ -233,10 +255,10 @@ classdef EpochedFeature < Block
                         
                         newObj = obj.setAsNewlyCreated;
                         if i == 1 || ~combineEpochs
-                            newObj = newObj.epochChannels(EEG, 'dataRecordingId', dataRecordingUuid{i}, 'channelNamingSystem', channelNamingSystem, varargin{:});
+                            newObj = newObj.epochChannels(EEG, 'dataRecordingId', dataRecordingUuid{i}, 'channelNamingSystem', channelNamingSystem{i}, epoching{:});
                         else % use the same channel set (by labels)
                             channelAxis = obj.channel;
-                            newObj = newObj.epochChannels(EEG, 'dataRecordingId', dataRecordingUuid{i}, 'channelLabels', channelAxis.labels, 'channelNamingSystem', channelNamingSystem,varargin{:} );
+                            newObj = newObj.epochChannels(EEG, 'dataRecordingId', dataRecordingUuid{i}, 'channelLabels', channelAxis.labels, 'channelNamingSystem', channelNamingSystem{i}, epoching{:} );
                         end
                         clear EEG ALLEEG;
                         newObj = newObj.removeNoisyEpochs;

@@ -216,7 +216,8 @@ classdef levelDerivedStudy  < levelStudy;
                     obj.parentStudyObj = levelDerivedStudy.readLevelXML(temporaryparentStudyXmlFilePath);
                     
                 else
-                    obj.(names{i}) = xmlAsStructure.(names{i});
+                    objPropertyName = strrep(names{i}, 'Info', ''); % to deal with legacy xml field names such as projectInfo
+                    obj.(objPropertyName) = xmlAsStructure.(names{i});
                 end;
             end;
             

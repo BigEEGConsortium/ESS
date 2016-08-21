@@ -1,8 +1,37 @@
 % Copyright © Qusp 2016. All Rights Reserved.
 classdef levelStudy
     methods
-        function obj = levelStudy(varargin)
+        function obj = levelStudy(folderOrXML)
             add_ess_path_if_needed;
+            if nargin > 0
+                switch(exist(folderOrXML))
+                    case 0
+                        error('file or folder %s does not exist.', folderOrXML);
+                    case 7 % is a directory
+                        if exist([folderOrXML filesep 'studyLevelDerived_description.xml'], 'file')
+                            obj = levelDerivedStudy(folderOrXML);
+                        elseif exist([folderOrXML filesep 'studyLevel2_description.xml'], 'file')
+                            obj = level2Study(folderOrXML);
+                        elseif exist([folderOrXML filesep 'study_description.xml'], 'file')
+                            obj = level1Study(folderOrXML);
+                        else
+                            error('No container manifest xml file can be found in the directory %s,', folderOrXML);
+                        end
+                    case 2 % is a file name that exists
+                        Pref.NumLevels = 1;
+                        [tree, RootName, DOMnode] = xml_read(folderOrXML, Pref);
+                        switch(RootName(1))
+                            case 'studyLevelDerived'
+                                obj = levelDerivedStudy(folderOrXML);
+                            case 'studyLevel2'
+                                obj = level2Study(folderOrXML);
+                            case 'studyLevel1'
+                                obj = level1Study(folderOrXML);
+                        end;
+                    otherwise
+                        error('cannot recognize the input argument');
+                end;
+            end;
         end;
         
         function [STUDY, studyFilenameAndPath] = createEeglabStudy(obj, studyFolder, varargin)
