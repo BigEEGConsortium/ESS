@@ -296,12 +296,20 @@ classdef EpochedFeature < Block
                 );
             
             EEG = inputOptions.EEG;
-            trialFrames = vec([EEG.event(:).latency]);
-            trialTimes = vec((trialFrames-1)/ EEG.srate);
-            trialHEDStrings = vec({EEG.event(:).usertags});
-            trialEventTypes = vec({EEG.event(:).type});
-            
-            
+            if isempty(EEG.event)
+                trialFrames = [];
+                trialTimes = [];
+                trialHEDStrings = {};
+                trialEventTypes = {};
+                warning('EEG variable has no events!');
+                return;
+            else
+                trialFrames = vec([EEG.event(:).latency]);
+                trialTimes = vec((trialFrames-1)/ EEG.srate);
+                trialHEDStrings = vec({EEG.event(:).usertags});
+                trialEventTypes = vec({EEG.event(:).type});
+            end;
+                        
             if ~isempty(inputOptions.eventTypes)
                 id = ismember(trialEventTypes, inputOptions.eventTypes);
                 

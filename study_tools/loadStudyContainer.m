@@ -17,7 +17,7 @@ switch(exist(folderOrXML))
     case 2 % is a file name that exists
         Pref.NumLevels = 1;
         [tree, RootName, DOMnode] = xml_read(folderOrXML, Pref);
-        switch(RootName(1))
+        switch(RootName{1})
             case 'studyLevelDerived'
                 obj = levelDerivedStudy(folderOrXML);
             case 'studyLevel2'

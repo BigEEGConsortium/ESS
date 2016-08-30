@@ -519,7 +519,7 @@ classdef levelDerivedStudy  < levelStudy;
             taskLabel = {};
             filename = {};
             sessionNumber = {};
-            subjectInfo = [];
+            subjectInfo = {};
             levelDerivedDataRecordingNumber = [];
             originalFileNameAndPath = {};
             clear level1DataRecording;

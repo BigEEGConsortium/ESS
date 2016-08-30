@@ -2759,7 +2759,7 @@ classdef level1Study < levelStudy;
             taskLabel = {};
             sessionTaskNumber = [];
             dataRecordingNumber = [];
-            subjectInfo = [];
+            subjectInfo = {};
             sessionNumber = {};
             originalFileNameAndPath = {};
             for i=1:length(obj.sessionTaskInfo)
@@ -2791,9 +2791,9 @@ classdef level1Study < levelStudy;
                         dataRecordingNumber(end+1) = j;
                         originalFileNameAndPath{end+1} = obj.sessionTaskInfo(i).dataRecording(j).originalFileNameAndPath;
                         if isempty(subjectInfo)
-                            subjectInfo = obj.sessionTaskInfo(i).subject;
+                            subjectInfo{1} = obj.sessionTaskInfo(i).subject;
                         else
-                            subjectInfo(end+1) = obj.sessionTaskInfo(i).subject;
+                            subjectInfo{end+1} = obj.sessionTaskInfo(i).subject;
                         end;
                         
                     end;
@@ -3159,7 +3159,7 @@ classdef level1Study < levelStudy;
                             if isempty(sessionCombinedAcrossTasks{currentSessionI})
                                 sessionCombinedAcrossTasks{currentSessionI} = sessions{j};
                             else
-                                sessionCombinedAcrossTasks{currentSessionI}.dataRecordings = concat(sessionCombinedAcrossTasks{currentSessionI}.dataRecordings, sessions{j}.dataRecordings);
+                                sessionCombinedAcrossTasks{currentSessionI}.dataRecordings = cat(2, sessionCombinedAcrossTasks{currentSessionI}.dataRecordings, sessions{j}.dataRecordings);
                             end;
                         end;
                     end;

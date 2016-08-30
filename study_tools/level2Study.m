@@ -629,7 +629,7 @@ classdef level2Study < levelStudy;
             taskLabel = {};
             filename = {};
             sessionNumber = {};
-            subjectInfo = [];
+            subjectInfo = {};
             level2DataRecordingNumber = [];
             originalFileNameAndPath = {};
             clear level1DataRecording;
@@ -659,9 +659,9 @@ classdef level2Study < levelStudy;
                     else % a single number
                         newSubject = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(foundSubjectId);
                         if isempty(subjectInfo)
-                            subjectInfo = newSubject;
+                            subjectInfo{1} = newSubject;
                         else
-                            subjectInfo(end+1)  = newSubject;
+                            subjectInfo{end+1}  = newSubject;
                         end;
                     end;
                     
