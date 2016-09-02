@@ -31,8 +31,8 @@ classdef EpochedFeature < Block
                 timeAndTrialByfeatures = permute(obj.index(indexArguments{:}), [dims(end), dims(1:(end-1))]);
                 medianTimeFeatures = median_lowmem(timeAndTrialByfeatures);
                 centeredTimeFeatures = bsxfun(@minus, timeAndTrialByfeatures, medianTimeFeatures);
-                clear timeAndTrialByfeatures;                
-                robustStdTimeFeatures = 1.4826 * median_lowmem(abs(centeredTimeFeatures));               
+                clear timeAndTrialByfeatures;
+                robustStdTimeFeatures = 1.4826 * median_lowmem(abs(centeredTimeFeatures));
                 clear centeredTimeFeatures;
                 
                 medianTimeFeatures = permute(medianTimeFeatures, [dims(2:end) dims(1)]);
@@ -83,17 +83,17 @@ classdef EpochedFeature < Block
             %                  first recording are selected for subsequent recordings.
             % epochingParams   a cell array with parameters to be passed on to 'epochChannels'
             %                  functions.
-            % skipComputed     skip the computation if file with the same output name already exists (useful for resuming after an error) 
+            % skipComputed     skip the computation if file with the same output name already exists (useful for resuming after an error)
             
             if ischar(studyContainer)
                 studyContainer = loadStudyContainer(studyContainer)
-
-               
-%                 try
-%                     studyContainer = level2Study(studyContainer);
-%                 catch
-%                     studyContainer = levelDerivedStudy(studyContainer);
-%                 end;
+                
+                
+                %                 try
+                %                     studyContainer = level2Study(studyContainer);
+                %                 catch
+                %                     studyContainer = levelDerivedStudy(studyContainer);
+                %                 end;
             end;
             
             if nargin < 4
@@ -115,19 +115,19 @@ classdef EpochedFeature < Block
                         EEG = pop_loadset([name, ext], path);
                         
                         % only for NCTU
-%                         if isempty(EEG.chanlocs(1).type) && isempty(EEG.chanlocs(10).type)
-%                             for k=1:length(EEG.chanlocs)
-%                                 if isempty(EEG.chanlocs(k).type)
-%                                     EEG.chanlocs(k).type= 'EEG';
-%                                 end;
-%                             end;
-%                             pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
-%                         end;
+                        %                         if isempty(EEG.chanlocs(1).type) && isempty(EEG.chanlocs(10).type)
+                        %                             for k=1:length(EEG.chanlocs)
+                        %                                 if isempty(EEG.chanlocs(k).type)
+                        %                                     EEG.chanlocs(k).type= 'EEG';
+                        %                                 end;
+                        %                             end;
+                        %                             pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
+                        %                         end;
                         
                         
                         % find the label naming system for the data recording
                         channelNamingSystem  = nan;
-                                                                     
+                        
                         if isprop(studyContainer, 'level1StudyObj')
                             level1StudyObj = studyContainer.level1StudyObj;
                         else
@@ -175,11 +175,11 @@ classdef EpochedFeature < Block
             end;
         end;
         
-        function obj = epochFileList(obj, varargin)
+        function [obj, failedList]= epochFileList(obj, varargin)
             % obj = epochFileList(obj, ['key', value pairs])
             %
             % Keys:
-            % filenames           a cell array of strings with the 
+            % filenames           a cell array of strings with the
             % filePart            if provided, intermediate results are saved in
             %                      file starting with 'filePart' and numbered consequatively, e.g. filePart1.mat,  filePart2.mat..
             % combineEpochs      by default is True and combines epochs across data recordings into
@@ -189,26 +189,26 @@ classdef EpochedFeature < Block
             %                    first recording are selected for subsequent recordings.
             % epochingParams     a cell array with parameters to be passed on to 'epochChannels'
             %                    functions.
-            % skipComputed       skip the computation if file with the same output name already exists (useful for resuming after an error) 
+            % skipComputed       skip the computation if file with the same output name already exists (useful for resuming after an error)
             % channelNamingSystem   EEG channel location naming system. This is a cell string array and MUST be provided. If only a single string is provided it will be assumed for all files.
             
             
             % places these directly into workspace
             arg_define(varargin, ...
                 arg('filenames', {},[],'a cell array of filename strings. if both ''filenames'' and ''folder'' are provided the concatenation will be processed.', 'type', 'cellstr'), ...
-                arg('dataRecordingUuid', {},[],'a cell array of data recording uuids. Should be the same length as ''filenames''.', 'type', 'cellstr'), ...               
+                arg('dataRecordingUuid', {},[],'a cell array of data recording uuids. Should be the same length as ''filenames''.', 'type', 'cellstr'), ...
                 arg('folder', '', [],'Top directory of files to be epoched. All .set file immediately under this directory will be processed.', 'type', 'char'),...
                 arg('filePart', '', [],'For data recording epoch files. If provided, intermediate results are saved in file starting with ''filePart'' and numbered consequatively, e.g. filePart1.mat, filePart2.mat..'),...
                 arg('combineEpochs', true, [false true],'Acceptable data quality values. A cell array containing a combination of acceptable data quality values (Good, Suspect or Unusbale)', 'type', 'logical'), ...
                 arg('skipComputed', true,[],'Skip alread-computed recordings. Skip the computation if file with the same output name already exists (useful for resuming after an error).', 'type', 'logical'), ...
                 arg('channelNamingSystem', '', '','EEG channel location naming system. This is a cell string array and MUST be provided. If only a single string is provided it will be assumed for all files.', 'type', 'cellstr'), ...
                 arg('epoching', {}, {},'Epoching parameters. This is a cell containing key, value pairs for the epoching function.') ...
-            );                                   
+                );
             
             if isempty(filenames) && isempty(folder)
                 error('Either ''filenames'' or ''folder'' should be provided');
-            end;                     
-           
+            end;
+            
             if isempty(channelNamingSystem)
                 error('Channel naming system must be provided');
             elseif ischar(channelNamingSystem)
@@ -230,7 +230,9 @@ classdef EpochedFeature < Block
                 end
             end;
             
+            failedList = [];
             for i=1:length(filenames)
+                try
                     outputFile = [filePart num2str(i) '.mat'];
                     if isempty(filePart) || ~(exist(outputFile, 'file') && skipComputed)
                         
@@ -238,19 +240,19 @@ classdef EpochedFeature < Block
                         EEG = pop_loadset([name, ext], path);
                         
                         % create data recording uuids from EEG data if not provided.
-                        if length(dataRecordingUuid) < i 
+                        if length(dataRecordingUuid) < i
                             dataRecordingUuid{i} = ['md5_from_EEG_variable_' hlp_cryptohash(EEG)];
                         end
                         
                         % only for NCTU
-%                         if isempty(EEG.chanlocs(1).type) && isempty(EEG.chanlocs(10).type)
-%                             for k=1:length(EEG.chanlocs)
-%                                 if isempty(EEG.chanlocs(k).type)
-%                                     EEG.chanlocs(k).type= 'EEG';
-%                                 end;
-%                             end;
-%                             pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
-%                         end;
+                        %                         if isempty(EEG.chanlocs(1).type) && isempty(EEG.chanlocs(10).type)
+                        %                             for k=1:length(EEG.chanlocs)
+                        %                                 if isempty(EEG.chanlocs(k).type)
+                        %                                     EEG.chanlocs(k).type= 'EEG';
+                        %                                 end;
+                        %                             end;
+                        %                             pop_saveset(EEG, 'filepath', EEG.filepath, 'filename', EEG.filename);
+                        %                         end;
                         
                         
                         newObj = obj.setAsNewlyCreated;
@@ -276,6 +278,31 @@ classdef EpochedFeature < Block
                     if combineEpochs
                         obj = [obj newObj];
                     end;
+                catch e
+                    fprintf(['Error on file %s: ' e.message '\n'], filenames{i});
+                    if isempty(failedList)
+                        failedList = struct;
+                        failedId=1;
+                    else
+                        failedId = length(failedList) + 1;
+                    end
+                    
+                    failedList(failedId).message = e.message;
+                    failedList(failedId).error = e;
+                    failedList(failedId).file = filenames{i};
+                end
+            end;
+            
+            if isempty(failedList)
+                fprintf('\n');fprintf('\n');fprintf('\n');
+                fprintf('All files processed without an error.\n');
+            else
+                fprintf('\n');fprintf('\n');fprintf('\n');
+                fprintf('Errors have occured and %d files failed during processing:\n', length(failedList));
+                for i=1:length(failedList)
+                    fprintf([num2str(i) ' - %s: %s'  ' \n'], failedList(i).file, failedList(i).message);
+                end;
+                fprintf('\nSee the output ''failedList'' variable for more information.\n');
             end;
         end;
         
@@ -309,7 +336,7 @@ classdef EpochedFeature < Block
                 trialHEDStrings = vec({EEG.event(:).usertags});
                 trialEventTypes = vec({EEG.event(:).type});
             end;
-                        
+            
             if ~isempty(inputOptions.eventTypes)
                 id = ismember(trialEventTypes, inputOptions.eventTypes);
                 
@@ -482,6 +509,6 @@ classdef EpochedFeature < Block
                 epochedTensor(i,1:epochLength,:) = tensor(epochDimensionIndices(i,:),:);
             end;
             
-        end        
+        end
     end
 end
