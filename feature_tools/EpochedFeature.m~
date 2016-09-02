@@ -179,9 +179,10 @@ classdef EpochedFeature < Block
             % obj = epochFileList(obj, ['key', value pairs])
             %
             % Keys:
-            % filenames           a cell array of strings with the
-            % filePart            if provided, intermediate results are saved in
-            %                      file starting with 'filePart' and numbered consequatively, e.g. filePart1.mat,  filePart2.mat..
+            % filenames          cell array of string, each a
+            % folder             top directory of files to be epoched. All .set file immediately under this directory will be processed.
+            % filePart           if provided, intermediate results are saved in
+            %                    file starting with 'filePart' and numbered consequatively, e.g. filePart1.mat,  filePart2.mat..
             % combineEpochs      by default is True and combines epochs across data recordings into
             %                    the object. If False then epochs for data recorings are saved as
             %                    file but not combined. This is useful when wanting to e.g. keep all
@@ -294,9 +295,15 @@ classdef EpochedFeature < Block
             end;
             
             if isempty(failedList)
+                fprintf('\n');fprintf('\n');fprintf('\n');
                 fprintf('All files processed without an error.\n');
             else
-                fprintf('%d file failed during processing:\n');
+                fprintf('\n');fprintf('\n');fprintf('\n');
+                fprintf('Errors have occured and %d files failed during processing:\n', length(failedList));
+                for i=1:length(failedList)
+                    fprintf([num2str(i) ' - %s: %s'  ' \n'], failedList(i).file, failedList(i).message);
+                end;
+                fprintf('\nSee the output ''failedList'' variable for more information.\n');
             end;
         end;
         

@@ -179,9 +179,10 @@ classdef EpochedFeature < Block
             % obj = epochFileList(obj, ['key', value pairs])
             %
             % Keys:
-            % filenames           a cell array of strings with the
-            % filePart            if provided, intermediate results are saved in
-            %                      file starting with 'filePart' and numbered consequatively, e.g. filePart1.mat,  filePart2.mat..
+            % filenames          cell array of string, each a file name to be epoched.
+            % folder             top directory of files to be epoched. All .set file immediately under this directory will be processed.
+            % filePart           if provided, intermediate results are saved in
+            %                    file starting with 'filePart' and numbered consequatively, e.g. filePart1.mat,  filePart2.mat..
             % combineEpochs      by default is True and combines epochs across data recordings into
             %                    the object. If False then epochs for data recorings are saved as
             %                    file but not combined. This is useful when wanting to e.g. keep all
