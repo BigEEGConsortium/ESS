@@ -5,7 +5,7 @@ classdef level1Study < levelStudy;
     % (e.g. add a ne session) and then save using the write() method into a =new ESS XML file.
     %
     % Written by Nima Bigdely-Shamlo and Jessica Hsi.
-    % Copyright 2014 Syntrogi, Inc.
+    % Copyright 2014-2016 Qusp.
     % Copyright 2013-2014 University of California San Diego.
     % Released under BSD License.
     
