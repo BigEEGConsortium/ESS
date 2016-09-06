@@ -342,7 +342,8 @@ classdef levelDerivedStudy  < levelStudy;
             mkdir([inputOptions.levelDerivedFolder filesep 'additional_data']);
             
             obj.uuid = getUuid;
-            obj.studyLevelDerivedSchemaVersion  = '1.0';
+            [toolsVersion, level1SchemaVersion, level2SchemaVersion, levelDerivedSchemaVersion] = get_ess_versions;
+            obj.studyLevelDerivedSchemaVersion  = levelDerivedSchemaVersion;
                         
             if ismember(class(obj.parentStudyObj), {'level2Study', 'levelDerivedStudy'})
                 

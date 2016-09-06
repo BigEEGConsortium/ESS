@@ -168,7 +168,8 @@ classdef level1Study < levelStudy;
                     
                     % prepare the object based on input values.
                     % assigns a random UUID.
-                    obj.essVersion = '2.2';
+                    [toolsVersion, level1SchemaVersion, level2SchemaVersion, levelDerivedSchemaVersion] = get_ess_versions;
+                    obj.essVersion = level1SchemaVersion;
                     obj.studyUuid = ['studylevel1_' getUuid];
                     
                     % if data recodring parameter set if assigned, use it

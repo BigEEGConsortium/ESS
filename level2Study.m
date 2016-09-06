@@ -318,7 +318,8 @@ classdef level2Study < levelStudy;
             
             obj.uuid = char(java.util.UUID.randomUUID);
             obj.title = obj.level1StudyObj.studyTitle;
-            obj.studyLevel2SchemaVersion  = '1.0';
+            [toolsVersion, level1SchemaVersion, level2SchemaVersion, levelDerivedSchemaVersion] = get_ess_versions;
+            obj.studyLevel2SchemaVersion  = level2SchemaVersion;
             
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
