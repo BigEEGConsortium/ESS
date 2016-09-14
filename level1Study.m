@@ -119,7 +119,7 @@ classdef level1Study < levelStudy;
             %
             %   essFilePath                             : String, ESS Standard Level 1 XML Filename or Container folder. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.
             %   numberOfSessions                        : Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.
-            %   numberOfSubjectsPerSession              : Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.
+            %   numberOfSubjectsPerSession              : Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study session.
             %   numberOfRecordingsPerSessionTask        : Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.
             %   taskLabels                              : Cell array of strings, Labels for session tasks. A cell array containing task labels. Optional if study only has a single task.
             %   createNewFile                           : Logical, Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
@@ -131,7 +131,7 @@ classdef level1Study < levelStudy;
             inputOptions = arg_define([0 1],varargin, ...
                 arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
-                arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study sesion.'), ...
+                arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study session.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
                 arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ?eyes closed? task, followed by a ?target detection? task and a ?mind wandering?, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
@@ -589,7 +589,7 @@ classdef level1Study < levelStudy;
                                 % for now we asume all had the same
                                 % samling, a better way is to check all
                                 % samplig rates and create different
-                                % recodingParameter sets.
+                                % recordingParameter sets.
                                 obj.recordingParameterSet(1).modality(1).samplingRate = readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                             end;
                         end;
@@ -1714,7 +1714,7 @@ classdef level1Study < levelStudy;
             % validating recordingParameterSet
             listOfRecordingParameterSetLabelsWithCustomEEGChannelLocation = {};
             if isempty(obj.recordingParameterSet)
-                issue(end+1).description = sprintf('There is no recording parameter set defined. You need to at least have on ene of these to hold number of EEG channels, etc.');
+                issue(end+1).description = sprintf('There is no recording parameter set defined. You need to at least have one of these to hold number of EEG channels, etc.');
             else
                 for i=1:length(obj.recordingParameterSet)
                     if ~level1Study.isAvailable(obj.recordingParameterSet(i).recordingParameterSetLabel)
@@ -1739,7 +1739,7 @@ classdef level1Study < levelStudy;
                                 
                                 % Reference location is needed for EEG
                                 if ~level1Study.isAvailable(obj.recordingParameterSet(i).modality(j).referenceLocation)
-                                    issue(end+1).description = sprintf('Refernce location of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                    issue(end+1).description = sprintf('Reference location of EEG (modality %d) in recording parameter set %d is empty.', j, i);
                                 end;
                                 
                                 % Channel Location Type is needed for EEG
@@ -1862,7 +1862,7 @@ classdef level1Study < levelStudy;
                 sessionNumber  = str2double(obj.sessionTaskInfo(i).sessionNumber);
                 % session numbers must be an integer number
                 if isnan(sessionNumber) || round(sessionNumber) ~= sessionNumber || sessionNumber < 1
-                    issue(end+1).description = sprintf('Sesion number in sessionTaskInfo(%d).sessionNumber is not a positive integer.', i); %#ok<AGROW>
+                    issue(end+1).description = sprintf('session number in sessionTaskInfo(%d).sessionNumber is not a positive integer.', i); %#ok<AGROW>
                 else
                     sessionNumbers = [sessionNumbers sessionNumber];
                 end;
@@ -1886,7 +1886,7 @@ classdef level1Study < levelStudy;
                     for j=1:length(obj.sessionTaskInfo(i).subject)
                         
                         if ~level1Study.isAvailable(obj.sessionTaskInfo(i).subject(j).inSessionNumber)
-                            issue(end+1).description =  sprintf('Subject %d of sesion %s does not an inSessionNumber.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Subject %d of session %s does not an inSessionNumber.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                             
                             if fixIssues && length(obj.sessionTaskInfo(i).subject) == 1
                                 issue(end).howItWasFixed = 'inSessionNumber was assigned to 1';
@@ -1894,7 +1894,7 @@ classdef level1Study < levelStudy;
                         end;
                         
                         if ~isfield(obj.sessionTaskInfo(i).subject(j), 'labId')
-                            issue(end+1).description =  sprintf('Subject %d of sesion %s does not a labId field.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Subject %d of session %s does not have a labId field.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                             
                             if fixIssues && length(obj.sessionTaskInfo(i).subject) == 1
                                 obj.sessionTaskInfo(i).subject(j).labId = 'NA';
@@ -1903,7 +1903,7 @@ classdef level1Study < levelStudy;
                         end;
                         
                         if isfield(obj.sessionTaskInfo(i).subject(j), 'height') && (~isempty(strfind(obj.sessionTaskInfo(i).subject(j).height, '''')) || ~isempty(strfind(obj.sessionTaskInfo(i).subject(j).height, '"')))
-                            issue(end+1).description =  sprintf('Subject %d of sesion %s has a ''height'' field that seems to be in feets and inches (instead of centimeters).', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>                                                        
+                            issue(end+1).description =  sprintf('Subject %d of session %s has a ''height'' field that seems to be in feets and inches (instead of centimeters).', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>                                                        
                         end;
                         
                         
@@ -1913,7 +1913,7 @@ classdef level1Study < levelStudy;
                         % location type is specified as Custom (versus e.g. 10-20).
                         if eegChannelLocationFileIsNeeded && (isempty(obj.sessionTaskInfo(i).subject(j).channelLocations)...
                                 || strcmpi('NA', obj.sessionTaskInfo(i).subject(j).channelLocations))
-                            issue(end+1).description =  sprintf('Subject %d of sesion %s does not have a channelLocations while \r its channelLocationType is defined as ''custom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Subject %d of session %s does not have a channelLocations while \r its channelLocationType is defined as ''custom''.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         end;
                         
                         % check if the channel location file actually
@@ -1931,7 +1931,7 @@ classdef level1Study < levelStudy;
                             end;
                             
                             if ~fileFound
-                                issue(end+1).description =  sprintf('Channel location file recoding of subject %d of sesion number %s cannot be found \r at any of these locations: %s .', j, obj.sessionTaskInfo(i).sessionNumber, strjoin_adjoiner_first(', ', searchFullPath)); %#ok<AGROW>
+                                issue(end+1).description =  sprintf('Channel location file recording of subject %d of session number %s cannot be found \r at any of these locations: %s .', j, obj.sessionTaskInfo(i).sessionNumber, strjoin_adjoiner_first(', ', searchFullPath)); %#ok<AGROW>
                                 issue(end).issueType = 'missing file';
                             end;
                             
@@ -1942,13 +1942,13 @@ classdef level1Study < levelStudy;
                 
                 % validate the existence of valid data recordings for the session
                 if isempty(obj.sessionTaskInfo(i).dataRecording)
-                    issue(end+1).description = sprintf('Sesion %s does not have any data recording.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                    issue(end+1).description = sprintf('session %s does not have any data recording.', obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                 else
                     for j=1:length(obj.sessionTaskInfo(i).dataRecording)
                         
                         % check filename
                         if ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).filename)
-                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a filename.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Data recording %d of session number %s does not have a filename.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         else % file has to be found according to ESS convention
                             
                             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
@@ -1957,7 +1957,7 @@ classdef level1Study < levelStudy;
                             fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
                             
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
-                                issue(end+1).description = [sprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
+                                issue(end+1).description = [sprintf('File specified for data recording %d of session number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
                                 
                             else % if file exists, check if its adheres to ESS naming convention
@@ -1965,7 +1965,7 @@ classdef level1Study < levelStudy;
                                 [dataRecordingModalities, dataRecordingModalityString]= obj.getModalitiesForDataRecording(i, j); %#ok<ASGLU>
                                 if ~level1Study.fileNameMatchesEssConvention(obj.sessionTaskInfo(i).dataRecording(j).filename, dataRecordingModalityString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                         subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject))
-                                    fprintf('Warning: Filename %s (data recoding %d of sesion number %s) does not follow ESS convention.\n', obj.sessionTaskInfo(i).dataRecording(j).filename, j, obj.sessionTaskInfo(i).sessionNumber);
+                                    fprintf('Warning: Filename %s (data recording %d of session number %s) does not follow ESS convention.\n', obj.sessionTaskInfo(i).dataRecording(j).filename, j, obj.sessionTaskInfo(i).sessionNumber);
                                 end;
                             end
                         end;
@@ -1973,7 +1973,7 @@ classdef level1Study < levelStudy;
                         
                         % check dataRecordingUuid
                         if ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid)
-                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a UUID in dataRecordingUuid.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Data recording %d of session number %s does not have a UUID in dataRecordingUuid.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                             obj.sessionTaskInfo(i).dataRecording(j).dataRecordingUuid = ['datarecording_' getUuid];
                             issue(end).howItWasFixed = 'UUID placed into the field.';
                         end;
@@ -1983,7 +1983,7 @@ classdef level1Study < levelStudy;
                         dataRecordingModalities = lower(obj.getModalitiesForDataRecording(i,j));
                         if ismember('eeg', dataRecordingModalities) && ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile)
                             if strcmpi(strtrim(obj.isInEssContainer), 'yes')
-                                issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                                issue(end+1).description =  sprintf('Data recording %d of session number %s does not have an event instance file.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                                 obj = obj.recreateEventInstanceFiles(false, i);
                                 issue(end).howItWasFixed = 'Event instance file created.';
                             end;
@@ -1994,7 +1994,7 @@ classdef level1Study < levelStudy;
                             fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
                             
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
-                                issue(end+1).description = [sprintf('Event Instance file specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
+                                issue(end+1).description = [sprintf('Event Instance file specified for data recording %d of session number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
                                 try
                                     obj = obj.recreateEventInstanceFiles(false, i);
@@ -2007,7 +2007,7 @@ classdef level1Study < levelStudy;
                         % check startDateTime to be in ISO 8601 format
                         dateTime = strtrim(obj.sessionTaskInfo(i).dataRecording(j).startDateTime);
                         if isempty(dateTime) || (level1Study.isAvailable(dateTime) && isempty(datenum8601(dateTime)))
-                            issue(end+1).description =  sprintf('startDateTime specified in data recoding %d of sesion number %s does not have a valid ISO 8601 Date String.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('startDateTime specified in data recording %d of session number %s does not have a valid ISO 8601 Date String.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                             
                             dateTimeIso8601 = [];
                             try
@@ -2025,7 +2025,7 @@ classdef level1Study < levelStudy;
                         % make sure a valid recordingParameterSetLabel is assigned
                         % for each recording
                         if ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
-                            issue(end+1).description =  sprintf('Data recoding %d of sesion number %s does not have a Recording Parameterset Label.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Data recording %d of session number %s does not have a Recording Parameterset Label.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         else % file has to be found according to ESS convention
                             % check to see if the label matches any of the
                             % labels in recordingParameterSet
@@ -2038,7 +2038,7 @@ classdef level1Study < levelStudy;
                             end;
                             
                             if ~matchFound
-                                issue(end+1).description = sprintf('Recording parameter set label ''%s'' defined in Data recoding %d of sesion number %s does not match any labels in recordingParameterSet', obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel, j, obj.sessionTaskInfo(i).sessionNumber );
+                                issue(end+1).description = sprintf('Recording parameter set label ''%s'' defined in Data recording %d of session number %s does not match any labels in recordingParameterSet', obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel, j, obj.sessionTaskInfo(i).sessionNumber );
                             end;
                             
                         end;
@@ -2049,7 +2049,7 @@ classdef level1Study < levelStudy;
                 
                 % validate the task label in the session
                 if numberOfTasks > 1 && ~level1Study.isAvailable(obj.sessionTaskInfo(i).taskLabel)
-                    issue(end+1).description = sprintf('The study has more than one task but the task label is not available for sesion number %d', i);
+                    issue(end+1).description = sprintf('The study has more than one task but the task label is not available for session number %d', i);
                 else
                     if ~ismember(obj.sessionTaskInfo(i).taskLabel, taskLabels)
                         issue(end+1).description = sprintf('The task label %s in session number %d does not match defined tasks.', obj.sessionTaskInfo(i).taskLabel, i);
@@ -2062,7 +2062,7 @@ classdef level1Study < levelStudy;
             % numbers)
             missingSessionNumber = setdiff(1:max(sessionNumbers), unique(sessionNumbers));
             if ~isempty(missingSessionNumber)
-                issue(end+1).description = sprintf('Some session numbers are missing. These numbers have to be from 1 up to the number of sesssions.\n Here are the missing numbers: %s.', num2str(missingSessionNumber));
+                issue(end+1).description = sprintf('Some session numbers are missing. These numbers have to be from 1 up to the number of sessions.\n Here are the missing numbers: %s.', num2str(missingSessionNumber));
             end;
             
             if ~level1Study.isAvailable(obj.eventSpecificationMethod) || ~ismember(strtrim(lower(obj.eventSpecificationMethod)), {'codes', 'tags'})
@@ -2541,7 +2541,7 @@ classdef level1Study < levelStudy;
                             fileFinalPath = nextToXMLFilePath;
                         else % the file cannot be found
                             fileFinalPath = [];
-                            fprintf('Channel location file for for subject %d of sesion number %s cannot be found.\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                            fprintf('Channel location file for for subject %d of session number %s cannot be found.\n', j, obj.sessionTaskInfo(i).sessionNumber);
                         end;
                         
                         if ~isempty(fileFinalPath)
@@ -2609,15 +2609,15 @@ classdef level1Study < levelStudy;
                             fileFinalPath = nextToXMLFilePath;
                         elseif ~fileNameFromObjisEmpty
                             fileFinalPath = [];
-                            fprintf('File specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
+                            fprintf('File specified for data recording %d of session number %s does not exist, \r         i.e. cannot find either %s or %s.\n', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
                             fprintf('You might want to run validate() routine.\n');
                         else % the file was empty
                             fileFinalPath = [];
                             if strcmpi(typeOfFile{k}, 'recording')
-                                fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                                fprintf('You have not specified any file for data recording %d of session number %s\n', j, obj.sessionTaskInfo(i).sessionNumber);
                                 fprintf('You might want to run validate() routine.\n');
                             else
-                                fprintf('Event Instance file for for data recoding %d of sesion number %s is not specified.\n', j, obj.sessionTaskInfo(i).sessionNumber);
+                                fprintf('Event Instance file for for data recording %d of session number %s is not specified.\n', j, obj.sessionTaskInfo(i).sessionNumber);
                                 fprintf('Will attempt to create it from the data recording file.\n');
                             end;
                         end;
