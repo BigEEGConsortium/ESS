@@ -2394,6 +2394,11 @@ classdef level1Study < levelStudy;
                     end;
                 end;
                 
+                % remove events with nan latency
+                eventType = eventType(~isnan(eventLatency));
+                eventHedString = eventHedString(~isnan(eventLatency));
+                eventLatency = eventLatency(~isnan(eventLatency));
+                
                 fid = fopen(fullFilePath, 'w');
                 for i=1:length(eventType)
                     fprintf(fid, '%s\t%s\t%s', eventType{i}, num2str(eventLatency(i)), eventHedString{i});
@@ -2706,6 +2711,8 @@ classdef level1Study < levelStudy;
                     end;
                 end;
             end;
+            
+            obj = obj.updateEventNumberOfInstances;
             
             % copy static files (assets)
             thisClassFilenameAndPath = mfilename('fullpath');
