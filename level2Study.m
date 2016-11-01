@@ -251,7 +251,7 @@ classdef level2Study < levelStudy;
             % Example:
             %
             %	obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
-            %	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object.
+            %	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_study\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object.
             %
             % Options:
             %

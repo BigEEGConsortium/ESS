@@ -1,6 +1,11 @@
-function obj = loadStudyContainer(folderOrXML)
-% obj = loadStudyContainer(folderOrXML)
+function obj = load_study_container(folderOrXML, verbose)
+% obj = load_study_container(folderOrXML, verbose)
 % loads all study levels by detecting the type of file or folder provided.
+
+if nargin < 2
+    verbose = true;
+end;
+
 switch(exist(folderOrXML))
     case 0
         error('file or folder %s does not exist.', folderOrXML);
@@ -12,7 +17,10 @@ switch(exist(folderOrXML))
         elseif exist([folderOrXML filesep 'study_description.xml'], 'file')
             obj = level1Study(folderOrXML);
         else
-            error('No container manifest xml file can be found in the directory %s,', folderOrXML);
+            if verbose
+            warning('No container manifest xml file can be found in the directory %s,', folderOrXML);
+            end;
+            obj = [];
         end
     case 2 % is a file name that exists
         Pref.NumLevels = 1;
