@@ -1,8 +1,8 @@
 classdef level1Study < levelStudy;
-    % Allow reading, writing and manipulatoion of information contained in ESS-formatted Standard Level 1 XML files.
+    % Allow reading, writing and manipulation of information contained in ESS-formatted Standard Level 1 XML files.
     % EEG Studdy Schema (ESS) Level 1 contains EEG study meta-data information (subject information, sessions file
     % associations...). On read data are loaded in the object properties, you can change this data
-    % (e.g. add a ne session) and then save using the write() method into a =new ESS XML file.
+    % (e.g. add a ne session) and then save using the write() method into a new ESS XML file.
     %
     % Written by Nima Bigdely-Shamlo and Jessica Hsi.
     % Copyright 2014-2016 Qusp.
@@ -21,7 +21,7 @@ classdef level1Study < levelStudy;
         % goals, experimental procedures  utilized, etc.)
         studyShortDescription = ' ';
         
-        % Long description the study (e.g. explanation of study goals,
+        % Long description of the study (e.g. explanation of study goals,
         % experimental procedures utilized, etc.).
         studyDescription = ' ';
         
@@ -60,7 +60,7 @@ classdef level1Study < levelStudy;
             'hearing', [], 'height', [], 'weight', [], 'channelLocations', [], ...
             'medication', struct('caffeine', [], 'alcohol', [])));
         
-        % information different tasks in each session of the study.
+        % information about different tasks in each session of the study.
         tasksInfo = struct('taskLabel', ' ', 'tag', ' ', 'description', ' ');
         
         eventSpecificationMethod = ' '; % should be either 'codes' or 'tags'.
@@ -68,7 +68,7 @@ classdef level1Study < levelStudy;
         isInEssContainer = 'No'; % should be either 'Yes' or 'No'.
         
         % Information about event codes (i.e. triggers, event numbers).
-        % Notive, we do not have a separate 'event' node inside the
+        % Notice, we do not have a separate 'event' node inside the
         % eventCodesInfo. This is a slightly different mapping from XML.
         eventCodesInfo = struct('code', ' ', 'taskLabel', ' ', 'numberOfInstances', ' ', 'condition', struct(...
             'label', ' ', 'description', ' ', 'tag', ' '));
@@ -86,7 +86,7 @@ classdef level1Study < levelStudy;
         % Information of individual to contact for data results, or more information regarding the study.
         contactInfo = struct ('name', ' ', 'phone', ' ', 'email', ' ');
         
-        % Iinformation regarding the organization that conducted the
+        % Information regarding the organization that conducted the
         % research study or experiment.
         organizationInfo = struct('name', ' ', 'logoLink', ' ');
         
@@ -104,8 +104,8 @@ classdef level1Study < levelStudy;
     methods
         function obj = level1Study(varargin)
             % obj = level1Study(essFilePath)
-            % create a instance of the object. If essFilePath is provided (optional) it also read the
-            % XML file. If the file does not exists, it will be created on
+            % create an instance of the object. If essFilePath is provided (optional) it also read the
+            % XML file. If the file does not exist, it will be created on
             % obj.write();
             %
             % Example:
@@ -117,23 +117,23 @@ classdef level1Study < levelStudy;
             % Options:
             %   Key                                     Value
             %
-            %   essFilePath                             : String, ESS Standard Level 1 XML Filename or Container folder. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.
+            %   essFilePath                             : String, ESS Standard Level 1 XML Filename or Container folder. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly recommended to use the name study_description.xml to comply with ESS folder convention.
             %   numberOfSessions                        : Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.
             %   numberOfSubjectsPerSession              : Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study session.
             %   numberOfRecordingsPerSessionTask        : Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.
             %   taskLabels                              : Cell array of strings, Labels for session tasks. A cell array containing task labels. Optional if study only has a single task.
-            %   createNewFile                           : Logical, Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.
+            %   createNewFile                           : Logical, Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an unpromted overwrite if an ESS file already exists in the specified path.
             %   recordingParameterSet                   : Structure array, Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).
             %
             
             obj = obj@levelStudy;
             
             inputOptions = arg_define([0 1],varargin, ...
-                arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly Urecommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
+                arg('essFilePath', '','','ESS Standard Level 1 XML Filename. Name of the ESS XML file associated with the level1 study. It should include path and if it does not exist a new file with (mostly) empty fields in created.  It is highly recommended to use the name study_description.xml to comply with ESS folder convention.', 'type', 'char'), ...
                 arg('numberOfSessions', uint32(1),[1 Inf],'Number of study sessions. A session is best described as a single application of EEG cap for subjects, for data to be recorded under a single study. Multiple (and potentially quite different) tasks may be recorded during each session but they should all belong to the same study.'), ...
                 arg('numberOfSubjectsPerSession', uint32(1),[1 Inf],'Number of subjects per session. Most studies only have one session per subject but some may have two or more subejcts interacting in a single study session.'), ...
                 arg('numberOfRecordingsPerSessionTask', uint32(1),[1 Inf],'Number of EEG recordings per task. Sometimes data for each task in a session is recorded in multiple files.'), ...
-                arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ?eyes closed? task, followed by a ?target detection? task and a ?mind wandering?, eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
+                arg('taskLabels', {'main'},[],'Labels for session tasks. A cell array containing task labels. Optional if study only has a single task. Each study may contain multiple tasks. For example a baseline ''eyes closed'' task, followed by a ''target detection'' task and a ''mind wandering'', eyes open, task. Each task contains a single paradigm and in combination they allow answering scientific questions investigated in the study. ESS allows for event codes to have different meanings in each task, although such event encoding is discouraged due to potential for experimenter confusion.', 'type', 'cellstr'), ...
                 arg('createNewFile', false,[],'Always create a new file. Forces the creation of a new (partially empty, filled according to input parameters) ESS file. Use with caution since this forces an un-promted overwrite if an ESS file already exists in the specified path.', 'type', 'cellstr'), ...
                 arg('recordingParameterSet', unassigned,[],'Common data recording parameter set. If assigned indicates that all data recording have the exact same recording parameter set (same number of channels, sampling frequency, modalities and their orders...).') ...
                 );
@@ -142,7 +142,7 @@ classdef level1Study < levelStudy;
             if ~isempty(inputOptions.essFilePath)
                 obj.essFilePath = inputOptions.essFilePath;
                 
-                % if the folder 'container' is instead of filename provided, use the default
+                % if the folder 'container' is provided instead of filename, use the default
                 % 'study_description.xml' file.
                 if exist(obj.essFilePath, 'dir')...
                         && exist([obj.essFilePath filesep 'study_description.xml'], 'file')
@@ -172,7 +172,7 @@ classdef level1Study < levelStudy;
                     obj.essVersion = level1SchemaVersion;
                     obj.studyUuid = ['studylevel1_' getUuid];
                     
-                    % if data recodring parameter set if assigned, use it
+                    % if data recording parameter set if assigned, use it
                     % for all the recordings.
                     typicalDataRecording = obj.sessionTaskInfo(1).dataRecording;
                     recordingParameterSetIsConstant = isfield(inputOptions, 'recordingParameterSet') && ~isempty(inputOptions.recordingParameterSet);
@@ -182,7 +182,7 @@ classdef level1Study < levelStudy;
                     end;
                     
                     % create number of sessions x number of task records in
-                    % sessionTaskInfo an fill them with provided session numbers and
+                    % sessionTaskInfo and fill them with provided session numbers and
                     % task labels.
                     numberOfSessionTaskTuples = inputOptions.numberOfSessions * length(inputOptions.taskLabels);
                     obj.sessionTaskInfo(1:numberOfSessionTaskTuples) = obj.sessionTaskInfo;
@@ -227,7 +227,7 @@ classdef level1Study < levelStudy;
         function obj = read(obj, essFilePath)
             %  obj = read(essFilePath);
             %
-            % Reads the information contained an ESS-formatted XML file and placed it into object properties.
+            % Reads the information contained an ESS-formatted XML file and places it into object properties.
             
             function result = nodeExistsAndHasAChild(node)
                 result = node.getLength > 0 && ~isempty( node.item(0).getFirstChild);
@@ -244,8 +244,8 @@ classdef level1Study < levelStudy;
             
             % first validate the XML file according to ESS STDL1 schema encoded in XML (an XSD file)
             % this is useful since during read we are only looking for the
-            % first instance of each node but the XML might have mistakanly
-            % contain two more node, in which case the wrong information
+            % first instance of each node but the XML might mistakanly
+            % contain two more nodes, in which case the wrong information
             % may be read
             
             % get the class path
@@ -415,7 +415,7 @@ classdef level1Study < levelStudy;
                 
                 potentialRecordingParameterSetNodeArray = currentNode.getElementsByTagName('recordingParameterSet');
                 if potentialRecordingParameterSetNodeArray.getLength > 0
-                    % go over all recording paramer sets
+                    % go over all recording parameter sets
                     for parameterSetCounter = 0:(potentialRecordingParameterSetNodeArray.getLength-1)
                         currentNode = potentialRecordingParameterSetNodeArray.item(parameterSetCounter); % select a parameter set and make it the current node.
                         
@@ -587,8 +587,8 @@ classdef level1Study < levelStudy;
                             potentialEegSamplingRateNodeArray = currentNode.getElementsByTagName('eegSamplingRate');
                             if potentialEegSamplingRateNodeArray.getLength > 0
                                 % for now we asume all had the same
-                                % samling, a better way is to check all
-                                % samplig rates and create different
+                                % sampling, a better way is to check all
+                                % sampling rates and create different
                                 % recordingParameter sets.
                                 obj.recordingParameterSet(1).modality(1).samplingRate = readStringFromNode(potentialEegSamplingRateNodeArray.item(0));
                             end;
@@ -1064,9 +1064,9 @@ classdef level1Study < levelStudy;
             potentialOrgNodeArray = currentNode.getElementsByTagName('organization');
             
             % there are two 'organization' nodes in the ESS, the one that is under <project<funding> and
-            % says the organization that has funded the projects, e.g. NIH or NSF and then there is
-            % the organization node that is under the study node and contain name and logoLink info.
-            % here we need to find the one that is under the study node.
+            % specifies the organization that has funded the projects, e.g. NIH or NSF and then there is
+            % the organization node that is under the study node and contains name and logoLink info.
+            % Here we need to find the one that is under the study node.
             theItemNumber = [];
             for itemCounter = 0:(potentialOrgNodeArray.getLength-1)
                 if potentialOrgNodeArray.item(itemCounter).getParentNode == studyNode
@@ -1619,7 +1619,7 @@ classdef level1Study < levelStudy;
                     allowedUnitsLenght(iii) = length(allowedUnits{iii});
                 end;
                 
-                % sort based on lenth so match firt by the longest
+                % sort based on length so match first by the longest
                 [dummy, ord] = sort(allowedUnitsLenght, 'descend'); %#ok<ASGLU>
                 allowedUnits  = allowedUnits(ord);
                 
@@ -1668,7 +1668,7 @@ classdef level1Study < levelStudy;
             end;
             
             if length(obj.studyUuid) < 10 % uuid shoudllbe at least 10 random characters
-                issue(end+1).description = 'UUID is empty or less than 10 (random) characeters.';
+                issue(end+1).description = 'UUID is empty or less than 10 (random) characters.';
                 if fixIssues
                     obj.studyUuid = ['studylevel1_' getUuid];
                     issue(end).howItWasFixed = 'A new UUID is set.';
@@ -1903,7 +1903,7 @@ classdef level1Study < levelStudy;
                         end;
                         
                         if isfield(obj.sessionTaskInfo(i).subject(j), 'height') && (~isempty(strfind(obj.sessionTaskInfo(i).subject(j).height, '''')) || ~isempty(strfind(obj.sessionTaskInfo(i).subject(j).height, '"')))
-                            issue(end+1).description =  sprintf('Subject %d of session %s has a ''height'' field that seems to be in feets and inches (instead of centimeters).', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>                                                        
+                            issue(end+1).description =  sprintf('Subject %d of session %s has a ''height'' field that seems to be in feet and inches (instead of centimeters).', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>                                                        
                         end;
                         
                         
@@ -1998,7 +1998,7 @@ classdef level1Study < levelStudy;
                                 issue(end).issueType = 'missing file';
                                 try
                                     obj = obj.recreateEventInstanceFiles(false, i);
-                                    issue(end).howItWasFixed = 'Event insatnce file created.';
+                                    issue(end).howItWasFixed = 'Event instance file created.';
                                 catch e
                                 end;
                             end;
@@ -2025,7 +2025,7 @@ classdef level1Study < levelStudy;
                         % make sure a valid recordingParameterSetLabel is assigned
                         % for each recording
                         if ~level1Study.isAvailable(obj.sessionTaskInfo(i).dataRecording(j).recordingParameterSetLabel)
-                            issue(end+1).description =  sprintf('Data recording %d of session number %s does not have a Recording Parameterset Label.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
+                            issue(end+1).description =  sprintf('Data recording %d of session number %s does not have a ''recording parameter set'' Label.', j, obj.sessionTaskInfo(i).sessionNumber); %#ok<AGROW>
                         else % file has to be found according to ESS convention
                             % check to see if the label matches any of the
                             % labels in recordingParameterSet
