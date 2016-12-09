@@ -1757,14 +1757,14 @@ classdef level1Study < levelStudy;
                                         channelLabel = strsplit(obj.recordingParameterSet(i).modality(j).channelLabel,',');
                                         channelLabel = lower(strtrim(channelLabel));
                                         
-                                        nonScalpChannelLabel = strsplit(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel);
+                                        nonScalpChannelLabel = strsplit(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel, ',');
                                         nonScalpChannelLabel = lower(strtrim(nonScalpChannelLabel));
                                         
                                         scalpLabel = setdiff(channelLabel, nonScalpChannelLabel);
                                         unknownLabel = setdiff(scalpLabel, lower(listof10_20_labels));
                                         
                                         if ~isempty(unknownLabel)
-                                            fprintf('Channel labels (%s) \n specified for EEG with 10-20 montage (modality %d) in recording parameter set %d \ do not follow conventional 10-20 montage names.', strjoin_adjoiner_first(',', unknownLabel), j, i);
+                                            fprintf('Channel labels (%s) \n specified for EEG with 10-20 montage (modality %d) in recording parameter set %d \n do not follow conventional 10-20 montage names.', strjoin_adjoiner_first(',', unknownLabel), j, i);
                                         end;
                                     end;
                                     
@@ -2141,7 +2141,7 @@ classdef level1Study < levelStudy;
                         end;
                     end;
                     
-                    if ~level1Study.isAvailable(obj.summaryInfo.totalSize) || ~isProperNumber(obj.summaryInfo.totalSize, false, 0, {'Mb' 'GB' 'Gbytes' 'giga bytes' 'gbs' 'bytes' 'KB' 'kilo bytes' 'kilo byte' 'byte' 'kbs'})
+                    if strcmpi(obj.isInEssContainer, 'Yes') && (~level1Study.isAvailable(obj.summaryInfo.totalSize) || ~isProperNumber(obj.summaryInfo.totalSize, false, 0, {'Mb' 'GB' 'Gbytes' 'giga bytes' 'gbs' 'bytes' 'KB' 'kilo bytes' 'kilo byte' 'byte' 'kbs'}))
                         issue(end+1).description = sprintf('Total Size value specified in Summary Information is missing or not valid.');
                     end;
                     
@@ -2607,7 +2607,7 @@ classdef level1Study < levelStudy;
                         
                         nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
                         fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
-                        fileNameFromObjisEmpty = isempty(strtrim(fileNameFromObj));
+                        fileNameFromObjisEmpty = isempty(fileNameFromObj) || isempty(strtrim(fileNameFromObj));
                         if ~fileNameFromObjisEmpty && exist(fullEssFilePath, 'file')
                             fileFinalPath = fullEssFilePath;
                         elseif ~fileNameFromObjisEmpty && exist(nextToXMLFilePath, 'file')
@@ -2630,7 +2630,7 @@ classdef level1Study < levelStudy;
                         % either the eeg file should exist or an empty
                         % event instance file is specified and needs to be
                         % created from a data recording file.
-                        if ~isempty(fileFinalPath) || (isempty(strtrim(fileNameFromObj)) && strcmpi(typeOfFile{k}, 'event'))
+                        if ~isempty(fileFinalPath) || ( (isempty(fileNameFromObj) || isempty(strtrim(fileNameFromObj))) && strcmpi(typeOfFile{k}, 'event'))
                             essConventionfolder = ['session' filesep obj.sessionTaskInfo(i).sessionNumber];
                             
                             switch typeOfFile{k}
