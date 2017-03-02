@@ -2161,7 +2161,7 @@ classdef level1Study < levelStudy;
             end
             
             % validate event HED tags
-            w = which('validateCellTags.m');
+            w = which('validatecell.m');
             if isempty(w)
                 fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');
             else
