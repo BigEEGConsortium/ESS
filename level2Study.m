@@ -505,6 +505,7 @@ classdef level2Study < levelStudy;
                                 %filterFieldName = {'resampling' 'lineNoise'};
                                 %filterFunctionName = {'resampleEEG' 'cleanLineNoise'};
                                 
+                                f = 1;
                                 filterLabel = {'Line Noise Removal'};
                                 filterFieldName = {'lineNoise'};
                                 filterFunctionName = {'cleanLineNoise'};
@@ -555,7 +556,7 @@ classdef level2Study < levelStudy;
                                 end;
                             end;
                             
-                            % remove any filter with an empty (the first
+                            % remove any filter with an empty label (the first
                             % one created by the object)
                             removeId = [];
                             for f=1:length(obj.filters.filter)

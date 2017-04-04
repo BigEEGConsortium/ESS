@@ -1592,7 +1592,12 @@ classdef level1Study < levelStudy;
             xmlwrite(obj.essFilePath, docNode);
         end;
         
-        function [obj, issue]= validate(obj, fixIssues)
+        
+        
+      
+        function [obj, issue, numberOfMissingFileIssues, numberOfXMLIssues] = validate(obj, fixIssues)
+            % [obj, issue, numberOfMissingFileIssues, numberOfXMLIssues] = validate(obj, fixIssues)
+            % validates data by comparing to HED schema, looking for missing files, etc.
             
             function itIs = isProperNumber(inputString, mustBeInteger, minValue, allowedUnits)
                 % check to see if the input value is a valid number. It can
@@ -1746,8 +1751,8 @@ classdef level1Study < levelStudy;
                                 if ~level1Study.isAvailable(obj.recordingParameterSet(i).modality(j).channelLocationType)
                                     issue(end+1).description = sprintf('Channel location type of EEG (modality %d) in recording parameter set %d is empty.', j, i);
                                 else
-                                    if ~ismember(lower(obj.recordingParameterSet(i).modality(j).channelLocationType), lower({'10-20', '10-10', '10-5', 'EGI', 'Custom'}))
-                                        issue(end+1).description = sprintf('Invalid channel location type (%s) is specified for EEG (modality %d) in recording parameter set %d.\r Valid type are 10-20, 10-10, 10-5, EGI and Custom.', obj.recordingParameterSet(i).modality(j).channelLocationType, j, i);
+                                    if ~ismember(lower(obj.recordingParameterSet(i).modality(j).channelLocationType), lower({'10-20', '10-10', '10-5','Biosemi256', 'EGI', 'Custom'}))
+                                        issue(end+1).description = sprintf('Invalid channel location type (%s) is specified for EEG (modality %d) in recording parameter set %d.\r Valid type are 10-20, 10-10, 10-5, Biosemi256, EGI and Custom.', obj.recordingParameterSet(i).modality(j).channelLocationType, j, i);
                                     end;
                                     
                                     % make sure all the scalp labels match 10-20
@@ -1965,7 +1970,9 @@ classdef level1Study < levelStudy;
                                 [dataRecordingModalities, dataRecordingModalityString]= obj.getModalitiesForDataRecording(i, j); %#ok<ASGLU>
                                 if ~level1Study.fileNameMatchesEssConvention(obj.sessionTaskInfo(i).dataRecording(j).filename, dataRecordingModalityString, obj.studyTitle, obj.sessionTaskInfo(i).sessionNumber,...
                                         subjectInSessionNumber, obj.sessionTaskInfo(i).taskLabel, j, getSubjectLabIdForDataRecording(obj, i, j), length(obj.sessionTaskInfo(i).subject))
-                                    fprintf('Warning: Filename %s (data recording %d of session number %s) does not follow ESS convention.\n', obj.sessionTaskInfo(i).dataRecording(j).filename, j, obj.sessionTaskInfo(i).sessionNumber);
+                                    if strcmpi(obj.isInEssContainer, 'Yes')
+                                        fprintf('Warning: Filename %s (data recording %d of session number %s) does not follow ESS convention.\n', obj.sessionTaskInfo(i).dataRecording(j).filename, j, obj.sessionTaskInfo(i).sessionNumber);
+                                    end;
                                 end;
                             end
                         end;
@@ -2051,8 +2058,10 @@ classdef level1Study < levelStudy;
                 if numberOfTasks > 1 && ~level1Study.isAvailable(obj.sessionTaskInfo(i).taskLabel)
                     issue(end+1).description = sprintf('The study has more than one task but the task label is not available for session number %d', i);
                 else
-                    if ~ismember(obj.sessionTaskInfo(i).taskLabel, taskLabels)
-                        issue(end+1).description = sprintf('The task label %s in session number %d does not match defined tasks.', obj.sessionTaskInfo(i).taskLabel, i);
+                    sessionTasks = strtrim(strsplit(obj.sessionTaskInfo(i).taskLabel, ','));
+                    undefinedTasks = setdiff(sessionTasks, taskLabels);
+                    if ~isempty(undefinedTasks)
+                        issue(end+1).description = sprintf('The task label(s) %s in session number %d does not match defined tasks.', strjoin_adjoiner_first(', ', undefinedTasks), i);
                     end;
                 end;
                 
@@ -2174,8 +2183,13 @@ classdef level1Study < levelStudy;
                         fprintf('Encountered error \n%s\n while trying to validate the HED tag %s.\n', err.message, obj.eventCodesInfo(i).condition.tag);
                     end;
                     if ~isempty(errors)
+                        if ischar(errors)
+                            errors = {errors};
+                        end;
                         errors{1} = strrep(errors{1}, 'Errors in cell 1:', '');
-                        issue(end+1).description = [sprintf('HED tag error in event code "%s" of task "%s" (record %d): ', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel, i) errors{1}];
+                        s = [sprintf('HED tag error in event code "%s" of task "%s" (record %d): ', obj.eventCodesInfo(i).code, obj.eventCodesInfo(i).taskLabel, i) errors{1}];;
+                        warning(s);
+                       % issue(end+1).description = s; 
                     end;
                 end;
             end;

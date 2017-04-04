@@ -1,4 +1,4 @@
-function [outStructArray, id] = uniqe_struct(inStructArray)
+function [outStructArray, id] = unique_struct(inStructArray)
 % finds unique tuples, each defined by fields of an structure, in an structure array.
 
 if length(inStructArray) < 1
