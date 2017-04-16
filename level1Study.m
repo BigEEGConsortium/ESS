@@ -2726,6 +2726,7 @@ classdef level1Study < levelStudy;
                 end;
             end;
             
+            obj.essFilePath = [essFolder filesep 'study_description.xml']; % need to have this to updateEventNumberOfInstances() looks into the right place.
             obj = obj.updateEventNumberOfInstances;
             
             % copy static files (assets)
