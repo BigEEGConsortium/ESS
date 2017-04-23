@@ -2170,7 +2170,7 @@ classdef level1Study < levelStudy;
             end
             
             % validate event HED tags
-            w = which('validatecell.m');
+            w = which('validatestr.m');
             if isempty(w)
                 fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');
             else
@@ -2178,7 +2178,7 @@ classdef level1Study < levelStudy;
                 
                 for i=1:length(obj.eventCodesInfo)
                     try
-                        errors = validatecell({obj.eventCodesInfo(i).condition.tag});
+                        errors = validatestr({obj.eventCodesInfo(i).condition.tag});
                     catch err
                         fprintf('Encountered error \n%s\n while trying to validate the HED tag %s.\n', err.message, obj.eventCodesInfo(i).condition.tag);
                     end;

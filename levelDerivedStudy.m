@@ -507,7 +507,7 @@ classdef levelDerivedStudy  < levelStudy;
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
                 arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event''. Specifies which file types should be returned.', 'type', 'char'),...
-                arg('dataQuality', {},[],'Acceptable data quality values. I.e. whether to include Suspect datta or not.', 'type', 'cellstr') ...
+                arg('dataQuality', {'Good'}, {'Good', 'Suspect', 'Unusable'},'Acceptable data quality values. I.e. whether to include Suspect data or not.', 'type', 'cellstr') ...
                 );
             
             level1Obj = getLevel1(obj);
@@ -525,40 +525,42 @@ classdef levelDerivedStudy  < levelStudy;
             originalFileNameAndPath = {};
             clear level1DataRecording;
             for i=1:length(obj.studyLevelDerivedFiles.studyLevelDerivedFile)
-                [match, id] = ismember(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, selectedDataRecordingUuid);
-                if match
-                    matchedSessionTaskNumber = sessionTaskNumber(id);
-                    levelDerivedDataRecordingNumber(end+1) = i;
-                    dataRecordingUuid{end+1} = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid;
-                    taskLabel{end+1} = taskLabelFromParent(id);
-                    
-                    sessionNumber{end+1} = selectedSessionNumber{id};
-                    
-                    level1DataRecording(length(sessionNumber)) = level1Obj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
-                    originalFileNameAndPath{end+1} = level1Obj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
-                    
-                    
-                    if isempty(subjectInfo)
-                        subjectInfo = selectedSubjectInfo(id);
-                    else
-                        subjectInfo(end+1)  = selectedSubjectInfo(id);
-                    end;
-                    
-                    if strcmpi(inputOptions.filetype, 'eeg')
-                        basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName;
-                    else
-                        basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile;
-                    end;
-                    
-                    if inputOptions.includeFolder
-                        baseFolder = fileparts(obj.levelDerivedXmlFilePath);
-                        % remove extra folder separator
-                        if baseFolder(end) ==  filesep
-                            baseFolder = baseFolder(1:end-1);
+                if ismember(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataQuality, inputOptions.dataQuality)
+                    [match, id] = ismember(obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid, selectedDataRecordingUuid);
+                    if match
+                        matchedSessionTaskNumber = sessionTaskNumber(id);
+                        levelDerivedDataRecordingNumber(end+1) = i;
+                        dataRecordingUuid{end+1} = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid;
+                        taskLabel{end+1} = taskLabelFromParent(id);
+                        
+                        sessionNumber{end+1} = selectedSessionNumber{id};
+                        
+                        level1DataRecording(length(sessionNumber)) = level1Obj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
+                        originalFileNameAndPath{end+1} = level1Obj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
+                        
+                        
+                        if isempty(subjectInfo)
+                            subjectInfo = selectedSubjectInfo(id);
+                        else
+                            subjectInfo(end+1)  = selectedSubjectInfo(id);
                         end;
-                        filename{end+1} = [baseFolder filesep 'session' filesep sessionNumber{end} filesep basefilename];
-                    else
-                        filename{end+1} = basefilename;
+                        
+                        if strcmpi(inputOptions.filetype, 'eeg')
+                            basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).studyLevelDerivedFileName;
+                        else
+                            basefilename = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).eventInstanceFile;
+                        end;
+                        
+                        if inputOptions.includeFolder
+                            baseFolder = fileparts(obj.levelDerivedXmlFilePath);
+                            % remove extra folder separator
+                            if baseFolder(end) ==  filesep
+                                baseFolder = baseFolder(1:end-1);
+                            end;
+                            filename{end+1} = [baseFolder filesep 'session' filesep sessionNumber{end} filesep basefilename];
+                        else
+                            filename{end+1} = basefilename;
+                        end;
                     end;
                 end;
             end;

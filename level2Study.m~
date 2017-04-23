@@ -620,7 +620,7 @@ classdef level2Study < levelStudy;
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
                 arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event''. Specifies which file types should be returned.', 'type', 'char'),...
-                arg('dataQuality', {'Good'}, {'Good', 'Suspect', 'Unusable'},'Acceptable data quality values. I.e. whether to include Suspect data or not.', 'type', 'cellstr') ...
+                arg('dataQuality', {'Good', 'Suspect', 'Unusable’}, {},'Acceptable data quality values. I.e. whether to include Suspect data or not.', 'type', 'cellstr') ...
                 );
             
             % get the UUids from level 1
@@ -636,57 +636,55 @@ classdef level2Study < levelStudy;
             originalFileNameAndPath = {};
             clear level1DataRecording;
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                if ismember(obj.studyLevel2Files.studyLevel2File(i).dataQuality, inputOptions.dataQuality)
-                    [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
-                    if match
-                        matchedSessionTaskNumber = sessionTaskNumber(id);
-                        level2DataRecordingNumber(end+1) = i;
-                        dataRecordingUuid{end+1} = obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid;
-                        taskLabel{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).taskLabel;
-                        
-                        sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber;
-                        level1DataRecording(length(sessionNumber)) = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
-                        originalFileNameAndPath{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
-                        
-                        inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)));
-                        foundSubjectId = [];
-                        for j =1:length(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject)
-                            if strcmp(inSessionNumber, obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(j).inSessionNumber)
-                                foundSubjectId = [foundSubjectId j];
-                            end;
-                        end;
-                        if isempty(foundSubjectId)
-                            error('Something iss wrong, subejct with inSession number cannot be found.');
-                        elseif length(foundSubjectId) > 1
-                            error('Something is wrong, more than one sbject with inSession number found.');
-                        else % a single number
-                            newSubject = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(foundSubjectId);
-                            if isempty(subjectInfo)
-                                subjectInfo{1} = newSubject;
-                            else
-                                subjectInfo{end+1}  = newSubject;
-                            end;
-                        end;
-                        
-                        if strcmpi(inputOptions.filetype, 'eeg')
-                            basefilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
-                        else
-                            basefilename = obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile;
-                        end;
-                        
-                        if inputOptions.includeFolder
-                            baseFolder = fileparts(obj.level2XmlFilePath);
-                            % remove extra folder separator
-                            if baseFolder(end) ==  filesep
-                                baseFolder = baseFolder(1:end-1);
-                            end;
-                            filename{end+1} = [baseFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber filesep basefilename];
-                        else
-                            filename{end+1} = basefilename;
+                [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
+                if match
+                    matchedSessionTaskNumber = sessionTaskNumber(id);
+                    level2DataRecordingNumber(end+1) = i;
+                    dataRecordingUuid{end+1} = obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid;
+                    taskLabel{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).taskLabel;
+                    
+                    sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber;
+                    level1DataRecording(length(sessionNumber)) = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
+                    originalFileNameAndPath{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
+                    
+                    inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)));
+                    foundSubjectId = [];
+                    for j =1:length(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject)
+                        if strcmp(inSessionNumber, obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(j).inSessionNumber)
+                            foundSubjectId = [foundSubjectId j];
                         end;
                     end;
+                    if isempty(foundSubjectId)
+                        error('Something iss wrong, subejct with inSession number cannot be found.');
+                    elseif length(foundSubjectId) > 1
+                        error('Something is wrong, more than one sbject with inSession number found.');
+                    else % a single number
+                        newSubject = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(foundSubjectId);
+                        if isempty(subjectInfo)
+                            subjectInfo{1} = newSubject;
+                        else
+                            subjectInfo{end+1}  = newSubject;
+                        end;
+                    end;
+                    
+                    if strcmpi(inputOptions.filetype, 'eeg')
+                        basefilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
+                    else
+                        basefilename = obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile;
+                    end;
+                    
+                    if inputOptions.includeFolder
+                        baseFolder = fileparts(obj.level2XmlFilePath);
+                        % remove extra folder separator
+                        if baseFolder(end) ==  filesep
+                            baseFolder = baseFolder(1:end-1);
+                        end;
+                        filename{end+1} = [baseFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber filesep basefilename];
+                    else
+                        filename{end+1} = basefilename;
+                    end;
                 end;
-            end
+            end;
         end;
         
         function [filename, outputDataRecordingUuid, taskLabel, moreInfo, level2DataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
