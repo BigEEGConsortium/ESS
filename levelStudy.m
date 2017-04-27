@@ -507,7 +507,7 @@ classdef levelStudy
             obj = combinedObj;
         end;
         
-          function writeJSONP(obj, essFolder)
+        function writeJSONP(obj, essFolder)
             % writeJSONP(obj, essFolder)
             % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
 %             if nargin < 2
@@ -526,9 +526,9 @@ classdef levelStudy
         end;
         
         function copyJSONReportAssets(obj, essFolder)
-%             if nargin < 2
-%                 essFolder = fileparts(obj.essFilePath);
-%             end;
+            %             if nargin < 2
+            %                 essFolder = fileparts(obj.essFilePath);
+            %             end;
             
             thisClassFilenameAndPath = mfilename('fullpath');
             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
@@ -537,7 +537,7 @@ classdef levelStudy
             
             % copy javascript and CSS used in index.html
             copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
-        end;
+        end;        
     end
     methods (Static)
         function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder, sessionNumber, recordingNumber)
@@ -560,5 +560,100 @@ classdef levelStudy
                 fprintf('You might want to run validate() routine.\n');
             end;
         end
+        
+        function EEG = applyTagCorrectionFile(EEG, filename, catalog, dataRecordingId)
+            % EEG = applyTagCorrectionFile(EEG, filename, catalog, dataRecordingId)
+            % applies a 'tag correction' file, in YAML format, to change the HED tags
+            % associated with certains events in certain tasks (in certain studies).
+            % if dataRecordingId is omitted, the function tries to extract it from EEG.etc.dataRecordingUuid
+            
+            if ~exist('dataRecordingId', 'var')
+                if isfield(EEG.etc, 'dataRecordingUuid')
+                    dataRecordingId = EEG.etc.dataRecordingUuid;
+                else
+                    error('''dataRecordingId'' input is missing.');
+                end;
+            end;
+            
+            correction = ReadYaml(filename);
+            correctionStudyTitles = fieldnames(correction);
+            studyInfo  = DataRecording.studyInfoFromDataRecordingIds({dataRecordingId}, catalog);
+            [ustudytitles, ~, sids] = unq(studyInfo.studyTitles);
+            
+            tasklabels = DataRecording.taskLabelsFromDataRecordingIds({dataRecordingId}, catalog);
+            [utasklabels, ~, tids] = unq(tasklabels);
+            
+            for i=1:length(EEG.event)
+                if isempty(EEG.event(i).type)
+                    EEG.event(i).type = '';
+                elseif isnumeric(EEG.event(i).type)
+                    EEG.event(i).type = num2str(EEG.event(i).type);
+                end;
+            end;
+            codes = {EEG.event.type};
+            
+            [ucodes, ~, cids] = unq(codes);                        
+            
+            for st1 = 1:length(correctionStudyTitles)
+                correctionStudyMatchFound = false;
+                for st2 = 1:length(ustudytitles)
+                    if strcmp(strrep(ustudytitles{st2}, ' ', ''), correctionStudyTitles{st1}) % since during YAML import spaces are removed from tasklabel.
+                        correctionTaskLabelCells = correction.(correctionStudyTitles{st1});
+                        correctionStudyMatchFound = true;
+                        totalNumberOfInstancesCorrected = 0;
+                        
+                        fprintf('Study ''%s'':\n', ustudytitles{st2});
+                        
+                        studyMask = sids == st2;
+                        
+                        for i=1:length(utasklabels)
+                            for j=1:length(correctionTaskLabelCells)
+                                correctionTaskLabel = fieldnames(correctionTaskLabelCells{j});
+                                correctionTaskLabel = correctionTaskLabel{1};
+                                if strcmp(strrep(utasklabels{i}, ' ', ''), correctionTaskLabel) % since during YAML import spaces are removed from tasklabel.
+                                    eventCells = correction.(correctionStudyTitles{st1}){j}.(correctionTaskLabel);
+                                    for m = 1:length(eventCells)
+                                        codeNames = fieldnames(eventCells{m});
+                                        for k =1:length(codeNames)
+                                            if codeNames{i}(1) == 'x' && length(codeNames{i}) > 1 && ~isvarname(codeNames{i}(2:end)) % since during YAML import 'x' characters are added to allow input of numeric event codes as structure fields.
+                                                cleanedCodeName = codeNames{i}(2:end);
+                                            else
+                                                cleanedCodeName = codeNames{i};
+                                            end;
+                                            
+                                            id = find(strcmp(cleanedCodeName, ucodes));
+                                            if any(id)
+                                                codeMask = cids == id;
+                                                
+                                                taskMask = tids == i;
+                                                mask = studyMask & codeMask & taskMask;
+                                                
+                                                %obj.hedStrings(mask) = {eventCells{m}.(codeNames{i})};
+                                                maskIds = find(mask);
+                                                for e=1:length(maskIds)
+                                                    EEG.event(maskIds(e)).usertags = eventCells{m}.(codeNames{i});
+                                                end;
+                                                
+                                                
+                                                numberOfInstancesCorrected = sum(mask);
+                                                totalNumberOfInstancesCorrected = totalNumberOfInstancesCorrected + numberOfInstancesCorrected;
+                                                fprintf(' - %d event instances of type ''%s'' in task ''%s'' corrected to \r   ''%s''.\n', numberOfInstancesCorrected, ucodes{id}, utasklabels{i}, eventCells{m}.(codeNames{i}));
+                                            end;
+                                        end
+                                    end;
+                                end;
+                            end;
+                        end;
+                        
+                        if totalNumberOfInstancesCorrected == 0
+                            fprintf('No match for correction found in this study.\n');
+                        end;
+                    end;
+                    if ~correctionStudyMatchFound
+                        fprintf('No match for study ''%s'' found.\n', correctionStudyTitles{st1});
+                    end;
+                end;                           
+            end;            
+        end;
     end
 end
