@@ -27,19 +27,7 @@
 <body>
   <div ng-app = "essReportApp" ng-controller="ReportController">
     <h1>{{level1.title}}</h1>
-    <div ng-if="level1.showNotice">
-      <p>This study is an <a href="http://www.eegstudy.org/#level1">ESS Standard Data Level 1 container</a>. This means that it contains raw, unprocessed EEG data (and possibly other modalities) arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.</p>
-    </div>
-    <div ng-if="level2.showNotice">
-      <p>This study is an <a href="http://www.eegstudy.org/#level2">ESS Standard Data Level 2 container</a>. This means that raw EEG data has been processed with <a href="http://vislab.github.io/EEG-Clean-Tools/">PREP pipeline</a>, i.e. re-referenced with a robust average reference.
-        Data files have been arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.
-      </p>
-    </div>
-    <div ng-if="levelDerived.showNotice">
-      <p>This study is an ESS Standard Data Level-Derived container. This means that it contains data after one or more levels of procesing.
-        Data files have been arranged in a standard manner. You use the data in the container folder as usual or use <a href="https://github.com/BigEEGConsortium/ESS">ESS tools (MATLAB)</a> to automate access and proceesing.  For more information pleasee visit <a href="http://www.eegstudy.org/">eegstudy.org</a>.
-      </p>
-    </div>
+    <p id=preamble></p>
     <h3>Short Description</h3>
     <p>{{level1.shortDescription}}</p>
     <h3>Full Description</h3>
@@ -56,6 +44,7 @@
         <td>Subject Groups: {{level1.subjectGroup}}</td>
       </tr>
       <tr>
+        <td id="dataQuality"></td>
       </tr>
       <tr>
         <td>Primary source of event information: {{level1.eventSpecificationMethod}}</td>
@@ -101,17 +90,31 @@
     <label style="font-weight: normal">
       Filter Rows
       <input placeholder="" type="text"
-      onpaste="onLevel1DataRecordingsFilterChanged(this.value)"
-      oninput="onLevel1DataRecordingsFilterChanged(this.value)"
-      onchange="onLevel1DataRecordingsFilterChanged(this.value)"
-      onchange="onLevel1DataRecordingsFilterChanged(this.value)"
-      onkeydown="onLevel1DataRecordingsFilterChanged(this.value)"
-      onkeyup="onLevel1DataRecordingsFilterChanged(this.value)"/>
+      onpaste="onDataRecordingsFilterChanged(this.value)"
+      oninput="onDataRecordingsFilterChanged(this.value)"
+      onchange="onDataRecordingsFilterChanged(this.value)"
+      onchange="onDataRecordingsFilterChanged(this.value)"
+      onkeydown="onDataRecordingsFilterChanged(this.value)"
+      onkeyup="onDataRecordingsFilterChanged(this.value)"/>
     </label>
-    <label style="font-weight: normal">
-      <button  style="font-weight: normal" onclick="extracted.level1.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
-    </label>
-    <div ag-grid="level1.dataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    <div ng-if="level1.enable">
+      <label style="font-weight: normal">
+        <button  style="font-weight: normal" onclick="level1.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
+      </label>
+      <div ag-grid="level1.dataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    </div>
+    <div ng-if="level2.enable">
+      <label style="font-weight: normal">
+        <button  style="font-weight: normal" onclick="level2.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
+      </label>
+      <div ag-grid="level2.dataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    </div>
+    <div ng-if="levelDerived.enable">
+      <label style="font-weight: normal">
+        <button  style="font-weight: normal" onclick="levelDerived.dataRecordingsGridOptions.api.exportDataAsCsv()"  >Export to CSV</button>
+      </label>
+      <div ag-grid="levelDerived.dataRecordingsGridOptions" class="ag-fresh" style="height: 100%;"></div>
+    </div>
     <h3>Tasks</h3>
     <div ag-grid="level1.tasksGridOptions" class="ag-fresh" style="height: 100%"></div>
     <h3>Events</h3>
@@ -148,5 +151,16 @@
       <p style="horizon">{{level1.copyrightText}}</p>
     </div>
   </div>
+  <script language="javascript">
+    if (level1.enable)
+      document.getElementById("preamble").innerHTML = level1.preamble;
+    else if(level2.enable){
+      document.getElementById("preamble").innerHTML = level2.preamble;
+      document.getElementById("dataQuality").innerHTML = "Data quality: "+level2.dataQuality;
+    }
+    else if (levelDerived.enable) {
+      document.getElementById("preamble").innerHTML = levelDerived.preamble;
+    }
+  </script>
 </body>
 </html>
