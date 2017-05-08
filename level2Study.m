@@ -162,7 +162,7 @@ classdef level2Study < levelStudy;
             
             if nargin < 3
                 alsoWriteJson = true;
-            end; 
+            end;
             
             if alsoWriteJson
                 obj.writeJSONP(fileparts(obj.level2XmlFilePath)); % since this function has an internal call to obj.write, this prevents circular references
@@ -196,7 +196,7 @@ classdef level2Study < levelStudy;
         function obj = read(obj)
             Pref.Str2Num = false;
             Pref.PreserveSpace = true; % keep spaces
-            xmlAsStructure = xml_read(obj.level2XmlFilePath, Pref);            
+            xmlAsStructure = xml_read(obj.level2XmlFilePath, Pref);
             
             % read data from legacy field names with Info at the end
             legacyInfoNames = {'projectInfo', 'contactInfo', 'organizationInfo', 'copyrightInfo'};
@@ -312,7 +312,7 @@ classdef level2Study < levelStudy;
             if strcmpi(obj.level1StudyObj.summaryInfo.license.type, 'cc0')
                 copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [inputOptions.level2Folder filesep 'License.txt']);
             end;
-                                    
+            
             % JSON-based report assets
             obj.copyJSONReportAssets(inputOptions.level2Folder);
             
@@ -377,16 +377,23 @@ classdef level2Study < levelStudy;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
                             
                             % for test only
-%                             if inputOptions.forTest
-%                                 fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-%                                 if length(EEG.chanlocs) > size(EEG.data,1)
-%                                     EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
-%                                 end;
-%                                 EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
-%                             end;
+                            %                             if inputOptions.forTest
+                            %                                 fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
+                            %                                 if length(EEG.chanlocs) > size(EEG.data,1)
+                            %                                     EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
+                            %                                 end;
+                            %                                 EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
+                            %                             end;
+                            
+                            % to prevent figures opening up during computation
+                            defFigVisibility = get(0, 'DefaultFigureVisible');
+                            set(0, 'DefaultFigureVisible', 'off')
                             
                             % execute the pipeline
-                            [EEG, computationTimes] = prepPipeline(EEG, params);
+                            [EEG, computationTimes] = prepPipeline(EEG, params);                            
+                                                       
+                            set(0, 'DefaultFigureVisible', defFigVisibility)
+                            
                             
                             % use noiseDetection instead of noisyParameters
                             if isfield(EEG.etc, 'noisyParameters')
@@ -509,10 +516,10 @@ classdef level2Study < levelStudy;
                                 filterLabel = {'Line Noise Removal'};
                                 filterFieldName = {'lineNoise'};
                                 filterFunctionName = {'cleanLineNoise'};
-                                                                                                
+                                
                                 newFilter = struct;
                                 newFilter.filterLabel = filterLabel{f};
-                                newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';                                
+                                newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';
                                 newFilter.executionOrder = num2str(f);
                                 newFilter.softwareEnvironment = matlabVersionSTring;
                                 newFilter.softwarePackage = eeglabVersionString;
@@ -531,7 +538,7 @@ classdef level2Study < levelStudy;
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
                                     newFilter = struct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
-                                    newFilter.filterDescription = 'average referencing after interpolating noisy channels';                                    
+                                    newFilter.filterDescription = 'average referencing after interpolating noisy channels';
                                     newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
@@ -954,10 +961,10 @@ classdef level2Study < levelStudy;
             
             clear jsonfilters;
             for i=1:length(objAsStructure.filters.filter)
-                tempvar = objAsStructure.filters.filter(i);              
+                tempvar = objAsStructure.filters.filter(i);
                 tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
                 tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
-                                
+                
                 params = tempvar.parameters.parameter;
                 tempvar.parameters = params;
                 tempvar = rename_field_to_force_array(tempvar, 'parameters');
@@ -979,10 +986,10 @@ classdef level2Study < levelStudy;
                     tempvar.averageReferenceChannels = str2double(strtrim(strsplit(objAsStructure.studyLevel2Files.studyLevel2File(i).averageReferenceChannels, ',')));
                 end;
                 tempvar = rename_field_to_force_array(tempvar, 'averageReferenceChannels');
-                                
+                
                 tempvar = renameField(tempvar, 'dataRecordingUuid', 'dataRecordingId');
-
-                tempvar.id = tempvar.uuid; 
+                
+                tempvar.id = tempvar.uuid;
                 tempvar = rmfield(tempvar, 'uuid');
                 
                 if ~isempty(objAsStructure.studyLevel2Files.studyLevel2File(i).rereferencedChannels)
@@ -1000,21 +1007,21 @@ classdef level2Study < levelStudy;
                 end;
                 files(i) = tempvar;
             end;
-                        
+            
             objAsStructure.studyLevel2Files = files;
-             objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
             
             for i=1:length(objAsStructure.project)
                 objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
                 objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
-            end;       
+            end;
             objAsStructure = rename_field_to_force_array(objAsStructure, 'projectFunding');
-            objAsStructure = rmfield(objAsStructure, 'project');                      
-
+            objAsStructure = rmfield(objAsStructure, 'project');
+            
             
             objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
             objAsStructure = rename_field_to_force_array(objAsStructure, 'organizations');
-
+            
             
             if isempty(objAsStructure.copyright)
                 objAsStructure.copyright = 'NA';
