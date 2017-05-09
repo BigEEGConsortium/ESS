@@ -583,7 +583,7 @@ class Level2 extends Level1{
 		// Move notes field to the far right and put interpCol in its place
 		var ind = this.dataRecordingsGridOptions.columnDefs.findIndex(x => x.headerName=="Notes");
 		var tmp = this.dataRecordingsGridOptions.columnDefs[ind];
-		var interpCol = {headerName: "Interpolated channels", field: "numberOfInterpChannels", minWidth: 180, width:300};
+		var interpCol = {headerName: "# Interpolated Channels", field: "numberOfInterpChannels", minWidth: 180, width:300};
 		this.dataRecordingsGridOptions.columnDefs.splice(ind,1,interpCol);
 		this.dataRecordingsGridOptions.columnDefs[this.dataRecordingsGridOptions.columnDefs.length] = tmp;
 
@@ -653,7 +653,14 @@ collection.pushLevel(levelDerived);
 
 var extracted = {'level1':level1, 'level2':level2, 'levelDerived':levelDerived};
 
-var d3Hierarchy = convertToD3Hierarchy(eventCodeNumberOfInstancesToTagCount(level1.study.eventCodes));
+if (eventCountsAreValid(level1.study.eventCodes)){
+	var d3Hierarchy = convertToD3Hierarchy(eventCodeNumberOfInstancesToTagCount(level1.study.eventCodes));
+	level1.showHEDTreemap = true;
+}
+else {
+	var d3Hierarchy = null;
+	level1.showHEDTreemap = false;
+}
 
 //---------------------- setting up AngularJS ----------------------------------
 
@@ -664,5 +671,10 @@ angular.module('essReportApp',  ["agGrid"]).controller('ReportController', funct
 		if (!extracted.hasOwnProperty(key)) continue;
 		$scope[key] = extracted[key];
 	}
-	addTreemap(d3Hierarchy, "#treemap", 1200, 800);
+	if (d3Hierarchy == null){
+
+	}
+	else {
+			addTreemap(d3Hierarchy, "#treemap", 1200, 800);
+	}
 });

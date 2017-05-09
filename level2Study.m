@@ -585,28 +585,7 @@ classdef level2Study < levelStudy;
             
             % Level 2 total study size
             [dummy, obj.totalSize]= dirsize(fileparts(obj.level2XmlFilePath)); %#ok<ASGLU>
-            obj.write(obj.level2XmlFilePath);
-            
-            %             function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder)
-            %                 % search for the file both next to the xml file and in the standard ESS
-            %                 % convention location
-            %                 nextToXMLFilePath = [rootFolder filesep fileNameFromObjIn];
-            %                 fullEssFilePath = [rootFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObjIn];
-            %
-            %                 if ~isempty(fileNameFromObjIn) && exist(fullEssFilePath, 'file')
-            %                     fileFinalPathOut = fullEssFilePath;
-            %                 elseif ~isempty(fileNameFromObjIn) && exist(nextToXMLFilePath, 'file')
-            %                     fileFinalPathOut = nextToXMLFilePath;
-            %                 elseif ~isempty(fileNameFromObjIn) % when the file is specified but cannot be found on disk
-            %                     fileFinalPathOut = [];
-            %                     fprintf('File %s specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', fileNameFromObjIn, j, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
-            %                     fprintf('You might want to run validate() routine.\n');
-            %                 else % the file name is empty
-            %                     fileFinalPathOut = [];
-            %                     fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
-            %                     fprintf('You might want to run validate() routine.\n');
-            %                 end;
-            %             end
+            obj.write(obj.level2XmlFilePath);           
             
         end;
         

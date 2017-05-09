@@ -132,10 +132,12 @@
       <button onclick="extracted.level1.eventsGridOptions.api.exportDataAsCsv()">Export to CSV</button>
     </label>
     <div ag-grid="level1.eventsGridOptions" class="ag-fresh" style="height: 100%;"></div>
-    <div style="width:100%;" >
-      <h3>Event HED Tag Count</h3>
-      <p style="margin-top: 100 px;">Total number of events that match each HED tag (exclucing labels and descriptions).</p>
-      <div name='treemap' id='treemap' align="center" style="margin-left: 3%; margin- 5%;"/>
+    <div ng-if="level1.showHEDTreemap">
+      <div style="width:100%;" >
+        <h3>Event HED Tag Count</h3>
+        <p style="margin-top: 100 px;">Total number of events that match each HED tag (exclucing labels and descriptions).</p>
+        <div name='treemap' id='treemap' align="center" style="margin-left: 3%; margin- 5%;"/>
+      </div>
     </div>
 
     <div ng-if="level1.showLicensePart">
