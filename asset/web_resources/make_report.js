@@ -297,7 +297,7 @@ class Level1 {
 					'sessionNumber': study.sessions[i].number,
 					'taskLabel': study.sessions[i].dataRecordings[j].taskLabels.toString(),
 					'sessionLabId': study.sessions[i].labId,
-					'channelLocationsFilename': study.sessions[i].subjects[j].channelLocationFile,
+					'channelLocationsFilename': study.sessions[i].subjects[0].channelLocationFile,
 					'subjectGroup': study.sessions[i].subjects[0].group,
 					'subjectGender': study.sessions[i].subjects[0].gender,
 					'subjectYOB': study.sessions[i].subjects[0].YOB,
