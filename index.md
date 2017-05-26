@@ -121,4 +121,4 @@ ESS tools and schemas are released under the MIT license.
 
 ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.
 
-[© Qusp 2015] (http://qusp.io)
+[Copyright Qusp 2017](http://qusp.io)
