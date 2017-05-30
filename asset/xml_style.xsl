@@ -529,6 +529,7 @@ font-size= 7pt
 			</a>
 					</p>
 				</xsl:for-each>
+				<h3>IRB:</h3>
 				<xsl:for-each select="studyLevel1">
 					<p>
 						<tr>

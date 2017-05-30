@@ -531,7 +531,7 @@ classdef levelDerivedStudy  < levelStudy;
                         matchedSessionTaskNumber = sessionTaskNumber(id);
                         levelDerivedDataRecordingNumber(end+1) = i;
                         dataRecordingUuid{end+1} = obj.studyLevelDerivedFiles.studyLevelDerivedFile(i).dataRecordingUuid;
-                        taskLabel{end+1} = taskLabelFromParent(id);
+                        taskLabel{end+1} = taskLabelFromParent{id};
                         
                         sessionNumber{end+1} = selectedSessionNumber{id};
                         
