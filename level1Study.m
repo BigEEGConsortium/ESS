@@ -2059,7 +2059,7 @@ classdef level1Study < levelStudy;
                     issue(end+1).description = sprintf('The study has more than one task but the task label is not available for session number %d', i);
                 else
                     sessionTasks = strtrim(strsplit(obj.sessionTaskInfo(i).taskLabel, ','));
-                    undefinedTasks = setdiff(sessionTasks, taskLabels);
+                    undefinedTasks = setdiff(sessionTasks, [taskLabels strtrim(strsplit(taskLabels{1}, ','))]);
                     if ~isempty(undefinedTasks)
                         issue(end+1).description = sprintf('The task label(s) %s in session number %d does not match defined tasks.', strjoin_adjoiner_first(', ', undefinedTasks), i);
                     end;
