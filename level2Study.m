@@ -375,15 +375,7 @@ classdef level2Study < levelStudy;
                             params.detrendChannels = params.rereferencedChannels;
                             params.lineNoiseChannels = params.rereferencedChannels;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
-                            
-                            % for test only
-                            %                             if inputOptions.forTest
-                            %                                 fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-                            %                                 if length(EEG.chanlocs) > size(EEG.data,1)
-                            %                                     EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
-                            %                                 end;
-                            %                                 EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
-                            %                             end;
+                            params.ignoreBoundaryEvents = true; % ignore boundary events                            
                             
                             % to prevent figures opening up during computation
                             defFigVisibility = get(0, 'DefaultFigureVisible');
@@ -482,7 +474,7 @@ classdef level2Study < levelStudy;
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).uuid = studyLevel2FileUuid;
                             
-                            if isfield(EEG.etc.noiseDetection, 'reference')
+                            if isfield(EEG.etc.noiseDetection, 'reference') && ~isempty(EEG.etc.noiseDetection.reference)
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                                 % assume data quality hass been 'Good' (can be set to
                                 % 'Suspect or 'Unusable' later)
@@ -517,7 +509,13 @@ classdef level2Study < levelStudy;
                                 filterFieldName = {'lineNoise'};
                                 filterFunctionName = {'cleanLineNoise'};
                                 
-                                newFilter = struct;
+                                emptyFilterStruct = struct('filterLabel', '', ...
+                                    'filterDescription', '', 'executionOrder', [],...
+                                    'softwareEnvironment', '', 'softwarePackage', '',...
+                                    'functionName', '', 'codeHash', '', 'parameters', struct, ...
+                                    'recordingParameterSetLabel', '');
+                                
+                                newFilter = emptyFilterStruct;
                                 newFilter.filterLabel = filterLabel{f};
                                 newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';
                                 newFilter.executionOrder = num2str(f);
@@ -525,10 +523,12 @@ classdef level2Study < levelStudy;
                                 newFilter.softwarePackage = eeglabVersionString;
                                 newFilter.functionName = filterFunctionName{f};
                                 newFilter.codeHash = hlp_cryptohash(which('cleanLineNoise.m'),true);
-                                fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
-                                for p=1:length(fields)
-                                    newFilter.parameters.parameter(p).name = fields{p};
-                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
+                                if isstruct(EEG.etc.noiseDetection.(filterFieldName{f}))
+                                    fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
+                                    for p=1:length(fields)
+                                        newFilter.parameters.parameter(p).name = fields{p};
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
+                                    end;
                                 end;
                                 newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                 
@@ -536,7 +536,7 @@ classdef level2Study < levelStudy;
                                 
                                 % Reference (too complicated to put above)
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
-                                    newFilter = struct;
+                                    newFilter = emptyFilterStruct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
                                     newFilter.filterDescription = 'average referencing after interpolating noisy channels';
                                     newFilter.executionOrder = '3';
@@ -547,16 +547,20 @@ classdef level2Study < levelStudy;
                                     fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
                                         'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
                                         'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
-                                    for p=1:length(fields)
-                                        newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyStatistics.(fields{p}));
+                                    if ~isempty(EEG.etc.noiseDetection.reference)
+                                        for p=1:length(fields)
+                                            newFilter.parameters.parameter(p).name = fields{p};
+                                            newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyStatistics.(fields{p}));
+                                        end;
+                                        
+                                        
+                                        newFilter.parameters.parameter(end+1).name = 'referenceChannels';
+                                        newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.referenceChannels);
+                                        
+                                        newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
+                                        newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.rereferencedChannels);
                                     end;
                                     
-                                    newFilter.parameters.parameter(end+1).name = 'referenceChannels';
-                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.referenceChannels);
-                                    
-                                    newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
-                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.rereferencedChannels);
                                     newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                     
                                     obj.filters.filter(end+1) = newFilter;
@@ -944,9 +948,11 @@ classdef level2Study < levelStudy;
                 tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
                 tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
                 
-                params = tempvar.parameters.parameter;
-                tempvar.parameters = params;
-                tempvar = rename_field_to_force_array(tempvar, 'parameters');
+                if isfield(tempvar.parameters, 'parameter')
+                    params = tempvar.parameters.parameter;
+                    tempvar.parameters = params;
+                    tempvar = rename_field_to_force_array(tempvar, 'parameters');
+                end;
                 
                 if i>1
                     tempVar = orderfields(tempvar, jsonfilters(1));
