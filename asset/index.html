@@ -7,6 +7,7 @@
   <link rel="stylesheet" type="text/css" href="web_resources/ag-grid/ag-grid.css">
   <link rel="stylesheet" type="text/css" href="web_resources/ag-grid/theme-fresh.css">
   <link rel="stylesheet" type="text/css" href="web_resources/report_style.css">
+  <link rel="stylesheet" type="text/css" href="web_resources/logo.css">
 
   <!-- contains the manifest.js javascript JSONP wrapper function. It executes on JSON content provided in manifest.js -->
   <script type="text/javascript" src="web_resources/ess_preprocessor.js"></script>
@@ -26,6 +27,7 @@
 
 <body>
   <div ng-app = "essReportApp" ng-controller="ReportController">
+    <div class="hasicon" id="logo"></div>
     <h1>{{level1.title}}</h1>
     <p id=preamble></p>
     <h3>Short Description</h3>
@@ -162,6 +164,10 @@
     }
     else if (levelDerived.enable) {
       document.getElementById("preamble").innerHTML = levelDerived.preamble;
+    }
+    if (level1.showLogo){
+      var  img = level1.logo;
+      document.getElementById("logo").innerHTML = '<img src="'+img+'" class="icon"/>';
     }
   </script>
 </body>

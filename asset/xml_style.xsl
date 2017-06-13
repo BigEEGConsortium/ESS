@@ -34,12 +34,12 @@ text-align: center;
 .tablebody
 tr:nth-of-type(odd) {
   background-color:whitesmoke;
-} 
+}
 .tablebody
 tr:nth-of-type(even) {
   background-color:#E6E6E6;
-} 
-} 
+}
+}
 license
 {
 font-family:Arial
@@ -87,13 +87,13 @@ font-size= 7pt
 							</td>
 						</tr>
 					</xsl:for-each>
-				</p>				
+				</p>
 				<h3>Summary</h3>
-			
+
 				<table>
 					<xsl:for-each select="studyLevel1/summary">
 						<tr>
-							<td>Number of Sessions: 
+							<td>Number of Sessions:
 							<xsl:for-each select="/studyLevel1/sessions/session/number">
 									<xsl:sort data-type="number" order="descending"/>
 									<xsl:if test="position()=1">
@@ -103,7 +103,7 @@ font-size= 7pt
 							</td>
 						</tr>
 						<tr>
-							<td>Number of Subjects: 
+							<td>Number of Subjects:
 							<xsl:choose>
 							<xsl:when test="/studyLevel1/sessions/session/subject/labId='NA'">
 									<xsl:value-of select="count(/studyLevel1/sessions/session/subject)"/>
@@ -129,7 +129,7 @@ font-size= 7pt
 								<td>All subjects are considered healthy and normal: <xsl:value-of select="allSubjectsHealthyAndNormal"/>
 								</td>
 							</xsl:for-each>
-						</tr>						
+						</tr>
 						<tr>
 							<xsl:for-each select="/studyLevel1">
 								<td>Primary source of event information: <xsl:value-of select="eventSpecificationMethod"/>
@@ -137,7 +137,7 @@ font-size= 7pt
 							</xsl:for-each>
 						</tr>
 						<tr>
-							<td>Number of Channels (all modalities, min to max): 
+							<td>Number of Channels (all modalities, min to max):
 							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality/endChannel">
 									<xsl:sort data-type="number" order="ascending"/>
 									<xsl:if test="position()=1">
@@ -153,17 +153,17 @@ font-size= 7pt
 							</td>
 						</tr>
 						<tr>
-							<td>Recorded Modalities: 
+							<td>Recorded Modalities:
 							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality[generate-id()=generate-id(key('ModalityTypeGroupValue' , type)[1])]">
 									<xsl:value-of select="concat(type, '', '')"/>
 									<xsl:if test="position()!=last()">
 										<xsl:text>, </xsl:text>
 									</xsl:if>
 							</xsl:for-each>
-							</td>	
+							</td>
 						</tr>
 						<tr>
-							<td>Channel Location Type(s): 
+							<td>Channel Location Type(s):
 							<xsl:for-each select="/studyLevel1/recordingParameterSets/recordingParameterSet/channelType/modality[generate-id()=generate-id(key('ModalityChannelLocationTypeGroupValue' , channelLocationType)[1])]">
 									<xsl:value-of select="concat(channelLocationType, '', '')"/>
 									<xsl:if test="position()!=last()">
@@ -171,7 +171,7 @@ font-size= 7pt
 									</xsl:if>
 							</xsl:for-each>
 							</td>
-							
+
 						</tr>
 						<tr>
 							<td>Total Size: <xsl:value-of select="totalSize"/>
@@ -184,7 +184,7 @@ font-size= 7pt
 						<tr>
 							<td>Funding Organization: <xsl:value-of select="/studyLevel1/project/funding/organization"/>
 							</td>
-						</tr>						
+						</tr>
 					</xsl:for-each>
 				</table>
 				<xsl:choose>
@@ -348,13 +348,13 @@ font-size= 7pt
 							<td>
 								<xsl:for-each select="notes">
 									<xsl:value-of select="note"/>
-					
+
 										<a target="_blank">
 											<xsl:attribute name="href">
 												<xsl:value-of select="link"/>
 											</xsl:attribute>
 											<xsl:value-of select="linkName"/>
-										</a>								
+										</a>
 								</xsl:for-each>
 							</td>
 							<td>
@@ -401,7 +401,7 @@ font-size= 7pt
 								<td>
 									<xsl:value-of select="tag"/>
 								</td>
-								
+
 							</tr>
 							</xsl:for-each>
 				</table>
@@ -431,12 +431,12 @@ font-size= 7pt
 								<td>
 									<xsl:value-of select="tag"/>
 								</td>
-								
+
 							</tr>
 							</xsl:for-each>
 				</table>
 				</xsl:when>
-				
+
 				</xsl:choose>
 				<h3>Event Codes</h3>
 				<table width="770"  border="1" class="tablebody">
@@ -462,10 +462,10 @@ font-size= 7pt
 					<xsl:for-each select="studyLevel1/eventCodes/eventCode">
 						<tr height="35">
 							<td>
-							<xsl:choose> 
+							<xsl:choose>
 							<xsl:when test="taskLabel != ''"> Task <xsl:value-of select="taskLabel"/>: <xsl:value-of select="code"/></xsl:when>
 							<xsl:otherwise><xsl:value-of select="code"/></xsl:otherwise>
-							</xsl:choose> 
+							</xsl:choose>
 							</td>
 							<xsl:for-each select="condition">
 								<td>
@@ -494,7 +494,7 @@ font-size= 7pt
 						<tr>
 						<td>
 							<xsl:choose>
-								<xsl:when test="email != ''"> phone: <xsl:value-of select="email"/></xsl:when>
+								<xsl:when test="email != ''"> email: <xsl:value-of select="email"/></xsl:when>
 							</xsl:choose>
 							</td>
 						</tr>
@@ -543,13 +543,5 @@ font-size= 7pt
 			</body>
 		</html>
 	</xsl:template>
-	
+
 </xsl:stylesheet>
-
-
-
-
-
-
-
-

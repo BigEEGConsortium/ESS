@@ -136,6 +136,8 @@ class Level1 {
 		this.totalSize = 0;
 		this.licenseType = "";
 		this.fundingOrganization = [];
+		this.logo = "";
+		this.showLogo = false;
 		this.publications = [];
 		this.showPublications = false;
 		this.experimenters = [];
@@ -252,6 +254,7 @@ class Level1 {
 		this.subjectGroup = _.uniq(groups).toString();
 	}
 	parseFundingOrg(study){
+		this.logo = "";
 		this.fundingOrganization = [];
 		for (var i=0; i < study.projectFunding.length; i++){
 			this.fundingOrganization += study.projectFunding[i].organization;
@@ -259,7 +262,10 @@ class Level1 {
 				this.fundingOrganization += ' (' + study.projectFunding[i].grantId + ')';
 			if (i<study.projectFunding.length - 2)
 				this.fundingOrganization += ', ';
+			if (study.projectFunding[i].logo != '')
+				this.logo = study.projectFunding[i].logo;
 		}
+		this.showLogo = this.logo != "" && this.logo != null;
 	}
 	parseDataRecordings(study){
 		var parameterSetLabel = "";
