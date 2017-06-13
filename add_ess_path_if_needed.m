@@ -8,6 +8,7 @@ if ~(exist('uniqe_file_to_test_ESS_path', 'file') && exist('is_impure_expression
         exist('is_impure_expression', 'file') && exist('PropertyEditor', 'file') && exist('hlp_struct2varargin', 'file') && exist('savejson_for_ess', 'file'))
     thisClassFilenameAndPath = mfilename('fullpath');
     pathstr = fileparts(thisClassFilenameAndPath);
+    addpath(pathstr);
     addpath(genpath([pathstr filesep 'dependency']));
     addpath([pathstr filesep 'unit_test']);
 end;

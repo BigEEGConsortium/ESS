@@ -160,7 +160,7 @@ classdef level1Study < levelStudy;
                         fprintf('An ESS file already exists at the specified location. Loading the file and ignoring other input parameters.\n');
                     end;
                 elseif ~exist(obj.essFilePath, 'file') && ~inputOptions.createNewFile
-                    error('There is no ESS containr or manifest file with the given path. If you want to create a manifest file with this name, set ''createNewFile'' option to ''true''.');                                            
+                    error('There is no ESS container or manifest file with the given path. If you want to create a manifest file with this name, set ''createNewFile'' option to ''true''.');                                            
                 elseif inputOptions.createNewFile
                     % input file did not exist. Create an ESS file at that located
                     % and populate it with empty fields according to input
