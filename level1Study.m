@@ -37,7 +37,7 @@ classdef level1Study < levelStudy;
         
         % Information about the project under which this experiment is
         % performed.
-        projectInfo = struct('organization', ' ',  'grantId', ' ');
+        projectInfo = struct('organization', ' ',  'grantId', ' ', 'logo', '');
         
         %         holds one or more  recordingParameterSet structures, each containing
         %         information about one set of recording data parameters. Most studies have only a
@@ -362,10 +362,17 @@ classdef level1Study < levelStudy;
                         else
                             obj.projectInfo(fundingCounter+1).grantId = '';
                         end;
+                        
+                        potentialFundingLogoNodeArray = currentNode.getElementsByTagName('logo');
+                        if potentialFundingLogoNodeArray.getLength > 0
+                            obj.projectInfo(fundingCounter+1).logo = readStringFromNode(potentialFundingLogoNodeArray.item(0));
+                        else
+                            obj.projectInfo(fundingCounter+1).logo = '';
+                        end;
                     end;
                 end;
             else % project information has not been provided, we need to create the appropriate subfields though.
-                obj.projectInfo = struct('organization', '', 'grantId', '');
+                obj.projectInfo = struct('organization', '', 'grantId', '', 'logo', '');
             end;
             
             
@@ -1192,6 +1199,10 @@ classdef level1Study < levelStudy;
                 fundingGrantIdElement = docNode.createElement('grantId');
                 fundingGrantIdElement.appendChild(docNode.createTextNode(obj.projectInfo(y).grantId));
                 fundingRootNode.appendChild(fundingGrantIdElement);
+                
+                fundingLogoIdElement = docNode.createElement('logo');
+                fundingLogoIdElement.appendChild(docNode.createTextNode(obj.projectInfo(y).logo));
+                fundingRootNode.appendChild(fundingLogoIdElement);
                 
             end;
             
@@ -3088,9 +3099,10 @@ classdef level1Study < levelStudy;
             for i=1:length(xmlAsStructure.project.funding)
                 xmlAsStructure.projectFunding(i).organization = xmlAsStructure.project.funding(i).organization;
                 xmlAsStructure.projectFunding(i).grantId = xmlAsStructure.project.funding(i).grantId;
+                xmlAsStructure.projectFunding(i).logo = xmlAsStructure.project.funding(i).logo;
             end;
-               xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'projectFunding');
-
+            xmlAsStructure = rename_field_to_force_array(xmlAsStructure, 'projectFunding');
+            
             xmlAsStructure = rmfield(xmlAsStructure, 'project');
             
             clear recordingParameterSets;
