@@ -31,7 +31,7 @@
     <h1>{{level1.title}}</h1>
     <p id=preamble></p>
     <h3>Short Description</h3>
-    <p>{{level1.shortDescription}}</p>
+    <p id=short_desc></p>
     <h3>Full Description</h3>
     <p>{{level1.fullDescription}}</p>
     <h3>Summary</h3>
@@ -168,6 +168,11 @@
     if (level1.showLogo){
       var  img = level1.logo;
       document.getElementById("logo").innerHTML = '<img src="'+img+'" class="icon"/>';
+    }
+    if (levelDerived.enable && levelDerived.shortDescription.length>0)
+      document.getElementById("short_desc").innerHTML = levelDerived.shortDescription;
+    else {
+      document.getElementById("short_desc").innerHTML = level1.shortDescription;
     }
   </script>
 </body>

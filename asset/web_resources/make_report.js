@@ -48,7 +48,7 @@ function getLevelHierarchy(studyObj){
 		studyLevelHierarchy.unshift(currentLevel);
 		if ("parentStudy" in currentLevel){
 			studyLevelHierarchyType.unshift('level-derived');
-			currentLevel = currentLevel.parentStudyObj;
+			currentLevel = currentLevel.parentStudy;
 		}
 		else if ("studyLevel1" in currentLevel) {
 			studyLevelHierarchyType.unshift('level2');
@@ -265,7 +265,7 @@ class Level1 {
 			if (study.projectFunding[i].logo != '')
 				this.logo = study.projectFunding[i].logo;
 		}
-		this.showLogo = this.logo != "" && this.logo != null;
+		this.showLogo = this.logo != "" && this.logo != null && this.logo != "NA";
 	}
 	parseDataRecordings(study){
 		var parameterSetLabel = "";
