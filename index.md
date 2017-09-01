@@ -44,6 +44,7 @@ We tried to select terms similar to ones defined in EEGLAB software. The figure 
 You can see Level 1 specification at [www.eegstudy.org/schema/level1](http://www.eegstudy.org/schema/level1). 
 
 You can use [MATLAB ESS-GUI](https://github.com/ManuelaJaeger/ESS_GUI) developed by Manuela Jäger from University of Oldenburg to place your studies in ESS Level 1:
+
 ![](/images/ess_gui_snapshot.png)
 
 
