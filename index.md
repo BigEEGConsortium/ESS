@@ -43,6 +43,11 @@ We tried to select terms similar to ones defined in EEGLAB software. The figure 
 ![](/images/ESS level 1 schema.png)
 You can see Level 1 specification at [www.eegstudy.org/schema/level1](http://www.eegstudy.org/schema/level1). 
 
+You can use [MATLAB ESS-GUI](https://github.com/ManuelaJaeger/ESS_GUI) developed by Manuela Jäger from University of Oldenburg to place your studies in ESS Level 1:
+![](/images/ess_gui_snapshot.png)
+
+
+
 ### <a name="level2">Standardized Data Level 2</a>
 
 Standard Data Level 2 provides a containerized, well-documented version of the data after processing by accepted pre-processing functions and annotated by an extensive summary reporting of data quality. The focus of Standard Data Level 2 is to transform the EEG data into a state that would allow the direct application of machine learning or other analysis algorithms without additional processing. The amount of preprocessing applied is minimal, because we wanted to maximize the usability across a variety of applications. 
