@@ -115,9 +115,9 @@ obj = obj.combinePartialRuns(partFolders, finalFolder);
 ```
 ## People
 
-ESS 2.0 specifications were drafted by Nima Bigdely-Shamlo ([Qusp](http://qusp.io)), Kay Robbins (University of Texas at San Antonio) and Tony Johnson (DCS Corp.). ESS 1.0 specifications were drafted by Nima Bigdely-Shamlo,  Jessica Hsi (UCSD) and Scott Makeig (Swartz Center for Computational Neueorsciece, UCSD).
+ESS 2.0 specifications were drafted by Nima Bigdely-Shamlo ([Intheon](http://intheon.io)), Kay Robbins (University of Texas at San Antonio) and Tony Johnson (DCS Corp.). ESS 1.0 specifications were drafted by Nima Bigdely-Shamlo,  Jessica Hsi (UCSD) and Scott Makeig (Swartz Center for Computational Neueorsciece, UCSD).
 
-Please email your questions about ESS to Nima Bigdely-Shamlo: nima.bigdely [put at sign here] qusp.io.
+Please email your questions about ESS to Nima Bigdely-Shamlo: nima.bigdely [put at sign here] intheon.io.
 
 ## License
 
@@ -127,4 +127,4 @@ ESS tools and schemas are released under the MIT license.
 
 ESS was originally developed under HeadIT project at Swartz Center for Computational Neuroscience (SCCN) of the University of California, San Diego and funded by U.S. National Institutes of Health grants R01-MH084819 (Makeig, Grethe PIs) and R01-NS047293 (Makeig PI). ESS development is now supported by The Cognition and Neuroergonomics Collaborative Technology Alliance (CaN CTA) program of U.S Army Research Labaratory.
 
-[Copyright Qusp 2017](http://qusp.io)
+[Copyright Intheon 2017](http://intheon.io)
