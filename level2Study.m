@@ -646,7 +646,7 @@ classdef level2Study < levelStudy;
                             end;
                         end;
                         if isempty(foundSubjectId)
-                            error('Something iss wrong, subejct with inSession number cannot be found.');
+                            error('Something is wrong, subejct with inSession number cannot be found.');
                         elseif length(foundSubjectId) > 1
                             error('Something is wrong, more than one sbject with inSession number found.');
                         else % a single number

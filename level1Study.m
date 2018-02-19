@@ -2182,17 +2182,22 @@ classdef level1Study < levelStudy;
             
             % validate event HED tags
             w = which('validatestr.m');
-            if isempty(w)
-                fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');
+            wnew = which('validatehedstr.m'); % newer name
+            if isempty(w) && isempty(wnew)
+                    fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');                
             else
-                
-                
+                                
                 for i=1:length(obj.eventCodesInfo)
                     
                     errors = {};
                     try
                         if ischar(obj.eventCodesInfo(i).condition.tag)
-                            errors = validatestr(obj.eventCodesInfo(i).condition.tag);
+                            if ~isempty(wnew) % new function name
+                                errors = validatehedstr(obj.eventCodesInfo(i).condition.tag);
+                            else % old function name
+                                errors = validatestr(obj.eventCodesInfo(i).condition.tag);
+                            end;
+                            
                         elseif isempty(obj.eventCodesInfo(i).condition.tag)
                             obj.eventCodesInfo(i).condition.tag = '';
                         end
@@ -3304,38 +3309,6 @@ classdef level1Study < levelStudy;
             opt.emptyString = '"NA"';
             json = savejson_for_ess('', xmlAsStructure, opt);
         end;        
-        
-%         function writeJSONP(obj, essFolder)
-%             % writeJSONP(obj, essFolder)
-%             % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
-%             if nargin < 2
-%                 essFolder = fileparts(obj.essFilePath);
-%             end;
-%             
-%             if ~exist(essFolder, 'dir')
-%                 mkdir(essFolder);
-%             end;
-%             
-%             json = getAsJSON(obj);
-%             
-%             fid= fopen([essFolder filesep 'manifest.js'], 'w');
-%             fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
-%             fclose(fid);
-%         end;
-%         
-%         function copyJSONReportAssets(obj, essFolder)
-%             if nargin < 2
-%                 essFolder = fileparts(obj.essFilePath);
-%             end;
-%             
-%             thisClassFilenameAndPath = mfilename('fullpath');
-%             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
-%             % copy index.html
-%             copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
-%             
-%             % copy javascript and CSS used in index.html
-%             copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
-%         end;
         
         function obj = updateEventNumberOfInstances(obj)
             % obj = updateEventNumberOfInstances(obj)
