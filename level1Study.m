@@ -1128,6 +1128,14 @@ classdef level1Study < levelStudy;
             %
             % Writes the information into an ESS-formatted XML file and JSON manifest.js file.
             
+            
+            function node = makeTextNode(s)
+                if isempty(s) % this is necessary since in new MATLAB versions having [] as an empty string causes Null pointer error
+                    s = '';
+                end;
+                node = docNode.createTextNode(s);
+            end
+            
             if nargin < 3
                 alsoWriteJson = true;
             end;                       
@@ -1148,41 +1156,41 @@ classdef level1Study < levelStudy;
             docRootNode = docNode.getDocumentElement;
             
             essVersionElement = docNode.createElement('essVersion');
-            essVersionElement.appendChild(docNode.createTextNode(obj.essVersion));
+            essVersionElement.appendChild(makeTextNode(obj.essVersion));
             docRootNode.appendChild(essVersionElement);
             
             hedVersionElement = docNode.createElement('hedVersion');
-            hedVersionElement.appendChild(docNode.createTextNode(obj.hedVersion));
+            hedVersionElement.appendChild(makeTextNode(obj.hedVersion));
             docRootNode.appendChild(hedVersionElement);
             
             titleElement = docNode.createElement('title');
-            titleElement.appendChild(docNode.createTextNode(obj.studyTitle));
+            titleElement.appendChild(makeTextNode(obj.studyTitle));
             docRootNode.appendChild(titleElement);
             
             shortDescriptionElement = docNode.createElement('shortDescription');
-            shortDescriptionElement.appendChild(docNode.createTextNode(obj.studyShortDescription));
+            shortDescriptionElement.appendChild(makeTextNode(obj.studyShortDescription));
             docRootNode.appendChild(shortDescriptionElement);
             
             
             descriptionElement = docNode.createElement('description');
-            descriptionElement.appendChild(docNode.createTextNode(obj.studyDescription));
+            descriptionElement.appendChild(makeTextNode(obj.studyDescription));
             docRootNode.appendChild(descriptionElement);
             
             uuidElement = docNode.createElement('uuid');
-            uuidElement.appendChild(docNode.createTextNode(obj.studyUuid));
+            uuidElement.appendChild(makeTextNode(obj.studyUuid));
             docRootNode.appendChild(uuidElement);
             
             rootURIElement = docNode.createElement('rootURI');
-            rootURIElement.appendChild(docNode.createTextNode(obj.rootURI));
+            rootURIElement.appendChild(makeTextNode(obj.rootURI));
             docRootNode.appendChild(rootURIElement);
             
             eventSpecificationMethodElement = docNode.createElement('eventSpecificationMethod');
-            eventSpecificationMethodElement.appendChild(docNode.createTextNode(obj.eventSpecificationMethod));
+            eventSpecificationMethodElement.appendChild(makeTextNode(obj.eventSpecificationMethod));
             docRootNode.appendChild(eventSpecificationMethodElement);
             
             % isInEssContainer
             isInEssContainerElement = docNode.createElement('isInEssContainer');
-            isInEssContainerElement.appendChild(docNode.createTextNode(obj.isInEssContainer));
+            isInEssContainerElement.appendChild(makeTextNode(obj.isInEssContainer));
             docRootNode.appendChild(isInEssContainerElement);
             
             projectElement = docNode.createElement('project');
@@ -1193,15 +1201,15 @@ classdef level1Study < levelStudy;
                 fundingRootNode= projectRootNode.appendChild(fundingElement);
                 
                 fundingOrganizationElement = docNode.createElement('organization');
-                fundingOrganizationElement.appendChild(docNode.createTextNode(obj.projectInfo(y).organization));
+                fundingOrganizationElement.appendChild(makeTextNode(obj.projectInfo(y).organization));
                 fundingRootNode.appendChild(fundingOrganizationElement);
                 
                 fundingGrantIdElement = docNode.createElement('grantId');
-                fundingGrantIdElement.appendChild(docNode.createTextNode(obj.projectInfo(y).grantId));
+                fundingGrantIdElement.appendChild(makeTextNode(obj.projectInfo(y).grantId));
                 fundingRootNode.appendChild(fundingGrantIdElement);
                 
                 fundingLogoIdElement = docNode.createElement('logo');
-                fundingLogoIdElement.appendChild(docNode.createTextNode(obj.projectInfo(y).logo));
+                fundingLogoIdElement.appendChild(makeTextNode(obj.projectInfo(y).logo));
                 fundingRootNode.appendChild(fundingLogoIdElement);
                 
             end;
@@ -1215,7 +1223,7 @@ classdef level1Study < levelStudy;
                 recordingParameterSetRootNode = recordingParameterSetsRootNode.appendChild(recordingParameterSetElement);
                 
                 recordingParameterSetLabelElement = docNode.createElement('recordingParameterSetLabel');
-                recordingParameterSetLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).recordingParameterSetLabel));
+                recordingParameterSetLabelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).recordingParameterSetLabel));
                 recordingParameterSetRootNode.appendChild(recordingParameterSetLabelElement);
                 
                 % create channelType node.
@@ -1231,64 +1239,64 @@ classdef level1Study < levelStudy;
                     
                     % create modality/type  node
                     typeElement = docNode.createElement('type');
-                    typeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).type));
+                    typeElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).type));
                     modalityRootNode.appendChild(typeElement);
                     
                     % create modality/samplingRate  node
                     samplingRateElement = docNode.createElement('samplingRate');
-                    samplingRateElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).samplingRate));
+                    samplingRateElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).samplingRate));
                     modalityRootNode.appendChild(samplingRateElement);
                     
                     % create modality/type node
                     nameElement = docNode.createElement('name');
-                    nameElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).name));
+                    nameElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).name));
                     modalityRootNode.appendChild(nameElement);
                     
                     % create modality/description node
                     descriptionElement = docNode.createElement('description');
-                    descriptionElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).description));
+                    descriptionElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).description));
                     modalityRootNode.appendChild(descriptionElement);
                     
                     % create modality/startChannel node
                     startChannelElement = docNode.createElement('startChannel');
-                    startChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).startChannel));
+                    startChannelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).startChannel));
                     modalityRootNode.appendChild(startChannelElement);
                     
                     % create modality/endChannel  node
                     endChannelElement = docNode.createElement('endChannel');
-                    endChannelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).endChannel));
+                    endChannelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).endChannel));
                     modalityRootNode.appendChild(endChannelElement);
                     
                     % create modality/subjectInSessionNumber  node
                     subjectInSessionNumberElement = docNode.createElement('subjectInSessionNumber');
-                    subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).subjectInSessionNumber));
+                    subjectInSessionNumberElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).subjectInSessionNumber));
                     modalityRootNode.appendChild(subjectInSessionNumberElement);
                     
                     
                     % create modality/referenceLocation node
                     referenceLabelElement = docNode.createElement('referenceLocation');
-                    referenceLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).referenceLocation));
+                    referenceLabelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).referenceLocation));
                     modalityRootNode.appendChild(referenceLabelElement);
                     
                     
                     % create modality/referenceLabel node
                     referenceLabelElement = docNode.createElement('referenceLabel');
-                    referenceLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).referenceLabel));
+                    referenceLabelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).referenceLabel));
                     modalityRootNode.appendChild(referenceLabelElement);
                     
                     % create modality/channelLocationType node
                     channelLocationTypeElement = docNode.createElement('channelLocationType');
-                    channelLocationTypeElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).channelLocationType));
+                    channelLocationTypeElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).channelLocationType));
                     modalityRootNode.appendChild(channelLocationTypeElement);
                     
                     % create modality/channelLabel node
                     channelLabelElement = docNode.createElement('channelLabel');
-                    channelLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).channelLabel));
+                    channelLabelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).channelLabel));
                     modalityRootNode.appendChild(channelLabelElement);
                     
                     % create modality/nonScalpChannelLabel node
                     nonScalpChannelLabelElement = docNode.createElement('nonScalpChannelLabel');
-                    nonScalpChannelLabelElement.appendChild(docNode.createTextNode(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel));
+                    nonScalpChannelLabelElement.appendChild(makeTextNode(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel));
                     modalityRootNode.appendChild(nonScalpChannelLabelElement);
                 end
                 
@@ -1307,11 +1315,11 @@ classdef level1Study < levelStudy;
                 sessionRootNode.appendChild(numberElement);
                 
                 sessionTaskLabelElement = docNode.createElement('taskLabel');
-                sessionTaskLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).taskLabel));
+                sessionTaskLabelElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).taskLabel));
                 sessionRootNode.appendChild(sessionTaskLabelElement);                      
                                  
                 labIdElement = docNode.createElement('labId');
-                labIdElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).labId));
+                labIdElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).labId));
                 sessionRootNode.appendChild(labIdElement);
                 
                 for j=1:length(obj.sessionTaskInfo(i).subject)
@@ -1319,47 +1327,47 @@ classdef level1Study < levelStudy;
                     subjectRootNode= sessionRootNode.appendChild(subjectElement);
                     
                     subjectLabIdElement = docNode.createElement('labId');
-                    subjectLabIdElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).labId));
+                    subjectLabIdElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).labId));
                     subjectRootNode.appendChild(subjectLabIdElement);
                     
                     subjectInSessionNumberElement = docNode.createElement('inSessionNumber');
-                    subjectInSessionNumberElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).inSessionNumber));
+                    subjectInSessionNumberElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).inSessionNumber));
                     subjectRootNode.appendChild(subjectInSessionNumberElement);
                     
                     subjectGroupElement = docNode.createElement('group');
-                    subjectGroupElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).group));
+                    subjectGroupElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).group));
                     subjectRootNode.appendChild(subjectGroupElement);
                     
                     subjectGenderElement = docNode.createElement('gender');
-                    subjectGenderElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).gender));
+                    subjectGenderElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).gender));
                     subjectRootNode.appendChild(subjectGenderElement);
                     
                     subjectYOBElement = docNode.createElement('YOB');
-                    subjectYOBElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).YOB));
+                    subjectYOBElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).YOB));
                     subjectRootNode.appendChild(subjectYOBElement);
                     
                     subjectAgeElement = docNode.createElement('age');
-                    subjectAgeElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).age));
+                    subjectAgeElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).age));
                     subjectRootNode.appendChild(subjectAgeElement);
                     
                     subjectHandElement = docNode.createElement('hand');
-                    subjectHandElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).hand));
+                    subjectHandElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).hand));
                     subjectRootNode.appendChild(subjectHandElement);
                     
                     subjectVisionElement = docNode.createElement('vision');
-                    subjectVisionElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).vision));
+                    subjectVisionElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).vision));
                     subjectRootNode.appendChild(subjectVisionElement);
                     
                     subjectHearingElement = docNode.createElement('hearing');
-                    subjectHearingElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).hearing));
+                    subjectHearingElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).hearing));
                     subjectRootNode.appendChild(subjectHearingElement);
                     
                     subjectHeightElement = docNode.createElement('height');
-                    subjectHeightElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).height));
+                    subjectHeightElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).height));
                     subjectRootNode.appendChild(subjectHeightElement);
                     
                     subjectWeightElement = docNode.createElement('weight');
-                    subjectWeightElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).weight));
+                    subjectWeightElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).weight));
                     subjectRootNode.appendChild(subjectWeightElement);
                     
                     subjectMedicationElement = docNode.createElement('medication');
@@ -1367,16 +1375,16 @@ classdef level1Study < levelStudy;
                     
                     % caffeine and alcohol elements producing error
                     caffeineElement = docNode.createElement('caffeine');
-                    caffeineElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).medication.caffeine));
+                    caffeineElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).medication.caffeine));
                     medicationRootNode.appendChild(caffeineElement);
                     
                     alcoholElement = docNode.createElement('alcohol');
-                    alcoholElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).medication.alcohol));
+                    alcoholElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).medication.alcohol));
                     medicationRootNode.appendChild(alcoholElement);
                     
                     
                     subjectChannelLocationsElement = docNode.createElement('channelLocations');
-                    subjectChannelLocationsElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).subject(j).channelLocations));
+                    subjectChannelLocationsElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).subject(j).channelLocations));
                     subjectRootNode.appendChild(subjectChannelLocationsElement);
                 end;
                 
@@ -1386,15 +1394,15 @@ classdef level1Study < levelStudy;
                 notesRootNode= sessionRootNode.appendChild(notesElement);
                 
                 noteElement = docNode.createElement('note');
-                noteElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).note));
+                noteElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).note));
                 notesRootNode.appendChild(noteElement);
                 
                 noteLinkNameElement = docNode.createElement('linkName');
-                noteLinkNameElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).linkName));
+                noteLinkNameElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).linkName));
                 notesRootNode.appendChild(noteLinkNameElement);
                 
                 noteLinkElement = docNode.createElement('link');
-                noteLinkElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).link));
+                noteLinkElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).link));
                 notesRootNode.appendChild(noteLinkElement);
                 
                 dataRecordingsElement = docNode.createElement('dataRecordings');
@@ -1406,35 +1414,35 @@ classdef level1Study < levelStudy;
                     
                     % create the filename node under dataRecording node.
                     dataRecordingFilenameElement = docNode.createElement('filename');
-                    dataRecordingFilenameElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).filename));
+                    dataRecordingFilenameElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).dataRecording(k).filename));
                     dataRecordingElement.appendChild(dataRecordingFilenameElement);
                     
                     % create the dataRecordingUuid node under dataRecording node.
                     dataRecordingDataRecordingUuidElement = docNode.createElement('dataRecordingUuid');
-                    dataRecordingDataRecordingUuidElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).dataRecordingUuid));
+                    dataRecordingDataRecordingUuidElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).dataRecording(k).dataRecordingUuid));
                     dataRecordingElement.appendChild(dataRecordingDataRecordingUuidElement);
                     
                     % create the startDateTime node under dataRecording node.
                     dataRecordingStartDateElement = docNode.createElement('startDateTime');
-                    dataRecordingStartDateElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).startDateTime));
+                    dataRecordingStartDateElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).dataRecording(k).startDateTime));
                     dataRecordingElement.appendChild(dataRecordingStartDateElement);
                     
                     % create the recordingParameterSetLabel node under dataRecording node.
                     dataRecordingRecordingParameterSetLabelElement = docNode.createElement('recordingParameterSetLabel');
-                    dataRecordingRecordingParameterSetLabelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).recordingParameterSetLabel));
+                    dataRecordingRecordingParameterSetLabelElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).dataRecording(k).recordingParameterSetLabel));
                     dataRecordingElement.appendChild(dataRecordingRecordingParameterSetLabelElement);
                     
                     
                     
                     % create the eventInstanceFile node under dataRecording node.
                     dataRecordingEventInstanceFilelElement = docNode.createElement('eventInstanceFile');
-                    dataRecordingEventInstanceFilelElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).eventInstanceFile));
+                    dataRecordingEventInstanceFilelElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).dataRecording(k).eventInstanceFile));
                     dataRecordingElement.appendChild(dataRecordingEventInstanceFilelElement);
                     
                     
                     % create the originalFileNameAndPath node under dataRecording node.
                     dataRecordingOriginalFileNameAndPathElement = docNode.createElement('originalFileNameAndPath');
-                    dataRecordingOriginalFileNameAndPathElement.appendChild(docNode.createTextNode(obj.sessionTaskInfo(i).dataRecording(k).originalFileNameAndPath));
+                    dataRecordingOriginalFileNameAndPathElement.appendChild(makeTextNode(obj.sessionTaskInfo(i).dataRecording(k).originalFileNameAndPath));
                     dataRecordingElement.appendChild(dataRecordingOriginalFileNameAndPathElement);
                     
                     
@@ -1450,15 +1458,15 @@ classdef level1Study < levelStudy;
                 taskRootNode= tasksRootNode.appendChild(taskElement);
                 
                 taskLabelElement = docNode.createElement('taskLabel');
-                taskLabelElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).taskLabel));
+                taskLabelElement.appendChild(makeTextNode(obj.tasksInfo(m).taskLabel));
                 taskRootNode.appendChild(taskLabelElement);
                 
                 taskTagElement = docNode.createElement('tag');
-                taskTagElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).tag));
+                taskTagElement.appendChild(makeTextNode(obj.tasksInfo(m).tag));
                 taskRootNode.appendChild(taskTagElement);
                 
                 taskDescriptionElement = docNode.createElement('description');
-                taskDescriptionElement.appendChild(docNode.createTextNode(obj.tasksInfo(m).description));
+                taskDescriptionElement.appendChild(makeTextNode(obj.tasksInfo(m).description));
                 taskRootNode.appendChild(taskDescriptionElement);
             end;
             
@@ -1470,15 +1478,15 @@ classdef level1Study < levelStudy;
                 eventCodeRootNode=eventCodesRootNode.appendChild(eventCodeElement);
                 
                 eventCodeNodeElement = docNode.createElement('code');
-                eventCodeNodeElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).code));
+                eventCodeNodeElement.appendChild(makeTextNode(obj.eventCodesInfo(n).code));
                 eventCodeRootNode.appendChild(eventCodeNodeElement);
                 
                 eventCodeTaskLabelElement = docNode.createElement('taskLabel');
-                eventCodeTaskLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).taskLabel));
+                eventCodeTaskLabelElement.appendChild(makeTextNode(obj.eventCodesInfo(n).taskLabel));
                 eventCodeRootNode.appendChild(eventCodeTaskLabelElement);
                 
                 eventCodeNumberOfInstancesElement = docNode.createElement('numberOfInstances');
-                eventCodeNumberOfInstancesElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).numberOfInstances));
+                eventCodeNumberOfInstancesElement.appendChild(makeTextNode(obj.eventCodesInfo(n).numberOfInstances));
                 eventCodeRootNode.appendChild(eventCodeNumberOfInstancesElement);
                 
                 for p= 1:length(obj.eventCodesInfo(n).condition)
@@ -1486,15 +1494,15 @@ classdef level1Study < levelStudy;
                     eventCodeConditionRootNode=eventCodeRootNode.appendChild(eventCodeConditionElement);
                     
                     eventCodeConditionLabelElement = docNode.createElement('label');
-                    eventCodeConditionLabelElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).label));
+                    eventCodeConditionLabelElement.appendChild(makeTextNode(obj.eventCodesInfo(n).condition(p).label));
                     eventCodeConditionRootNode.appendChild(eventCodeConditionLabelElement);
                     
                     eventCodeConditionDescriptionElement = docNode.createElement('description');
-                    eventCodeConditionDescriptionElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).description));
+                    eventCodeConditionDescriptionElement.appendChild(makeTextNode(obj.eventCodesInfo(n).condition(p).description));
                     eventCodeConditionRootNode.appendChild(eventCodeConditionDescriptionElement);
                     
                     eventCodeConditionTagElement = docNode.createElement('tag');
-                    eventCodeConditionTagElement.appendChild(docNode.createTextNode(obj.eventCodesInfo(n).condition(p).tag));
+                    eventCodeConditionTagElement.appendChild(makeTextNode(obj.eventCodesInfo(n).condition(p).tag));
                     eventCodeConditionRootNode.appendChild(eventCodeConditionTagElement);
                 end;
             end;
@@ -1503,26 +1511,26 @@ classdef level1Study < levelStudy;
             summaryRootNode=docRootNode.appendChild(summaryElement);
             
             summaryTotalSizeElement = docNode.createElement('totalSize');
-            summaryTotalSizeElement.appendChild(docNode.createTextNode(obj.summaryInfo.totalSize));
+            summaryTotalSizeElement.appendChild(makeTextNode(obj.summaryInfo.totalSize));
             summaryRootNode.appendChild(summaryTotalSizeElement);
             
             summaryAllSubjectsElement = docNode.createElement('allSubjectsHealthyAndNormal');
-            summaryAllSubjectsElement.appendChild(docNode.createTextNode(obj.summaryInfo.allSubjectsHealthyAndNormal));
+            summaryAllSubjectsElement.appendChild(makeTextNode(obj.summaryInfo.allSubjectsHealthyAndNormal));
             summaryRootNode.appendChild(summaryAllSubjectsElement);
             
             summaryLicenseElement = docNode.createElement('license');
             summaryLicenseRootNode=summaryRootNode.appendChild(summaryLicenseElement);
             
             summaryLicenseTypeElement = docNode.createElement('type');
-            summaryLicenseTypeElement.appendChild(docNode.createTextNode(obj.summaryInfo.license.type));
+            summaryLicenseTypeElement.appendChild(makeTextNode(obj.summaryInfo.license.type));
             summaryLicenseRootNode.appendChild(summaryLicenseTypeElement);
             
             summaryLicenseTextElement = docNode.createElement('text');
-            summaryLicenseTextElement.appendChild(docNode.createTextNode(obj.summaryInfo.license.text));
+            summaryLicenseTextElement.appendChild(makeTextNode(obj.summaryInfo.license.text));
             summaryLicenseRootNode.appendChild(summaryLicenseTextElement);
             
             summaryLicenseLinkElement = docNode.createElement('link');
-            summaryLicenseLinkElement.appendChild(docNode.createTextNode(obj.summaryInfo.license.link));
+            summaryLicenseLinkElement.appendChild(makeTextNode(obj.summaryInfo.license.link));
             summaryLicenseRootNode.appendChild(summaryLicenseLinkElement);
             
             publicationsElement = docNode.createElement('publications');
@@ -1533,15 +1541,15 @@ classdef level1Study < levelStudy;
                 publicationRootNode=publicationsRootNode.appendChild(publicationElement);
                 
                 publicationCitationElement = docNode.createElement('citation');
-                publicationCitationElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).citation));
+                publicationCitationElement.appendChild(makeTextNode(obj.publicationsInfo(r).citation));
                 publicationRootNode.appendChild(publicationCitationElement);
                 
                 publicationDoiElement = docNode.createElement('DOI');
-                publicationDoiElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).DOI));
+                publicationDoiElement.appendChild(makeTextNode(obj.publicationsInfo(r).DOI));
                 publicationRootNode.appendChild(publicationDoiElement);
                 
                 publicationLinkElement = docNode.createElement('link');
-                publicationLinkElement.appendChild(docNode.createTextNode(obj.publicationsInfo(r).link));
+                publicationLinkElement.appendChild(makeTextNode(obj.publicationsInfo(r).link));
                 publicationRootNode.appendChild(publicationLinkElement);
                 
             end;
@@ -1554,11 +1562,11 @@ classdef level1Study < levelStudy;
                 experimenterRootNode=experimentersRootNode.appendChild(experimenterElement);
                 
                 experimenterNameElement = docNode.createElement('name');
-                experimenterNameElement.appendChild(docNode.createTextNode(obj.experimentersInfo(x).name));
+                experimenterNameElement.appendChild(makeTextNode(obj.experimentersInfo(x).name));
                 experimenterRootNode.appendChild(experimenterNameElement);
                 
                 experimenterRoleElement = docNode.createElement('role');
-                experimenterRoleElement.appendChild(docNode.createTextNode(obj.experimentersInfo(x).role));
+                experimenterRoleElement.appendChild(makeTextNode(obj.experimentersInfo(x).role));
                 experimenterRootNode.appendChild(experimenterRoleElement);
             end;
             
@@ -1566,34 +1574,34 @@ classdef level1Study < levelStudy;
             contactRootNode=docRootNode.appendChild(contactElement);
             
             contactNameElement = docNode.createElement('name');
-            contactNameElement.appendChild(docNode.createTextNode(obj.contactInfo.name));
+            contactNameElement.appendChild(makeTextNode(obj.contactInfo.name));
             contactRootNode.appendChild(contactNameElement);
             
             contactPhoneElement = docNode.createElement('phone');
-            contactPhoneElement.appendChild(docNode.createTextNode(obj.contactInfo.phone));
+            contactPhoneElement.appendChild(makeTextNode(obj.contactInfo.phone));
             contactRootNode.appendChild(contactPhoneElement);
             
             contactEmailElement = docNode.createElement('email');
-            contactEmailElement.appendChild(docNode.createTextNode(obj.contactInfo.email));
+            contactEmailElement.appendChild(makeTextNode(obj.contactInfo.email));
             contactRootNode.appendChild(contactEmailElement);
             
             organizationElement = docNode.createElement('organization');
             organizationRootNode=docRootNode.appendChild(organizationElement);
             
             organizationNameElement = docNode.createElement('name');
-            organizationNameElement.appendChild(docNode.createTextNode(obj.organizationInfo.name));
+            organizationNameElement.appendChild(makeTextNode(obj.organizationInfo.name));
             organizationRootNode.appendChild(organizationNameElement);
             
             organizationLogoLinkElement = docNode.createElement('logoLink');
-            organizationLogoLinkElement.appendChild(docNode.createTextNode(obj.organizationInfo.logoLink));
+            organizationLogoLinkElement.appendChild(makeTextNode(obj.organizationInfo.logoLink));
             organizationRootNode.appendChild(organizationLogoLinkElement);
             
             copyrightElement = docNode.createElement('copyright');
-            copyrightElement.appendChild(docNode.createTextNode(obj.copyrightInfo));
+            copyrightElement.appendChild(makeTextNode(obj.copyrightInfo));
             docRootNode.appendChild(copyrightElement);
             
             IrbElement = docNode.createElement('IRB');
-            IrbElement.appendChild(docNode.createTextNode(obj.irbInfo));
+            IrbElement.appendChild(makeTextNode(obj.irbInfo));
             docRootNode.appendChild(IrbElement);
             
             proc = docNode.createProcessingInstruction('xml-stylesheet', 'type="text/xsl" href="xml_style.xsl"');
@@ -1970,8 +1978,11 @@ classdef level1Study < levelStudy;
                             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
                             
                             nextToXMLFilePath = [nextToXMLFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
-                            fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
-                            
+                            if exist(obj.sessionTaskInfo(i).dataRecording(j).filename, 'file')
+                                fullEssFilePath = obj.sessionTaskInfo(i).dataRecording(j).filename;
+                            else
+                                fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).filename];
+                            end
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
                                 issue(end+1).description = [sprintf('File specified for data recording %d of session number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
@@ -2009,8 +2020,11 @@ classdef level1Study < levelStudy;
                             [allSearchFolders, nextToXMLFolder, fullEssFolder] = getSessionFileSearchFolders(obj, sessionNumber); %#ok<ASGLU>
                             
                             nextToXMLFilePath = [nextToXMLFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
-                            fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
-                            
+                            if exist(obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile, 'file')
+                                fullEssFilePath = obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile;
+                            else
+                                fullEssFilePath = [fullEssFolder filesep obj.sessionTaskInfo(i).dataRecording(j).eventInstanceFile];
+                            end
                             if ~(exist(fullEssFilePath, 'file') || exist(nextToXMLFilePath, 'file'))
                                 issue(end+1).description = [sprintf('Event Instance file specified for data recording %d of session number %s does not exist, \r         i.e. cannot find either %s or %s', j, obj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath)  '.'];
                                 issue(end).issueType = 'missing file';
@@ -2124,7 +2138,8 @@ classdef level1Study < levelStudy;
                         end;
                         
                         % event instance count missing
-                        if ~level1Study.isAvailable(obj.eventCodesInfo(i).numberOfInstances)
+                        if ~level1Study.isAvailable(obj.eventCodesInfo(i).numberOfInstances) && ...
+                                strcmpi(strtrim(obj.isInEssContainer), 'yes')
                             issue(end+1).description = sprintf('Number of event instances for Task label ''%s'', Event ''%s'' was missing.', obj.eventCodesInfo(i).taskLabel, obj.eventCodesInfo(i).code);
                             obj = obj.updateEventNumberOfInstances;
                             issue(end).howItWasFixed = sprintf('All event instance counts recomputed.');
@@ -2181,23 +2196,18 @@ classdef level1Study < levelStudy;
             end
             
             % validate event HED tags
-            w = which('validatestr.m');
-            wnew = which('validatehedstr.m'); % newer name
-            if isempty(w) && isempty(wnew)
-                    fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');                
+            w = which('validatehedstr.m');
+            if isempty(w)
+                fprintf('Unable to validate HED tags since HEDTools cannot be found. \n Please add it to the path. It can be downloaded from https://github.com/VisLab/HEDTools \n');
             else
-                                
+                
+                
                 for i=1:length(obj.eventCodesInfo)
                     
                     errors = {};
                     try
                         if ischar(obj.eventCodesInfo(i).condition.tag)
-                            if ~isempty(wnew) % new function name
-                                errors = validatehedstr(obj.eventCodesInfo(i).condition.tag);
-                            else % old function name
-                                errors = validatestr(obj.eventCodesInfo(i).condition.tag);
-                            end;
-                            
+                            errors = validatehedstr(obj.eventCodesInfo(i).condition.tag);
                         elseif isempty(obj.eventCodesInfo(i).condition.tag)
                             obj.eventCodesInfo(i).condition.tag = '';
                         end
@@ -2328,7 +2338,11 @@ classdef level1Study < levelStudy;
                         try
                             % only read a single channel since we only care
                             % about events at this point.
-                            combinedPathAndName = [allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename];
+                            if exist(obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename, 'file')
+                                combinedPathAndName = obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename;
+                            else
+                                combinedPathAndName = [allSearchFolders{i} filesep obj.sessionTaskInfo(sessionTaskNumber).dataRecording(dataRecordingNumber).filename];
+                            end
                             fileFound = fileFound | exist(combinedPathAndName, 'file');
                             EEG = exp_eval(io_loadset(combinedPathAndName));
                         catch
@@ -2531,8 +2545,8 @@ classdef level1Study < levelStudy;
                 overwriteFiles = true;
             end;
             
-            [obj, issue]= obj.validate; % fix solvable issues, like missing UUIDs;.
-            
+          [obj, issue]= obj.validate; % fix solvable issues, like missing UUIDs;.
+         
             % stop and generate an error here if there are outstanding
             % issues.
             if stopOnIssues
@@ -2575,8 +2589,11 @@ classdef level1Study < levelStudy;
                     if ~(strcmpi(fileNameFromObj, 'na') || isempty(fileNameFromObj))
                         
                         nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
-                        fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
-                        
+                        if exist(fileNameFromObj, 'file')
+                            fullEssFilePath = fileNameFromObj;
+                        else
+                           fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                        end
                         if ~isempty(fileNameFromObj) && exist(fullEssFilePath, 'file')
                             fileFinalPath = fullEssFilePath;
                         elseif ~isempty(fileNameFromObj) && exist(nextToXMLFilePath, 'file')
@@ -2643,7 +2660,11 @@ classdef level1Study < levelStudy;
                         end;
                         
                         nextToXMLFilePath = [rootFolder filesep fileNameFromObj];
-                        fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                        if exist(fileNameFromObj, 'file')
+                            fullEssFilePath = fileNameFromObj;
+                        else
+                            fullEssFilePath = [rootFolder filesep 'session' filesep obj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObj];
+                        end
                         fileNameFromObjisEmpty = isempty(fileNameFromObj) || isempty(strtrim(fileNameFromObj));
                         if ~fileNameFromObjisEmpty && exist(fullEssFilePath, 'file')
                             fileFinalPath = fullEssFilePath;
@@ -3309,6 +3330,38 @@ classdef level1Study < levelStudy;
             opt.emptyString = '"NA"';
             json = savejson_for_ess('', xmlAsStructure, opt);
         end;        
+        
+%         function writeJSONP(obj, essFolder)
+%             % writeJSONP(obj, essFolder)
+%             % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+%             if nargin < 2
+%                 essFolder = fileparts(obj.essFilePath);
+%             end;
+%             
+%             if ~exist(essFolder, 'dir')
+%                 mkdir(essFolder);
+%             end;
+%             
+%             json = getAsJSON(obj);
+%             
+%             fid= fopen([essFolder filesep 'manifest.js'], 'w');
+%             fprintf(fid, '%s', ['receiveEssDocument(' json ');']);
+%             fclose(fid);
+%         end;
+%         
+%         function copyJSONReportAssets(obj, essFolder)
+%             if nargin < 2
+%                 essFolder = fileparts(obj.essFilePath);
+%             end;
+%             
+%             thisClassFilenameAndPath = mfilename('fullpath');
+%             essDocumentPathStr = fileparts(thisClassFilenameAndPath);
+%             % copy index.html
+%             copyfile([essDocumentPathStr filesep 'asset' filesep 'index.html'], [essFolder filesep 'index.html']);
+%             
+%             % copy javascript and CSS used in index.html
+%             copyfile([essDocumentPathStr filesep 'asset' filesep 'web_resources' filesep '*'], [essFolder filesep 'web_resources']);
+%         end;
         
         function obj = updateEventNumberOfInstances(obj)
             % obj = updateEventNumberOfInstances(obj)
