@@ -510,6 +510,7 @@ classdef levelStudy
         function writeJSONP(obj, essFolder)
             % writeJSONP(obj, essFolder)
             % write ESS container manifest data as a JSONP (JSON with a function wrapper) in manifest.js file.
+            
 %             if nargin < 2
 %                 essFolder = fileparts(obj.essFilePath);
 %             end;
