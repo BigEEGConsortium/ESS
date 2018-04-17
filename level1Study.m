@@ -1806,7 +1806,7 @@ classdef level1Study < levelStudy;
                                 % Non-scalp channel labels are needed for
                                 % EEG
                                 if isempty(strtrim(obj.recordingParameterSet(i).modality(j).nonScalpChannelLabel))
-                                    issue(end+1).description = sprintf('Non-scalp channel labels of EEG (modality %d) in recording parameter set %d is empty.', j, i);
+                                    warning('Non-scalp channel labels of EEG (modality %d) in recording parameter set %d is empty.\n This is fine only if there are no channels located on non-scalp locations.', j, i);
                                 end;
                             end;
                             
