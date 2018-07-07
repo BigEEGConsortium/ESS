@@ -248,8 +248,8 @@ classdef levelStudy
                     EEG = exp_eval(io_loadset(fileFinalPath, 'timerange', [1 10]));
                 else % load all the data
                     EEG = exp_eval(io_loadset(fileFinalPath));
-                end;
-            end;
+                end
+            end
             
             channelLabelsAreMadeUp = false;
             for qqi = 1:length(EEG.chanlocs)
@@ -259,15 +259,15 @@ classdef levelStudy
                     channelLabelsAreMadeUp = false;
                     break;
                 end
-            end;
+            end
             if channelLabelsAreMadeUp
                 EEG.chanlocs = [];
-            end;
+            end
             
             % add HED tags based on events
             if ~strcmpi(level1StudyObj.eventSpecificationMethod, 'Tags')
                 EEG = addUsertagsToEEG(level1StudyObj, EEG, currentTask);
-            end;
+            end
             
             % find EEG channels subsets
             dataRecordingParameterSet = [];
@@ -275,8 +275,8 @@ classdef levelStudy
                 if strcmpi(level1StudyObj.recordingParameterSet(kk).recordingParameterSetLabel, recordingParameterSetLabel)
                     dataRecordingParameterSet = level1StudyObj.recordingParameterSet(kk);
                     break;
-                end;
-            end;
+                end
+            end
             
             if isempty(dataRecordingParameterSet)
                 % ToDo: Throw a better error message
