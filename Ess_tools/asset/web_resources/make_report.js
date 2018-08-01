@@ -53,7 +53,7 @@ function getLevelHierarchy(studyObj){
 		else if ("studyLevel1" in currentLevel) {
 			studyLevelHierarchyType.unshift('level2');
 			currentLevel = currentLevel.studyLevel1;
-		} else if ("eventSpecificationMethod" in currentLevel) {
+		} else if ("isInEssContainer" in currentLevel) {
 			studyLevelHierarchyType.unshift('level1');
 			break;
 		}
