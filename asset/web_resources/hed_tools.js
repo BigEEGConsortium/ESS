@@ -58,6 +58,14 @@ function makeAllParentHedTags(hedTag)
 	return 	parentTags
 }
 
+function eventCountsAreValid(eventArray){
+	for (var i = 0; i < eventArray.length; i++) {
+		if (eventArray[i].numberOfInstances > 0)
+			return true;
+	}
+	return false;
+}
+
 function eventCodeNumberOfInstancesToTagCount (eventArray, ignoreTagArray){ // assumes event object has 'numberOfInstances' and 'tag' fields.
 // ignoreTagArray contains tags that are not to be counted and are fully removed.
 var ignoreTagArray = typeof ignoreTagArray !== 'undefined' ?  ignoreTagArray :['Attribute/Onset', 'Attribute/Offset', 'Event/Label', 'Event/Description', 'Sensory presentation/Visual/Rendering type/Screen/2D'];
@@ -164,7 +172,7 @@ function getChildD3Hierarchy(currentTag, tagCount, useLogCount){
 }
 
 function convertToD3Hierarchy(tagCount, useLogCount){
-
+  var eventCountsExist = false;
 	var hierarchy = {};
 	hierarchy.name = 'HED';
 	hierarchy.children = [];
@@ -209,7 +217,7 @@ function convertToD3Hierarchy(tagCount, useLogCount){
 if (isNode()){
     var eventArray = [{numberOfInstances:5, tag:'/Participant/Effect/Cognitive/Target/'},
         {numberOfInstances:10, tag:'Event/Categorty/Stimulus'},{numberOfInstances:10, tag:'Event/Categorty/Check, Event/Categorty'}];
-    
+
     var tagCount = eventCodeNumberOfInstancesToTagCount(eventArray);
     var d3hierarchyJson = JSON.stringify(convertToD3Hierarchy(tagCount));
 	fs.writeFile("/home/nima/Documents/mycode/matlab/ESS_scripts/treemap/hedcount.json", d3hierarchyJson, function(err) {

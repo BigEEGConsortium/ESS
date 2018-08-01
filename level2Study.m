@@ -1,3 +1,4 @@
+% Copyright © Qusp 2016. All Rights Reserved.
 classdef level2Study < levelStudy;
     % creates a Level 2 object, either from a Level 2 container, or by starting from a Level 1 container
     % (using 'level1XmlFilePath' option) and processing it with Standardized Data Level 2 (PREP) pipeline
@@ -161,7 +162,7 @@ classdef level2Study < levelStudy;
             
             if nargin < 3
                 alsoWriteJson = true;
-            end; 
+            end;
             
             if alsoWriteJson
                 obj.writeJSONP(fileparts(obj.level2XmlFilePath)); % since this function has an internal call to obj.write, this prevents circular references
@@ -195,7 +196,7 @@ classdef level2Study < levelStudy;
         function obj = read(obj)
             Pref.Str2Num = false;
             Pref.PreserveSpace = true; % keep spaces
-            xmlAsStructure = xml_read(obj.level2XmlFilePath, Pref);            
+            xmlAsStructure = xml_read(obj.level2XmlFilePath, Pref);
             
             % read data from legacy field names with Info at the end
             legacyInfoNames = {'projectInfo', 'contactInfo', 'organizationInfo', 'copyrightInfo'};
@@ -250,7 +251,7 @@ classdef level2Study < levelStudy;
             % Example:
             %
             %	obj = level2Study('level1XmlFilePath', 'C:\Users\You\Awesome_EEG_stud\level_1\'); % this load the data but does not make a proper Level 2 container yet (Obj it is still mostly empty).
-            %	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_stud\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object.
+            %	obj = obj.createLevel2Study( 'C:\Users\You\Awesome_EEG_study\level_2\'); % this command start applying the preprocessing pipelines and makes a proper Level 2 object.
             %
             % Options:
             %
@@ -311,13 +312,14 @@ classdef level2Study < levelStudy;
             if strcmpi(obj.level1StudyObj.summaryInfo.license.type, 'cc0')
                 copyfile([essDocumentPathStr filesep 'asset' filesep 'cc0_license.txt'], [inputOptions.level2Folder filesep 'License.txt']);
             end;
-                                    
+            
             % JSON-based report assets
             obj.copyJSONReportAssets(inputOptions.level2Folder);
             
             obj.uuid = char(java.util.UUID.randomUUID);
             obj.title = obj.level1StudyObj.studyTitle;
-            obj.studyLevel2SchemaVersion  = '1.0';
+            [toolsVersion, level1SchemaVersion, level2SchemaVersion, levelDerivedSchemaVersion] = get_ess_versions;
+            obj.studyLevel2SchemaVersion  = level2SchemaVersion;
             
             % process each session before moving to the other
             for i=1:length(obj.level1StudyObj.sessionTaskInfo)
@@ -373,18 +375,17 @@ classdef level2Study < levelStudy;
                             params.detrendChannels = params.rereferencedChannels;
                             params.lineNoiseChannels = params.rereferencedChannels;
                             params.name = [obj.level1StudyObj.studyTitle ', session ' obj.level1StudyObj.sessionTaskInfo(i).sessionNumber ', task ', obj.level1StudyObj.sessionTaskInfo(i).taskLabel ', recording ' num2str(j)];
+                            params.ignoreBoundaryEvents = true; % ignore boundary events                            
                             
-                            % for test only
-%                             if inputOptions.forTest
-%                                 fprintf('Cutting data, WARNING: ONLY FOR TESTING, REMOVE THIS FOR PRODUCTION!\n');
-%                                 if length(EEG.chanlocs) > size(EEG.data,1)
-%                                     EEG.chanlocs = EEG.chanlocs(1:size(EEG.data, 1));
-%                                 end;
-%                                 EEG = pop_select(EEG, 'point', 1:round(size(EEG.data,2)/100));
-%                             end;
+                            % to prevent figures opening up during computation
+                            defFigVisibility = get(0, 'DefaultFigureVisible');
+                            set(0, 'DefaultFigureVisible', 'off')
                             
                             % execute the pipeline
-                            [EEG, computationTimes] = prepPipeline(EEG, params);
+                            [EEG, computationTimes] = prepPipeline(EEG, params);                            
+                                                       
+                            set(0, 'DefaultFigureVisible', defFigVisibility)
+                            
                             
                             % use noiseDetection instead of noisyParameters
                             if isfield(EEG.etc, 'noisyParameters')
@@ -473,7 +474,7 @@ classdef level2Study < levelStudy;
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).rereferencedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, allEEGChannels, 'UniformOutput', false));
                             obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).uuid = studyLevel2FileUuid;
                             
-                            if isfield(EEG.etc.noiseDetection, 'reference')
+                            if isfield(EEG.etc.noiseDetection, 'reference') && ~isempty(EEG.etc.noiseDetection.reference)
                                 obj.studyLevel2Files.studyLevel2File(studyLevel2FileCounter).interpolatedChannels = strjoin_adjoiner_first(',', arrayfun(@num2str, EEG.etc.noiseDetection.reference.interpolatedChannels.all, 'UniformOutput', false));
                                 % assume data quality hass been 'Good' (can be set to
                                 % 'Suspect or 'Unusable' later)
@@ -503,22 +504,31 @@ classdef level2Study < levelStudy;
                                 %filterFieldName = {'resampling' 'lineNoise'};
                                 %filterFunctionName = {'resampleEEG' 'cleanLineNoise'};
                                 
+                                f = 1;
                                 filterLabel = {'Line Noise Removal'};
                                 filterFieldName = {'lineNoise'};
                                 filterFunctionName = {'cleanLineNoise'};
-                                                                                                
-                                newFilter = struct;
+                                
+                                emptyFilterStruct = struct('filterLabel', '', ...
+                                    'filterDescription', '', 'executionOrder', [],...
+                                    'softwareEnvironment', '', 'softwarePackage', '',...
+                                    'functionName', '', 'codeHash', '', 'parameters', struct, ...
+                                    'recordingParameterSetLabel', '');
+                                
+                                newFilter = emptyFilterStruct;
                                 newFilter.filterLabel = filterLabel{f};
-                                newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';                                
+                                newFilter.filterDescription = 'Removes power line noise (50/60 Hz) from data using a method that tries to not affect other frequencies';
                                 newFilter.executionOrder = num2str(f);
                                 newFilter.softwareEnvironment = matlabVersionSTring;
                                 newFilter.softwarePackage = eeglabVersionString;
                                 newFilter.functionName = filterFunctionName{f};
                                 newFilter.codeHash = hlp_cryptohash(which('cleanLineNoise.m'),true);
-                                fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
-                                for p=1:length(fields)
-                                    newFilter.parameters.parameter(p).name = fields{p};
-                                    newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
+                                if isstruct(EEG.etc.noiseDetection.(filterFieldName{f}))
+                                    fields = fieldnames(EEG.etc.noiseDetection.(filterFieldName{f}));
+                                    for p=1:length(fields)
+                                        newFilter.parameters.parameter(p).name = fields{p};
+                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.(filterFieldName{f}).(fields{p}));
+                                    end;
                                 end;
                                 newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                 
@@ -526,9 +536,9 @@ classdef level2Study < levelStudy;
                                 
                                 % Reference (too complicated to put above)
                                 if (isfield(EEG.etc.noiseDetection, 'reference'))
-                                    newFilter = struct;
+                                    newFilter = emptyFilterStruct;
                                     newFilter.filterLabel = 'Robust Reference Removal';
-                                    newFilter.filterDescription = 'average referencing after interpolating noisy channels';                                    
+                                    newFilter.filterDescription = 'average referencing after interpolating noisy channels';
                                     newFilter.executionOrder = '3';
                                     newFilter.softwareEnvironment = matlabVersionSTring;
                                     newFilter.softwarePackage = eeglabVersionString;
@@ -537,23 +547,27 @@ classdef level2Study < levelStudy;
                                     fields = {'robustDeviationThreshold', 'highFrequencyNoiseThreshold', 'correlationWindowSeconds', ...
                                         'correlationThreshold', 'badTimeThreshold', 'ransacSampleSize', 'ransacChannelFraction', ...
                                         'ransacCorrelationThreshold', 'ransacUnbrokenTime', 'ransacWindowSeconds'};
-                                    for p=1:length(fields)
-                                        newFilter.parameters.parameter(p).name = fields{p};
-                                        newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyStatistics.(fields{p}));
+                                    if ~isempty(EEG.etc.noiseDetection.reference)
+                                        for p=1:length(fields)
+                                            newFilter.parameters.parameter(p).name = fields{p};
+                                            newFilter.parameters.parameter(p).value = num2str(EEG.etc.noiseDetection.reference.noisyStatistics.(fields{p}));
+                                        end;
+                                        
+                                        
+                                        newFilter.parameters.parameter(end+1).name = 'referenceChannels';
+                                        newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.referenceChannels);
+                                        
+                                        newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
+                                        newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.rereferencedChannels);
                                     end;
                                     
-                                    newFilter.parameters.parameter(end+1).name = 'referenceChannels';
-                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.referenceChannels);
-                                    
-                                    newFilter.parameters.parameter(end+1).name = 'rereferencedChannels';
-                                    newFilter.parameters.parameter(end).value = num2str(EEG.etc.noiseDetection.reference.rereferencedChannels);
                                     newFilter.recordingParameterSetLabel = dataRecordingParameterSet.recordingParameterSetLabel;
                                     
                                     obj.filters.filter(end+1) = newFilter;
                                 end;
                             end;
                             
-                            % remove any filter with an empty (the first
+                            % remove any filter with an empty label (the first
                             % one created by the object)
                             removeId = [];
                             for f=1:length(obj.filters.filter)
@@ -575,28 +589,7 @@ classdef level2Study < levelStudy;
             
             % Level 2 total study size
             [dummy, obj.totalSize]= dirsize(fileparts(obj.level2XmlFilePath)); %#ok<ASGLU>
-            obj.write(obj.level2XmlFilePath);
-            
-            %             function fileFinalPathOut = findFile(fileNameFromObjIn, rootFolder)
-            %                 % search for the file both next to the xml file and in the standard ESS
-            %                 % convention location
-            %                 nextToXMLFilePath = [rootFolder filesep fileNameFromObjIn];
-            %                 fullEssFilePath = [rootFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(i).sessionNumber filesep fileNameFromObjIn];
-            %
-            %                 if ~isempty(fileNameFromObjIn) && exist(fullEssFilePath, 'file')
-            %                     fileFinalPathOut = fullEssFilePath;
-            %                 elseif ~isempty(fileNameFromObjIn) && exist(nextToXMLFilePath, 'file')
-            %                     fileFinalPathOut = nextToXMLFilePath;
-            %                 elseif ~isempty(fileNameFromObjIn) % when the file is specified but cannot be found on disk
-            %                     fileFinalPathOut = [];
-            %                     fprintf('File %s specified for data recoding %d of sesion number %s does not exist, \r         i.e. cannot find either %s or %s.\n', fileNameFromObjIn, j, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber, nextToXMLFilePath, fullEssFilePath);
-            %                     fprintf('You might want to run validate() routine.\n');
-            %                 else % the file name is empty
-            %                     fileFinalPathOut = [];
-            %                     fprintf('You have not specified any file for data recoding %d of sesion number %s\n', j, obj.level1StudyObj.sessionTaskInfo(i).sessionNumber);
-            %                     fprintf('You might want to run validate() routine.\n');
-            %                 end;
-            %             end
+            obj.write(obj.level2XmlFilePath);           
             
         end;
         
@@ -617,7 +610,7 @@ classdef level2Study < levelStudy;
                 arg('taskLabel', {},[],'Label(s) for session tasks. A cell array containing task labels.', 'type', 'cellstr'), ...
                 arg('includeFolder', true, [],'Add folder to returned filename.', 'type', 'logical'),...
                 arg('filetype', 'eeg',{'eeg' 'EEG', 'event', 'Event'},'Either ''EEG'' or  ''event''. Specifies which file types should be returned.', 'type', 'char'),...
-                arg('dataQuality', {},[],'Acceptable data quality values. I.e. whether to include Suspect data or not.', 'type', 'cellstr') ...
+                arg('dataQuality', {'Good'}, {'Good', 'Suspect', 'Unusable'},'Acceptable data quality values. I.e. whether to include Suspect data or not.', 'type', 'cellstr') ...
                 );
             
             % get the UUids from level 1
@@ -628,60 +621,62 @@ classdef level2Study < levelStudy;
             taskLabel = {};
             filename = {};
             sessionNumber = {};
-            subjectInfo = [];
+            subjectInfo = {};
             level2DataRecordingNumber = [];
             originalFileNameAndPath = {};
             clear level1DataRecording;
             for i=1:length(obj.studyLevel2Files.studyLevel2File)
-                [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
-                if match
-                    matchedSessionTaskNumber = sessionTaskNumber(id);
-                    level2DataRecordingNumber(end+1) = i;
-                    dataRecordingUuid{end+1} = obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid;
-                    taskLabel{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).taskLabel;
-                    
-                    sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber;
-                    level1DataRecording(length(sessionNumber)) = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
-                    originalFileNameAndPath{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
-                    
-                    inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)));
-                    foundSubjectId = [];
-                    for j =1:length(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject)
-                        if strcmp(inSessionNumber, obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(j).inSessionNumber)
-                            foundSubjectId = [foundSubjectId j];
+                if ismember(obj.studyLevel2Files.studyLevel2File(i).dataQuality, inputOptions.dataQuality)
+                    [match, id] = ismember(obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid, selectedDataRecordingUuid);
+                    if match
+                        matchedSessionTaskNumber = sessionTaskNumber(id);
+                        level2DataRecordingNumber(end+1) = i;
+                        dataRecordingUuid{end+1} = obj.studyLevel2Files.studyLevel2File(i).dataRecordingUuid;
+                        taskLabel{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).taskLabel;
+                        
+                        sessionNumber{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber;
+                        level1DataRecording(length(sessionNumber)) = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id));
+                        originalFileNameAndPath{end+1} = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)).originalFileNameAndPath;
+                        
+                        inSessionNumber = obj.level1StudyObj.getInSessionNumberForDataRecording(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).dataRecording(dataRecordingNumber(id)));
+                        foundSubjectId = [];
+                        for j =1:length(obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject)
+                            if strcmp(inSessionNumber, obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(j).inSessionNumber)
+                                foundSubjectId = [foundSubjectId j];
+                            end;
                         end;
-                    end;
-                    if isempty(foundSubjectId)
-                        error('Something iss wrong, subejct with inSession number cannot be found.');
-                    elseif length(foundSubjectId) > 1
-                        error('Something is wrong, more than one sbject with inSession number found.');
-                    else % a single number
-                        newSubject = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(foundSubjectId);
-                        if isempty(subjectInfo)
-                            subjectInfo = newSubject;
+                        if isempty(foundSubjectId)
+                            error('Something is wrong, subejct with inSession number cannot be found.');
+                        elseif length(foundSubjectId) > 1
+                            error('Something is wrong, more than one sbject with inSession number found.');
+                        else % a single number
+                            newSubject = obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).subject(foundSubjectId);
+                            if isempty(subjectInfo)
+                                subjectInfo{1} = newSubject;
+                            else
+                                subjectInfo{end+1}  = newSubject;
+                            end;
+                        end;
+                        
+                        if strcmpi(inputOptions.filetype, 'eeg')
+                            basefilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
                         else
-                            subjectInfo(end+1)  = newSubject;
+                            basefilename = obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile;
                         end;
-                    end;
-                    
-                    if strcmpi(inputOptions.filetype, 'eeg')
-                        basefilename = obj.studyLevel2Files.studyLevel2File(i).studyLevel2FileName;
-                    else
-                        basefilename = obj.studyLevel2Files.studyLevel2File(i).eventInstanceFile;
-                    end;
-                    
-                    if inputOptions.includeFolder
-                        baseFolder = fileparts(obj.level2XmlFilePath);
-                        % remove extra folder separator
-                        if baseFolder(end) ==  filesep
-                            baseFolder = baseFolder(1:end-1);
+                        
+                        if inputOptions.includeFolder
+                            baseFolder = fileparts(obj.level2XmlFilePath);
+                            % remove extra folder separator
+                            if baseFolder(end) ==  filesep
+                                baseFolder = baseFolder(1:end-1);
+                            end;
+                            filename{end+1} = [baseFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber filesep basefilename];
+                        else
+                            filename{end+1} = basefilename;
                         end;
-                        filename{end+1} = [baseFolder filesep 'session' filesep obj.level1StudyObj.sessionTaskInfo(matchedSessionTaskNumber).sessionNumber filesep basefilename];
-                    else
-                        filename{end+1} = basefilename;
                     end;
                 end;
-            end;
+            end
         end;
         
         function [filename, outputDataRecordingUuid, taskLabel, moreInfo, level2DataRecordingNumber] = infoFromDataRecordingUuid(obj, inputDataRecordingUuid, varargin)
@@ -848,6 +843,11 @@ classdef level2Study < levelStudy;
                 
             end;
             
+            c = cell2mat({obj.level1StudyObj.eventCodesInfo.condition});
+            if any(cell2mat((strfind({c.tag}, 'Action/Type'))))
+                issue(end+1).description = sprintf('Legacy HED tag ''Action/Type/'' detected. Please update this tag to ''Action/'' and redo the event instance files.');
+            end;
+            
             % display issues
             if isempty(issue)
                 fprintf('There are no issues. Great!\n');
@@ -939,18 +939,20 @@ classdef level2Study < levelStudy;
             objAsStructure.studyLevel2SchemaVersion = '1.1.0';
             objAsStructure.dateCreated = datestr8601(now,'*ymdHMS');
             objAsStructure.dateModified = objAsStructure.dateCreated;
-            objAsStructure.id = ['ess:study/' strrep(obj.title, ' ', '_') '/' obj.uuid];
+            objAsStructure.id = ['studylevel2_' obj.uuid];
             objAsStructure = rmfield(objAsStructure, 'uuid');
             
             clear jsonfilters;
             for i=1:length(objAsStructure.filters.filter)
-                tempvar = objAsStructure.filters.filter(i);              
+                tempvar = objAsStructure.filters.filter(i);
                 tempvar.executionOrder = str2double(strtrim(strsplit(objAsStructure.filters.filter(i).executionOrder, ',')));
                 tempvar = rename_field_to_force_array(tempvar, 'executionOrder');
-                                
-                params = tempvar.parameters.parameter;
-                tempvar.parameters = params;
-                tempvar = rename_field_to_force_array(tempvar, 'parameters');
+                
+                if isfield(tempvar.parameters, 'parameter')
+                    params = tempvar.parameters.parameter;
+                    tempvar.parameters = params;
+                    tempvar = rename_field_to_force_array(tempvar, 'parameters');
+                end;
                 
                 if i>1
                     tempVar = orderfields(tempvar, jsonfilters(1));
@@ -969,10 +971,10 @@ classdef level2Study < levelStudy;
                     tempvar.averageReferenceChannels = str2double(strtrim(strsplit(objAsStructure.studyLevel2Files.studyLevel2File(i).averageReferenceChannels, ',')));
                 end;
                 tempvar = rename_field_to_force_array(tempvar, 'averageReferenceChannels');
-                                
+                
                 tempvar = renameField(tempvar, 'dataRecordingUuid', 'dataRecordingId');
-
-                tempvar.id = tempvar.uuid; 
+                
+                tempvar.id = tempvar.uuid;
                 tempvar = rmfield(tempvar, 'uuid');
                 
                 if ~isempty(objAsStructure.studyLevel2Files.studyLevel2File(i).rereferencedChannels)
@@ -990,21 +992,21 @@ classdef level2Study < levelStudy;
                 end;
                 files(i) = tempvar;
             end;
-                        
+            
             objAsStructure.studyLevel2Files = files;
-             objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
+            objAsStructure = rename_field_to_force_array(objAsStructure, 'studyLevel2Files');
             
             for i=1:length(objAsStructure.project)
                 objAsStructure.projectFunding(i).organization = objAsStructure.project(i).organization;
                 objAsStructure.projectFunding(i).grantId = objAsStructure.project(i).grantId;
-            end;       
+            end;
             objAsStructure = rename_field_to_force_array(objAsStructure, 'projectFunding');
-            objAsStructure = rmfield(objAsStructure, 'project');                      
-
+            objAsStructure = rmfield(objAsStructure, 'project');
+            
             
             objAsStructure = renameField(objAsStructure, 'organization', 'organizations');
             objAsStructure = rename_field_to_force_array(objAsStructure, 'organizations');
-
+            
             
             if isempty(objAsStructure.copyright)
                 objAsStructure.copyright = 'NA';
